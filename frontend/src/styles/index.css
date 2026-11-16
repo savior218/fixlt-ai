@@ -1,10 +1,44 @@
 @import "tailwindcss";
 
+/* ==== UI 规范（DEV-02）====================================
+   品牌色：cyan-teal 系（信任、专业、安全）
+   风险色（PRD SAFE-001）：低=green 中=amber 高=red
+   通过 @theme 注册后可用 bg-brand-600 / text-risk-high 等类名 */
+@theme {
+  --color-brand-50: #ecfeff;
+  --color-brand-100: #cffafe;
+  --color-brand-200: #a5f3fc;
+  --color-brand-300: #67e8f9;
+  --color-brand-400: #22d3ee;
+  --color-brand-500: #06b6d4;
+  --color-brand-600: #0891b2;
+  --color-brand-700: #0e7490;
+  --color-brand-800: #155e75;
+  --color-brand-900: #164e63;
+
+  --color-risk-low: #16a34a;
+  --color-risk-medium: #d97706;
+  --color-risk-high: #dc2626;
+}
+
 /* ==== 关怀模式与无障碍基础（PRD 第 8 章）====
    字体缩放基于 rem：调整 html 根字号即可全局生效 */
 html[data-fs="normal"] { font-size: 16px; }
 html[data-fs="large"] { font-size: 18px; }
 html[data-fs="xlarge"] { font-size: 20px; }
+
+/* 长辈关怀模式：增大点击区域与控件最小尺寸（PRD 8 章） */
+html[data-mode="elder"] button,
+html[data-mode="elder"] a,
+html[data-mode="elder"] input,
+html[data-mode="elder"] select,
+html[data-mode="elder"] textarea {
+  min-height: 2.75rem;
+}
+html[data-mode="elder"] .chip {
+  min-height: 3rem;
+  font-size: 1rem;
+}
 
 /* 高对比度模式 */
 html.hc { filter: contrast(1.15) saturate(1.1); }
@@ -21,6 +55,27 @@ html.rm *::after {
 
 /* 键盘焦点可见（无障碍基线） */
 :focus-visible {
-  outline: 3px solid #0e7490;
+  outline: 3px solid var(--color-brand-700);
   outline-offset: 2px;
+}
+
+/* 跳转链接：平时隐藏，键盘聚焦时可见 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+/* Toast 入场动画（reduceMotion 时由上方规则关闭） */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.toast-item {
+  animation: toast-in 0.2s ease-out;
 }

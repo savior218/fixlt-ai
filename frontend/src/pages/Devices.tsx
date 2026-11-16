@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
+import Button from "../components/Button";
+import ConfirmDialog from "../components/ConfirmDialog";
+import EmptyState from "../components/EmptyState";
+import ErrorBanner from "../components/ErrorBanner";
+import PageHeader from "../components/PageHeader";
+import { useToast } from "../components/Toast";
 import {
   CATEGORY_LABELS,
   type Device,
@@ -23,12 +29,12 @@ const EMPTY_FORM: DeviceInput = {
 };
 
 export default function Devices() {
+  const { notify } = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [form, setForm] = useState<DeviceInput | null>(null); // null = 关闭表单
+  const [form, setForm] = useState<DeviceInput | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null); // 二次确认
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -75,58 +81,43 @@ export default function Devices() {
     try {
       if (editingId == null) {
         await createDevice(payload);
-        setNotice("设备已添加");
+        notify("设备已添加", "success");
       } else {
         await updateDevice(editingId, payload);
-        setNotice("设备已更新");
+        notify("设备已更新", "success");
       }
       setForm(null);
       setEditingId(null);
       await refresh();
     } catch (e) {
-      setError((e as Error).message);
+      notify((e as Error).message, "error");
     }
   }
 
-  async function confirmDelete(id: number) {
+  async function confirmDelete() {
+    if (deletingId == null) return;
     try {
-      await deleteDevice(id);
-      setNotice("设备已删除");
+      await deleteDevice(deletingId);
+      notify("设备已删除", "success");
       setDeletingId(null);
       await refresh();
     } catch (e) {
-      setError((e as Error).message);
+      notify((e as Error).message, "error");
     }
   }
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold">我的设备</h1>
-        {form == null && (
-          <button
-            type="button"
-            onClick={openCreate}
-            className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-800"
-          >
-            + 添加设备
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="我的设备"
+        action={
+          form == null ? (
+            <Button variant="primary" onClick={openCreate}>+ 添加设备</Button>
+          ) : undefined
+        }
+      />
 
-      {notice && (
-        <p
-          role="status"
-          className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
-        >
-          {notice}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
 
       {form != null && (
         <form
@@ -228,30 +219,31 @@ export default function Devices() {
           </label>
 
           <div className="flex gap-2 pt-1">
-            <button
-              type="submit"
-              className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-800"
-            >
-              保存
-            </button>
-            <button
-              type="button"
+            <Button type="submit">保存</Button>
+            <Button
+              variant="secondary"
               onClick={() => {
                 setForm(null);
                 setEditingId(null);
               }}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
             >
               取消
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
       {devices.length === 0 && !error && (
-        <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          暂无设备。添加家里的空调、冰箱或洗衣机，诊断时可直接关联。
-        </p>
+        <EmptyState
+          icon="❄️"
+          title="暂无设备"
+          description="添加家里的空调、冰箱或洗衣机，诊断时可直接关联。"
+          action={
+            form == null ? (
+              <Button variant="primary" onClick={openCreate}>添加设备</Button>
+            ) : undefined
+          }
+        />
       )}
 
       <ul className="space-y-2">
@@ -275,35 +267,26 @@ export default function Devices() {
                 )}
               </div>
               <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => openEdit(d)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"
-                >
+                <Button variant="secondary" size="sm" onClick={() => openEdit(d)}>
                   编辑
-                </button>
-                {deletingId === d.id ? (
-                  <button
-                    type="button"
-                    onClick={() => void confirmDelete(d.id)}
-                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
-                  >
-                    确认删除？
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setDeletingId(d.id)}
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    删除
-                  </button>
-                )}
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => setDeletingId(d.id)}>
+                  删除
+                </Button>
               </div>
             </div>
           </li>
         ))}
       </ul>
+
+      <ConfirmDialog
+        open={deletingId != null}
+        title="确认删除设备？"
+        message="删除后无法恢复，该设备的诊断与维修记录仍会保留。"
+        confirmLabel="确认删除"
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import Button from "../components/Button";
+import PageHeader from "../components/PageHeader";
+import Toggle from "../components/Toggle";
 import { getHealth, type HealthInfo } from "../services/api";
 import { usePrefs, type FontScale } from "../stores/prefs";
 
@@ -8,34 +11,6 @@ const FONT_OPTIONS: { value: FontScale; label: string }[] = [
   { value: "large", label: "大" },
   { value: "xlarge", label: "特大" },
 ];
-
-function Toggle({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between gap-4 py-3">
-      <span>
-        <span className="block text-sm font-medium">{label}</span>
-        <span className="block text-xs text-slate-500">{description}</span>
-      </span>
-      <input
-        type="checkbox"
-        role="switch"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full bg-slate-300 transition-colors before:block before:h-5 before:w-5 before:translate-x-0.5 before:translate-y-0.5 before:rounded-full before:bg-white before:transition-transform checked:bg-cyan-600 checked:before:translate-x-[1.375rem]"
-      />
-    </label>
-  );
-}
 
 export default function Settings() {
   const prefs = usePrefs();
@@ -50,7 +25,7 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="mb-5 text-lg font-bold">设置</h1>
+      <PageHeader title="设置" />
 
       <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold text-slate-700">交互模式</h2>
@@ -155,16 +130,13 @@ export default function Settings() {
 
       <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold text-slate-700">数据</h2>
-        <button
-          type="button"
-          onClick={() => {
+        <Button variant="secondary" onClick={() => {
             prefs.reset();
             localStorage.removeItem("fixitai-prefs");
           }}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
         >
           清除本机偏好设置
-        </button>
+        </Button>
       </section>
 
       <p className="px-1 text-xs leading-5 text-slate-400">
