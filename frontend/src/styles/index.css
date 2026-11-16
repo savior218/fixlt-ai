@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* ==== 关怀模式与无障碍基础（PRD 第 8 章）====
+   字体缩放基于 rem：调整 html 根字号即可全局生效 */
+html[data-fs="normal"] { font-size: 16px; }
+html[data-fs="large"] { font-size: 18px; }
+html[data-fs="xlarge"] { font-size: 20px; }
+
+/* 高对比度模式 */
+html.hc { filter: contrast(1.15) saturate(1.1); }
+html.hc body { background-color: #ffffff; color: #000000; }
+
+/* 减少动画模式 */
+html.rm *,
+html.rm *::before,
+html.rm *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* 键盘焦点可见（无障碍基线） */
+:focus-visible {
+  outline: 3px solid #0e7490;
+  outline-offset: 2px;
+}
