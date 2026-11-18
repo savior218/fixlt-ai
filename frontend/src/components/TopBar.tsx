@@ -23,7 +23,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">欢迎使用智修AI</p>
+          <p className="truncate text-sm font-medium text-slate-900">欢迎使用修必达</p>
           <p className="hidden truncate text-xs text-slate-500 sm:block">
             家电故障分诊与维修决策助手
           </p>

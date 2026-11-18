@@ -21,5 +21,5 @@ def test_demo_devices_seeded() -> None:
     resp = client.get("/api/devices", headers={"X-User-Id": "1"})
     assert resp.status_code == 200
     devices = resp.json()
-    assert len(devices) == 3
-    assert {d["category"] for d in devices} == {"ac", "fridge", "washer"}
+    # 种子数据包含空调/冰箱/洗衣机三类；测试期额外添加的设备不影响该断言
+    assert {"ac", "fridge", "washer"} <= {d["category"] for d in devices}

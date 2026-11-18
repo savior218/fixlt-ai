@@ -36,7 +36,7 @@ export default function Home() {
       {/* 欢迎横幅 */}
       <section className="rounded-2xl bg-brand-700 p-6 text-white shadow-sm">
         <h1 className={elder ? "text-2xl font-bold" : "text-xl font-bold"}>
-          {elder ? "你好！家里电器坏了吗？" : "你好，欢迎使用智修AI！"}
+          {elder ? "你好！家里电器坏了吗？" : "你好，欢迎使用修必达！"}
         </h1>
         <p className="mt-1.5 text-sm text-brand-100">
           {elder

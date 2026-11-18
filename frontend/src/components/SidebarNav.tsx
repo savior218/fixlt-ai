@@ -15,7 +15,7 @@ export default function SidebarNav() {
         <span className="text-xl" aria-hidden>
           🔧
         </span>
-        <span className="text-base font-bold text-slate-900">智修AI</span>
+        <span className="text-base font-bold text-slate-900">修必达</span>
       </div>
 
       {/* 导航菜单（与 MobileNavDrawer 共用 NAV_ITEMS） */}

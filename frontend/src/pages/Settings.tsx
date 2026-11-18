@@ -4,6 +4,7 @@ import { ShieldCheck, Volume2 } from "lucide-react";
 import Button from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
 import ConfirmDialog from "../components/ConfirmDialog";
+import ModalDialog from "../components/ModalDialog";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import {
@@ -37,6 +38,7 @@ export default function Settings() {
 
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   /** 自动保存指示：任意偏好变化 → 保存中 → 已自动保存 */
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function Settings() {
     <div className="space-y-5">
       <PageHeader
         title="个人设置"
-        subtitle="管理您的账号信息与使用偏好，让智修AI更符合您的使用习惯。"
+        subtitle="管理您的账号信息与使用偏好，让修必达更符合您的使用习惯。"
         actions={
           <span
             aria-live="polite"
@@ -197,6 +199,9 @@ export default function Settings() {
       {/* E. 隐私与数据 */}
       <SectionCard title="隐私与数据">
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setPrivacyOpen(true)}>
+            隐私说明
+          </Button>
           <Button variant="secondary" onClick={() => notify("个人数据管理为演示状态", "info")}>
             个人数据管理
           </Button>
@@ -235,6 +240,44 @@ export default function Settings() {
           }}
           onCancel={() => setDeleteOpen(false)}
         />
+        {/* 隐私说明弹窗（比赛合规：涉及用户数据须提供基本隐私说明） */}
+        <ModalDialog
+          open={privacyOpen}
+          title="修必达 FixIt AI · 隐私说明"
+          description="我们如何收集、使用和保护你的数据"
+          onClose={() => setPrivacyOpen(false)}
+          footer={
+            <Button variant="primary" onClick={() => setPrivacyOpen(false)}>
+              我已阅读
+            </Button>
+          }
+        >
+          <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+            <p>
+              <strong>1. 收集的数据。</strong>
+              为提供家电故障诊断服务，本产品会收集你主动填写的内容：设备信息（名称、品牌、型号、位置）、故障描述与问诊对话、维修记录，以及界面偏好设置（字体、缩放、对比度、长辈关怀模式等）。
+            </p>
+            <p>
+              <strong>2. 数据的存储。</strong>
+              界面偏好、诊断草稿与维修记录保存在你的浏览器本地（localStorage）；设备与维修档案保存在本产品服务端数据库中，仅用于业务功能展示，不做商业用途。
+            </p>
+            <p>
+              <strong>3. AI 诊断说明。</strong>
+              当你发起 AI 诊断时，故障描述与问诊对话会经由本产品服务端发送至智谱 GLM 大模型接口用于生成诊断内容；本产品不向 AI 服务发送你的账号信息，AI 服务商按其隐私政策处理请求数据。未配置 AI 服务时，诊断由本地规则引擎完成，数据不出本机。
+            </p>
+            <p>
+              <strong>4. 数据安全。</strong>
+              AI 服务密钥仅保存在服务端环境变量中，不随前端代码分发；产品不包含广告跟踪或第三方统计脚本。
+            </p>
+            <p>
+              <strong>5. 你的控制权。</strong>
+              你可以在本页「清除本机数据」随时删除本地保存的偏好、草稿与维修记录；当前版本为演示账号运行，未接入真实用户体系，不会收集手机号等真实身份信息。
+            </p>
+            <p className="text-xs text-slate-400">
+              本说明与产品当前实际功能一致。功能更新导致数据处理方式变化时，我们将同步更新本说明。
+            </p>
+          </div>
+        </ModalDialog>
       </SectionCard>
 
       {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文） */}

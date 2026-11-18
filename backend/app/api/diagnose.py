@@ -16,7 +16,7 @@ from app.schemas.diagnosis import DiagnoseContent, DiagnoseRequest, DiagnoseResp
 
 router = APIRouter(prefix="/api/diagnose", tags=["diagnose"])
 
-SYSTEM_PROMPT = """你是"智修AI"家用家电维修助手，负责根据用户提供的信息生成家电故障诊断内容。
+SYSTEM_PROMPT = """你是"修必达（FixIt AI）"家用家电维修助手，负责根据用户提供的信息生成家电故障诊断内容。
 
 【输出格式】只输出一个 JSON 对象，不要输出任何解释文字，字段如下：
 {

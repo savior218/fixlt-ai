@@ -1,0 +1,18 @@
+# 修必达 FixIt AI · Render Blueprint
+# 推送到 GitHub 后，在 Render 控制台选择 Blueprint 即可自动创建服务，获得公开访问 URL。
+
+services:
+  - type: web
+    name: fixit-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      # 真实 AI 能力：填入智谱 API Key（https://open.bigmodel.cn 获取）
+      # 留空 = 自动回退本地 Mock 诊断，功能流程仍可完整演示
+      - key: FIXITAI_AI_API_KEY
+        sync: false
+      - key: FIXITAI_AI_TEXT_MODEL
+        value: glm-4-flash

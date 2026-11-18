@@ -3,9 +3,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "智修AI FixItAI"
+    app_name: str = "修必达 FixIt AI"
     app_version: str = "0.1.0"
     database_url: str = "sqlite:///./fixitai.db"
+    # 前端构建产物目录（生产部署时由 FastAPI 统一托管；留空 = 本地开发模式，不托管）
+    # 环境变量名：FIXITAI_FRONTEND_DIST_DIR
+    frontend_dist_dir: str = ""
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

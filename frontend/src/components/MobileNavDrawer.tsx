@@ -69,7 +69,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         {/* Logo 区 + 关闭按钮 */}
         <div className="flex h-16 items-center justify-between border-b border-slate-200 pl-5 pr-3">
           <span className="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span aria-hidden className="text-xl">🔧</span>智修AI
+            <span aria-hidden className="text-xl">🔧</span>修必达
           </span>
           <button
             type="button"
