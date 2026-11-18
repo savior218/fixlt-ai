@@ -30,7 +30,7 @@ export default function AIMessageBubble({
     return (
       <div className="flex flex-col items-end gap-1">
         <div
-          className={`max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
+          className={`max-w-[85%] break-words rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
           {content}
         </div>
@@ -51,7 +51,7 @@ export default function AIMessageBubble({
         </span>
 
         <div
-          className={`max-w-[85%] rounded-2xl rounded-tl-md bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 ${elder ? "px-4 py-3 text-lg leading-loose" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
+          className={`min-w-0 max-w-[85%] break-words rounded-2xl rounded-tl-md bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 ${elder ? "px-4 py-3 text-lg leading-loose" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
           {loading ? (
             <span className="flex items-center gap-1 py-1" role="status" aria-label="AI 正在输入">

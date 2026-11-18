@@ -7,12 +7,14 @@ import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import RiskAlert from "../components/RiskAlert";
 import SectionCard from "../components/SectionCard";
+import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { createRecordFromDiagnosis } from "../services/repairService";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDateTime } from "../utils/format";
+import { contentFor, hasElderCopy, normalizeDiagnosis } from "../utils/diagnosis";
 
 /** elder 分步引导文案（节奏层：先结论 → 再原因 → 再建议） */
 const ELDER_STAGES = [
@@ -39,10 +41,10 @@ export default function DiagnosisResult() {
   const showCauses = !elder || elderStage >= 1;
   const showRest = !elder || elderStage >= 2;
 
-  const diagnosis = useMemo(
-    () => history.find((d) => d.id === id),
-    [history, id]
-  );
+  const diagnosis = useMemo(() => {
+    const found = history.find((d) => d.id === id);
+    return found ? normalizeDiagnosis(found) : undefined;
+  }, [history, id]);
 
   /** 是否已保存过（防止重复生成维修记录） */
   const saved = useMemo(
@@ -68,10 +70,14 @@ export default function DiagnosisResult() {
       notify("该诊断已保存过维修记录", "info");
       return;
     }
-    addRecord(createRecordFromDiagnosis(diagnosis));
+    addRecord(createRecordFromDiagnosis(diagnosis, elder ? "elder" : "standard"));
     setJustSaved(true);
     notify("已保存到维修档案", "success");
   }
+
+  const view = contentFor(diagnosis, elder ? "elder" : "standard");
+  const showSourceNote =
+    diagnosis.source !== "ai" || (elder && !hasElderCopy(diagnosis));
 
   return (
     <div className="space-y-5">
@@ -82,31 +88,60 @@ export default function DiagnosisResult() {
         </p>
       )}
 
-      {/* 诊断完成标识 */}
-      <div className="card-base flex items-center gap-3 p-5">
-        <CheckCircle2 aria-hidden className="h-8 w-8 shrink-0 text-risk-low" />
-        <div>
-          <h1 className={elder ? "text-xl font-bold text-slate-900" : "text-lg font-bold text-slate-900"}>
-            {elder ? "诊断完成！这就告诉您怎么办" : "诊断完成！为您生成详细的维修建议"}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {diagnosis.deviceName ?? "未关联设备"} · {diagnosis.symptom || "自定义描述"} ·{" "}
-            {formatDateTime(diagnosis.createdAt)}
-          </p>
+      {/* 诊断完成标识 + 来源标识 */}
+      <div className="card-base flex flex-wrap items-center justify-between gap-3 p-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <CheckCircle2 aria-hidden className="h-8 w-8 shrink-0 text-risk-low" />
+          <div className="min-w-0">
+            <h1 className={elder ? "text-xl font-bold text-slate-900" : "text-lg font-bold text-slate-900"}>
+              {elder ? "诊断完成！这就告诉您怎么办" : "诊断完成！为您生成详细的维修建议"}
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {diagnosis.deviceName ?? "未关联设备"} · {diagnosis.symptom || "自定义描述"} ·{" "}
+              {formatDateTime(diagnosis.createdAt)}
+            </p>
+          </div>
         </div>
+        <SourceBadge source={diagnosis.source} model={diagnosis.model} />
       </div>
+
+      {showSourceNote && (
+        <p
+          role="note"
+          className={[
+            "rounded-xl border px-4 py-3 text-sm",
+            diagnosis.source === "template"
+              ? "border-amber-300 bg-amber-50 text-amber-900"
+              : "border-slate-300 bg-slate-50 text-slate-600",
+          ].join(" ")}
+        >
+          {diagnosis.source === "template" &&
+            "本结果由本地模板生成，不是真实 AI 诊断，仅用于离线演示。"}
+          {diagnosis.source === "unknown" &&
+            "该历史记录未保存内容来源，无法确认是否由真实 AI 生成；不对来源作推断。"}
+          {elder && !hasElderCopy(diagnosis) &&
+            " 该历史记录只保存了当前版本文案，切换标准/长辈模式不会改变诊断判断。"}
+        </p>
+      )}
 
       {/* 核心结论 */}
       <SectionCard title="诊断结论">
         <p className={`text-slate-800 ${elder ? "text-lg leading-loose" : "text-sm leading-relaxed"}`}>
-          {diagnosis.conclusion}
+          {view.content.conclusion}
         </p>
+        {(diagnosis.source === "ai" || diagnosis.source === "template") && (
+          <p className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-400">
+            {diagnosis.source === "ai"
+              ? `内容由真实 AI 生成${diagnosis.model ? `（${diagnosis.model}）` : ""}；风险等级由本地安全规则独立判定。`
+              : "内容由本地固定模板生成（非 AI）；风险等级由本地安全规则独立判定。"}
+          </p>
+        )}
       </SectionCard>
 
       {/* 风险等级（安全信息：任何模式下始终完整展示，不参与分步折叠） */}
       <RiskAlert
         level={diagnosis.riskLevel}
-        description={diagnosis.riskNote ?? undefined}
+        description={view.content.riskNote ?? undefined}
       />
 
       {/* elder 第一步 → 第二步 */}
@@ -120,7 +155,7 @@ export default function DiagnosisResult() {
       {showCauses && (
         <SectionCard title={elder ? "可能是这些地方出了问题" : "可能的故障原因"}>
           <ul className="space-y-3">
-            {diagnosis.possibleCauses.map((c, i) => (
+            {view.content.possibleCauses.map((c, i) => (
               <li key={c.title} className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
                   {i + 1}
@@ -150,7 +185,7 @@ export default function DiagnosisResult() {
       {showRest && (
         <SectionCard title={elder ? "我们确认过的情况" : "判断依据"}>
           <ul className="space-y-2">
-            {diagnosis.evidence.map((e) => (
+            {view.content.evidence.map((e) => (
               <li
                 key={e}
                 className={`flex items-start gap-2 text-slate-600 ${elder ? "text-base leading-relaxed" : "text-sm"}`}
@@ -160,6 +195,26 @@ export default function DiagnosisResult() {
               </li>
             ))}
           </ul>
+        </SectionCard>
+      )}
+
+      {/* 未知 / 待确认信息：不升级为事实 */}
+      {showRest && view.content.unknownInformation.length > 0 && (
+        <SectionCard title={elder ? "还没弄清楚的情况" : "待确认信息"}>
+          <ul className="space-y-2">
+            {view.content.unknownInformation.map((u) => (
+              <li
+                key={u}
+                className={`flex items-start gap-2 text-amber-800 ${elder ? "text-base leading-relaxed" : "text-sm"}`}
+              >
+                <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                {u}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-400">
+            这些回答属于“不知道 / 没试过”等未知信息，未作为已确认事实使用。
+          </p>
         </SectionCard>
       )}
 

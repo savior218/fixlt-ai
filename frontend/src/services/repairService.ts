@@ -3,17 +3,23 @@
    P4 维修档案 / P7 设备详情 / P8 维修历史共用 repairStore
    ============================================================ */
 
-import type { Diagnosis } from "../types/diagnosis";
+import type { Diagnosis, Tone } from "../types/diagnosis";
 import type { RepairRecord, RepairStats } from "../types/repair";
 import { shortId } from "../utils/format";
+import { contentFor } from "../utils/diagnosis";
 
-/** 从诊断结果生成维修记录（P2「保存维修记录」） */
-export function createRecordFromDiagnosis(diagnosis: Diagnosis): RepairRecord {
+/** 从诊断结果生成维修记录（P2「保存维修记录」；语气跟随当前模式但事实一致） */
+export function createRecordFromDiagnosis(
+  diagnosis: Diagnosis,
+  tone: Tone = "standard"
+): RepairRecord {
+  const content = contentFor(diagnosis, tone).content;
   return {
     id: shortId("rep"),
     deviceId: diagnosis.deviceId ?? 0,
     deviceName: diagnosis.deviceName ?? "未关联设备",
     diagnosisId: diagnosis.id,
+    diagnosisSource: diagnosis.source,
     createdAt: new Date().toISOString(),
     repairTime: null,
     faultDescription: [
@@ -22,7 +28,7 @@ export function createRecordFromDiagnosis(diagnosis: Diagnosis): RepairRecord {
     ]
       .filter(Boolean)
       .join("；"),
-    repairMethod: diagnosis.suggestions
+    repairMethod: content.suggestions
       .map((s, i) => `${i + 1}. ${s.title}：${s.description}`)
       .join("\n"),
     technician: null,
@@ -49,6 +55,7 @@ export function createManualRecord(input: ManualRecordInput): RepairRecord {
   return {
     id: shortId("rep"),
     diagnosisId: null,
+    diagnosisSource: "none",
     createdAt: new Date().toISOString(),
     images: [],
     verificationStatus: "unverified",

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
-import MobileNavDrawer from "../components/MobileNavDrawer";
+import MobileNavDrawer, { DESKTOP_NAV_QUERY } from "../components/MobileNavDrawer";
 import SafetyBanner from "../components/SafetyBanner";
 import SidebarNav from "../components/SidebarNav";
 import TopBar from "../components/TopBar";
@@ -18,6 +18,16 @@ export default function AppLayout() {
   useEffect(() => {
     setNavOpen(false);
   }, [location.pathname]);
+
+  // 视口达到桌面宽度（≥1024px）自动关闭抽屉，避免遮罩残留
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_NAV_QUERY);
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setNavOpen(false);
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   return (
     <ToastProvider>

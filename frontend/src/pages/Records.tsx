@@ -145,6 +145,13 @@ export default function Records() {
         <ul className="space-y-3">
           {filtered.map((r) => {
             const open = expandedId === r.id;
+            const sourceLabel = !r.diagnosisId
+              ? "手动记录"
+              : r.diagnosisSource === "ai"
+                ? "真实 AI 生成"
+                : r.diagnosisSource === "template"
+                  ? "模板演示（非 AI）"
+                  : "来源未记录";
             return (
               <li key={r.id} className="card-base overflow-hidden">
                 <button
@@ -174,6 +181,7 @@ export default function Records() {
                       <Field label="维修时间" value={r.repairTime ? formatDateTime(r.repairTime) : "—"} />
                       <Field label="维修人员" value={r.technician ?? "—"} />
                       <Field label="费用" value={r.cost != null ? `¥${r.cost}` : "—"} />
+                      <Field label="诊断来源" value={sourceLabel} />
                     </div>
                     <div>
                       <p className="text-xs font-medium text-slate-400">处理方式</p>

@@ -1,29 +1,38 @@
 /* ============================================================
-   诊断服务（阶段九：真实 AI 接入）
+   诊断服务（阶段十：可信来源 / 完整问答 / 双文案 / 失败可重试）
    ------------------------------------------------------------
-   - 输入 deviceId/category + symptom + description + 逐题回答
-   - 每轮只追问一个问题（降低认知负担）
-   - 内部调用 utils/risk.ts 安全校验：高风险立即拦截
-     （安全判定始终在前端本地完成，不交给大模型）
-   - 诊断结果：优先后端转发真实 GLM（generateDiagnosis），
-     后端不可用时自动回退本地 Mock 模板（离线演示能力）
-   - 两套文案 standard / elder（表达不同，判断相同）
+   - 问诊每轮只追问一个问题，保存问题 ID、问题文本与回答
+   - 安全判定在本地独立完成（utils/risk.ts），高风险立即拦截
+   - 真实 AI 失败时不静默回退：返回结构化错误，由页面明确提示
+   - 用户主动选择“模板演示”时生成 source=template 的诊断，前后均标注
+   - 同一诊断保存 standard / elder 两套文案，共用事实、原因排序与行动含义
    ============================================================ */
 
-import type { DeviceCategory } from "./api";
-import { requestAIDiagnosis } from "./api";
+import { ApiError, requestAIDiagnosis } from "./api";
 import type {
   Diagnosis,
+  DiagnosisContent,
+  DiagnosisError,
+  DiagnoseCategory,
   PossibleCause,
+  QAPair,
   RepairSuggestion,
   RiskLevel,
   Tone,
 } from "../types/diagnosis";
 import type { Device } from "../types/device";
-import { buildInterception, detectRisk, type RiskInterception } from "../utils/risk";
+import {
+  buildInterception,
+  detectRisk,
+  higherRisk,
+  isUnknownAnswer,
+  SYMPTOM_BASE_RISK,
+  type RiskInterception,
+} from "../utils/risk";
 import { shortId } from "../utils/format";
+import { questionsFor, type QuestionDef } from "./questionScript";
 
-export type DiagnoseCategory = DeviceCategory | "other";
+export type { DiagnoseCategory } from "../types/diagnosis";
 
 /** P1 故障现象卡片选项（主标题 + 括注） */
 export const SYMPTOM_OPTIONS: Record<DiagnoseCategory, { title: string; note: string }[]> = {
@@ -53,55 +62,88 @@ export const SYMPTOM_OPTIONS: Record<DiagnoseCategory, { title: string; note: st
   ],
 };
 
-/** AI 问诊问题脚本（每类 2 问，逐题展示） */
-const QUESTIONS: Record<DiagnoseCategory, { text: string; suggestions: string[] }[]> = {
-  ac: [
-    { text: "最近有清洗过空调过滤网吗？", suggestions: ["没洗过", "上个月洗过", "不清楚怎么洗"] },
-    { text: "开机运行时，出风口有冷风吹出吗？", suggestions: ["有一点，但不凉", "完全没有冷风", "吹出来是热风"] },
-  ],
-  fridge: [
-    { text: "冰箱内部的照明灯还亮着吗？", suggestions: ["亮", "不亮", "没注意"] },
-    { text: "冷藏室的温度感觉怎么样？", suggestions: ["不够凉", "和平时一样", "都结冰了"] },
-  ],
-  washer: [
-    { text: "通电后，面板指示灯亮吗？", suggestions: ["亮", "不亮", "没注意"] },
-    { text: "故障出现在哪个环节？", suggestions: ["进水时", "脱水时", "整个运行过程"] },
-  ],
-  other: [
-    { text: "设备还能通电开机吗？", suggestions: ["能开机", "不能", "没试过"] },
-    { text: "这个问题出现多久了？", suggestions: ["今天刚出现", "几天了", "一周以上"] },
-  ],
-};
-
-/** 问诊上下文（diagnosisStore 草稿 + 已回答列表） */
+/** 问诊上下文（diagnosisStore 草稿 + 完整问答） */
 export interface AskContext {
   category: DiagnoseCategory | null;
   symptom: string | null;
   description: string;
-  answers: string[];
+  qa: QAPair[];
   device?: Device | null;
 }
 
 export type AskResult =
-  | { kind: "question"; text: string; suggestions: string[] }
-  /** 问诊完成，进入结果生成（异步：generateDiagnosis） */
+  | { kind: "question"; question: QuestionDef }
+  /** 问诊完成，进入异步结果生成（generateAIDiagnosis / buildTemplateDiagnosis） */
   | { kind: "result" }
   | { kind: "interception"; interception: RiskInterception };
 
-/** 症状基础风险（与 detectRisk 结果取较高者） */
-const SYMPTOM_BASE_RISK: Record<string, RiskLevel> = {
-  完全不制冷: "medium",
-  漏水: "medium",
-  无法启动: "medium",
-  不进水: "medium",
-  结冰严重: "medium",
-  不制冷: "medium",
-  无法开机: "medium",
+/** 生成结果：失败分“高风险拦截”和“AI 错误”，页面分别处理 */
+export type GenerateResult =
+  | { ok: true; diagnosis: Diagnosis }
+  | { ok: false; kind: "interception"; interception: RiskInterception }
+  | { ok: false; kind: "error"; error: DiagnosisError };
+
+const CATEGORY_LABELS: Record<DiagnoseCategory, string> = {
+  ac: "空调",
+  fridge: "冰箱",
+  washer: "洗衣机",
+  other: "其他家电",
 };
 
-function higherRisk(a: RiskLevel, b: RiskLevel): RiskLevel {
-  const order: RiskLevel[] = ["low", "medium", "high"];
-  return order.indexOf(a) >= order.indexOf(b) ? a : b;
+/* ============ 事实 / 未知信息（与后端 app/services/facts.py 同规则） ============ */
+
+function clip(text: string, max = 200): string {
+  return text.trim().slice(0, max);
+}
+
+export function buildEvidence(ctx: AskContext): {
+  evidence: string[];
+  unknownInformation: string[];
+} {
+  const category = ctx.category ?? "other";
+  const evidence: string[] = [];
+  const unknownInformation: string[] = [];
+
+  const deviceText = [ctx.device?.name, ctx.device?.brand, ctx.device?.model]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  evidence.push(
+    deviceText
+      ? `设备：${clip(deviceText)}（${CATEGORY_LABELS[category]}）`
+      : `设备类型：${CATEGORY_LABELS[category]}`
+  );
+
+  evidence.push(ctx.symptom ? `故障现象：${clip(ctx.symptom)}` : "故障现象：用户以文字描述了问题");
+  if (ctx.description.trim()) evidence.push(`用户描述：${clip(ctx.description)}`);
+
+  for (const item of ctx.qa) {
+    if (!item.questionText || !item.answer) continue;
+    if (item.unknown || isUnknownAnswer(item.answer)) {
+      unknownInformation.push(
+        `「${clip(item.questionText, 160)}」用户回答：${clip(item.answer)}（未知，未作为确认事实）`
+      );
+    } else {
+      evidence.push(
+        `「${clip(item.questionText, 160)}」用户回答：${clip(item.answer)}`
+      );
+    }
+  }
+
+  return { evidence: evidence.slice(0, 8), unknownInformation: unknownInformation.slice(0, 6) };
+}
+
+/** 安全扫描文本：症状 + 描述 + 每轮问题与回答（与后端一致） */
+export function buildScanText(ctx: AskContext): string {
+  return [ctx.symptom ?? "", ctx.description, ...ctx.qa.map((q) => `${q.questionText} ${q.answer}`)].join(
+    "\n"
+  );
+}
+
+export function buildLocalRisk(ctx: AskContext): { level: RiskLevel; matched: string[] } {
+  const detected = detectRisk(buildScanText(ctx));
+  const base = SYMPTOM_BASE_RISK[ctx.symptom ?? ""] ?? "low";
+  return { level: higherRisk(detected.level, base), matched: detected.matched };
 }
 
 /* ============ 诊断模板（standard / elder 双文案） ============ */
@@ -110,11 +152,12 @@ interface DiagnosisTemplate {
   conclusion: string;
   conclusionElder: string;
   causes: PossibleCause[];
-  evidence: (ctx: AskContext) => string[];
   suggestions: RepairSuggestion[];
   suggestionsElder: RepairSuggestion[];
   tips: string;
+  tipsElder: string;
   riskNote: string;
+  riskNoteElder: string;
 }
 
 const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
@@ -128,11 +171,6 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "制冷剂轻微不足（可能性较低）", description: "若清洁滤网后仍无改善，需专业人员检测压力确认" },
       { title: "室外机散热不良（如有遮挡）", description: "外机周围有杂物遮挡或阳光直射会降低换热效率" },
     ],
-    evidence: (ctx) => [
-      `设备为${ctx.device ? `${ctx.device.brand ?? ""}${ctx.device.model ? ` ${ctx.device.model}` : ""}空调` : "空调"}`,
-      `当前症状：${ctx.symptom ?? ""}`,
-      ...ctx.answers.map((a, i) => `针对"${QUESTIONS.ac[i].text}"的回答：${a}`),
-    ],
     suggestions: [
       { title: "断电后取出滤网清水冲洗", description: "关闭电源并等待 10 分钟，打开面板取出滤网，用清水冲洗晾干后装回" },
       { title: "清理室外机周边遮挡物", description: "确认外机四周 50cm 内无杂物堆积，保持通风顺畅" },
@@ -144,7 +182,9 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "第三步：开机试半小时", description: "还是不凉的话，就打维修电话，让师傅上门检查" },
     ],
     tips: "定期清洁滤网（建议每 1-2 个月一次），可有效提升制冷效果，延长使用寿命。",
+    tipsElder: "过滤网要常洗，空调才凉快，也更省电。",
     riskNote: "请勿自行拆卸空调内部部件，避免触电或造成更大损坏。",
+    riskNoteElder: "不要自己拆空调里面，小心触电，拿不准就找师傅。",
   },
   fridge: {
     conclusion:
@@ -155,11 +195,6 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "门封条老化或吸附异物，密封不严", description: "冷气外泄导致制冷变差，可用纸片测试门封吸力" },
       { title: "冷凝器散热空间不足", description: "冰箱两侧或背部贴墙、被遮挡时散热效率明显下降" },
       { title: "化霜系统异常导致结冰（如有厚冰）", description: "内壁厚冰会阻挡冷气循环，需先断电化霜再观察" },
-    ],
-    evidence: (ctx) => [
-      `设备为${ctx.device ? `${ctx.device.brand ?? ""}${ctx.device.model ? ` ${ctx.device.model}` : ""}冰箱` : "冰箱"}`,
-      `当前症状：${ctx.symptom ?? ""}`,
-      ...ctx.answers.map((a, i) => `针对"${QUESTIONS.fridge[i].text}"的回答：${a}`),
     ],
     suggestions: [
       { title: "检查门封条并清洁", description: "用温水擦拭门封条，纸片测试能否夹紧；老化变形需更换" },
@@ -172,7 +207,9 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "第三步：还不凉就联系维修", description: "让专业人员上门检查，不要自己拆冰箱" },
     ],
     tips: "热的食物请冷却后再放入冰箱；冰箱周围留出散热空间，可显著降低耗电并延长寿命。",
+    tipsElder: "热菜放凉了再放冰箱，冰箱两边留点空，省电又耐用。",
     riskNote: "请勿使用尖锐物品铲除内壁冰层，避免刺穿管路；化霜前请先断电。",
+    riskNoteElder: "除冰不要用刀子铲，会弄坏管子；先拔掉电源再化冰。",
   },
   washer: {
     conclusion:
@@ -183,11 +220,6 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "供电或门锁未就位", description: "插座接触不良或舱门未锁到位时，设备不会启动" },
       { title: "排水管堵塞或弯折", description: "排水不畅会导致报警停机或不进水" },
       { title: "脱水负载不平衡", description: "衣物偏向一侧会引起剧烈震动与噪音" },
-    ],
-    evidence: (ctx) => [
-      `设备为${ctx.device ? `${ctx.device.brand ?? ""}${ctx.device.model ? ` ${ctx.device.model}` : ""}洗衣机` : "洗衣机"}`,
-      `当前症状：${ctx.symptom ?? ""}`,
-      ...ctx.answers.map((a, i) => `针对"${QUESTIONS.washer[i].text}"的回答：${a}`),
     ],
     suggestions: [
       { title: "检查插座供电与舱门锁止", description: "换插座通电测试；重新关严舱门听到锁扣声" },
@@ -200,7 +232,9 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "第三步：衣服放均匀再试一次", description: "还不行就打维修电话，别自己拆机器" },
     ],
     tips: "洗大件（被套、窗帘）时单独脱水并抖散放置，可减少震动与噪音。",
+    tipsElder: "洗被子窗帘要抖开再脱水分开洗，机器就不容易晃。",
     riskNote: "清洁或检查前请拔掉电源插头；请勿湿手操作电源与插座。",
+    riskNoteElder: "检查前先拔插头，手湿的时候不要碰插座。",
   },
   other: {
     conclusion:
@@ -211,11 +245,6 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "电源连接或插座接触不良", description: "供电不稳是最常见的「无法开机/运行中断」原因" },
       { title: "内部电路板接触不良（可能性较低）", description: "需拆机检测确认，不建议自行处理" },
       { title: "过热保护触发", description: "设备长时间运行或散热受阻时可能自动停机" },
-    ],
-    evidence: (ctx) => [
-      ctx.device ? `设备为${ctx.device.brand ?? ""}${ctx.device.model ? ` ${ctx.device.model}` : ""}` : "设备类型：其他家电",
-      `当前症状：${ctx.symptom ?? ""}`,
-      ...ctx.answers.map((a, i) => `针对"${QUESTIONS.other[i].text}"的回答：${a}`),
     ],
     suggestions: [
       { title: "换插座重新通电测试", description: "排除插座接触不良的可能" },
@@ -228,37 +257,59 @@ const TEMPLATES: Record<DiagnoseCategory, DiagnosisTemplate> = {
       { title: "第三步：还不行就找维修师傅", description: "里面的电路有危险，别自己打开" },
     ],
     tips: "家电长期不用时建议拔掉电源，既省电也更安全。",
+    tipsElder: "电器长时间不用，最好把插头拔掉，省电也安全。",
     riskNote: "请勿自行拆机检查电路，避免触电风险；检查前先断电。",
+    riskNoteElder: "不要自己拆开看电路，很危险；先拔掉电源。",
   },
 };
 
-/** 组装 Mock 诊断结果 */
-export function buildDiagnosis(ctx: AskContext, tone: Tone): Diagnosis {
-  const category: DiagnoseCategory = ctx.category ?? "other";
+function buildTemplateContent(
+  ctx: AskContext,
+  tone: Tone,
+  facts: { evidence: string[]; unknownInformation: string[] }
+): DiagnosisContent {
+  const category = ctx.category ?? "other";
   const tpl = TEMPLATES[category];
+  const elder = tone === "elder";
+  return {
+    conclusion: elder ? tpl.conclusionElder : tpl.conclusion,
+    possibleCauses: tpl.causes,
+    evidence: facts.evidence,
+    unknownInformation: facts.unknownInformation,
+    suggestions: elder ? tpl.suggestionsElder : tpl.suggestions,
+    tips: elder ? tpl.tipsElder : tpl.tips,
+    riskNote: elder ? tpl.riskNoteElder : tpl.riskNote,
+  };
+}
 
-  // 安全校验：高风险关键词（含症状/描述/回答全文）
-  const detect = detectRisk(
-    [ctx.symptom ?? "", ctx.description, ...ctx.answers].join(" ")
-  );
-  const base = SYMPTOM_BASE_RISK[ctx.symptom ?? ""] ?? "low";
-  const riskLevel = higherRisk(detect.level, base);
-
+/**
+ * 模板演示（source=template）：必须由用户主动选择，页面在前后都明确标注“非 AI 生成”。
+ * 与真实 AI 一样保存 standard / elder 双文案与完整问答。
+ */
+export function buildTemplateDiagnosis(ctx: AskContext): Diagnosis {
+  const facts = buildEvidence(ctx);
+  const standard = buildTemplateContent(ctx, "standard", facts);
+  const elder = buildTemplateContent(ctx, "elder", facts);
+  const risk = buildLocalRisk(ctx);
   return {
     id: shortId("diag"),
     deviceId: ctx.device?.id ?? null,
     deviceName: ctx.device?.name ?? null,
-    category,
+    category: ctx.category ?? "other",
     symptom: ctx.symptom ?? "",
     description: ctx.description,
     createdAt: new Date().toISOString(),
-    conclusion: tone === "elder" ? tpl.conclusionElder : tpl.conclusion,
-    possibleCauses: tpl.causes,
-    evidence: tpl.evidence(ctx),
-    riskLevel,
-    suggestions: tone === "elder" ? tpl.suggestionsElder : tpl.suggestions,
-    tips: tpl.tips,
-    riskNote: tpl.riskNote,
+    source: "template",
+    model: null,
+    qa: ctx.qa.map((q) => ({ ...q })),
+    content: { standard, elder },
+    riskLevel: risk.level,
+    conclusion: standard.conclusion,
+    possibleCauses: standard.possibleCauses,
+    evidence: standard.evidence,
+    suggestions: standard.suggestions,
+    tips: standard.tips,
+    riskNote: standard.riskNote,
     status: "completed",
   };
 }
@@ -267,66 +318,168 @@ export function buildDiagnosis(ctx: AskContext, tone: Tone): Diagnosis {
  * 问诊下一轮：
  * 1. 全文风险检测 → 高风险立即拦截（任何模式一致）
  * 2. 问题未问完 → 返回下一个问题（每次只问一个）
- * 3. 问题问完 → 返回 result（由 generateDiagnosis 异步生成结果）
+ * 3. 问题问完 → 返回 result（由页面异步生成结果）
  */
 export function nextTurn(ctx: AskContext, tone: Tone): AskResult {
-  const fullText = [ctx.symptom ?? "", ctx.description, ...ctx.answers].join(" ");
-  const detect = detectRisk(fullText);
-  if (detect.level === "high") {
-    return { kind: "interception", interception: buildInterception(detect.matched, tone) };
+  const risk = buildLocalRisk(ctx);
+  if (risk.level === "high") {
+    return { kind: "interception", interception: buildInterception(risk.matched, tone) };
   }
-  const category: DiagnoseCategory = ctx.category ?? "other";
-  const qs = QUESTIONS[category];
-  if (ctx.answers.length < qs.length) {
-    const q = qs[ctx.answers.length];
-    return { kind: "question", text: q.text, suggestions: q.suggestions };
+  const questions = questionsFor(ctx.category);
+  if (ctx.qa.length < questions.length) {
+    return { kind: "question", question: questions[ctx.qa.length] };
   }
   return { kind: "result" };
 }
 
-/**
- * 生成诊断结果（阶段九）：
- * 优先后端 /api/diagnose/complete 转发真实 GLM（standard/elder 双文案
- * 单次调用产出）；后端未配置 / 网络 / 解析失败时自动回退本地 Mock 模板。
- * 风险等级始终由本地规则引擎判定，LLM 不参与。
- */
-export async function generateDiagnosis(
-  ctx: AskContext,
+function errorMessage(code: string): string {
+  switch (code) {
+    case "ai_not_configured":
+      return "AI 服务尚未配置，暂时无法生成真实诊断。";
+    case "ai_timeout":
+      return "AI 响应超时，请稍后重试。";
+    case "ai_unavailable":
+    case "ai_busy":
+    case "rate_limited":
+      return "AI 服务当前繁忙或不可用，请稍后重试。";
+    case "ai_invalid_output":
+      return "AI 返回内容不合格，未采用该结果，请重试。";
+    case "ai_unsafe_output":
+      return "AI 建议未通过安全检查，未展示该内容，请重试。";
+    case "request_too_large":
+      return "描述内容过长，请精简后重试。";
+    case "timeout":
+      return "请求超时，请检查网络后重试。";
+    case "network":
+      return "无法连接诊断服务，请检查网络或后端是否启动。";
+    default:
+      return "诊断生成失败，请重试或选择模板演示。";
+  }
+}
+
+function backendInterception(
+  detail: unknown,
   tone: Tone
-): Promise<Diagnosis> {
-  // 本地回退结果（含本地风险判定），同时作为 AI 结果的字段兜底
-  const fallback = buildDiagnosis(ctx, tone);
+): RiskInterception | null {
+  const risk = (detail as { risk?: Record<string, unknown> } | undefined)?.risk;
+  if (!risk || typeof risk !== "object") return null;
+  const key = tone === "elder" ? "elder" : "standard";
+  const variant = (risk[key] ?? risk.standard) as
+    | { description?: string; immediate_actions?: { title: string; description: string }[]; forbidden_actions?: string[] }
+    | undefined;
+  if (!variant) return null;
+  return {
+    level: "high",
+    title: String(risk.title ?? "存在高风险！"),
+    description: String(variant.description ?? ""),
+    immediateActions: variant.immediate_actions ?? [],
+    forbiddenActions: variant.forbidden_actions ?? [],
+    matched: Array.isArray(risk.matched) ? (risk.matched as string[]) : [],
+  };
+}
+
+/**
+ * 真实 AI 诊断（阶段十）：
+ * - 成功：保存双文案、完整问答、来源 ai、模型名；风险取本地与后端下限较高者
+ * - 失败：返回结构化错误，不自动回退模板；高风险由后端拦截时转为拦截结果
+ */
+export async function generateAIDiagnosis(
+  ctx: AskContext,
+  tone: Tone,
+  signal?: AbortSignal
+): Promise<GenerateResult> {
+  const localRisk = buildLocalRisk(ctx);
+  const facts = buildEvidence(ctx);
+  const fallback = buildTemplateDiagnosis(ctx);
 
   try {
-    const res = await requestAIDiagnosis({
-      category: ctx.category ?? "other",
-      symptom: ctx.symptom,
-      description: ctx.description,
-      answers: ctx.answers,
-      device_name: ctx.device?.name ?? null,
-      device_brand: ctx.device?.brand ?? null,
-      device_model: ctx.device?.model ?? null,
-    });
+    const res = await requestAIDiagnosis(
+      {
+        category: ctx.category ?? "other",
+        symptom: ctx.symptom,
+        description: ctx.description,
+        qa: ctx.qa.map((q) => ({
+          question_id: q.questionId,
+          question_text: q.questionText,
+          answer: q.answer,
+          unknown: q.unknown || isUnknownAnswer(q.answer),
+        })),
+        device_name: ctx.device?.name ?? null,
+        device_brand: ctx.device?.brand ?? null,
+        device_model: ctx.device?.model ?? null,
+      },
+      signal
+    );
+
     const c = res.content;
+    const causes = c.possible_causes.map((p) => ({
+      title: p.title,
+      description: p.description,
+    }));
+    const standard: DiagnosisContent = {
+      conclusion: c.conclusion,
+      possibleCauses: causes,
+      evidence: c.evidence?.length ? c.evidence : facts.evidence,
+      unknownInformation: c.unknown_information ?? facts.unknownInformation,
+      suggestions: c.suggestions,
+      tips: c.tips || fallback.content?.standard.tips || null,
+      riskNote: c.risk_note || fallback.content?.standard.riskNote || null,
+    };
+    const elder: DiagnosisContent = {
+      conclusion: c.conclusion_elder,
+      possibleCauses: causes,
+      evidence: standard.evidence,
+      unknownInformation: standard.unknownInformation,
+      suggestions: c.suggestions_elder,
+      tips: c.tips_elder || fallback.content?.elder?.tips || null,
+      riskNote: c.risk_note_elder || fallback.content?.elder?.riskNote || null,
+    };
+
+    const riskLevel = higherRisk(localRisk.level, res.risk_floor);
+
     return {
-      ...fallback,
-      id: shortId("diag"),
-      conclusion: tone === "elder" ? c.conclusion_elder : c.conclusion,
-      possibleCauses: c.possible_causes.map((p) => ({
-        title: p.title,
-        description: p.description,
-      })),
-      evidence: c.evidence,
-      suggestions: (tone === "elder" ? c.suggestions_elder : c.suggestions).map(
-        (s) => ({ title: s.title, description: s.description })
-      ),
-      tips: (tone === "elder" ? c.tips_elder : c.tips) || fallback.tips,
-      riskNote:
-        (tone === "elder" ? c.risk_note_elder : c.risk_note) || fallback.riskNote,
-      status: "completed",
+      ok: true,
+      diagnosis: {
+        id: shortId("diag"),
+        deviceId: ctx.device?.id ?? null,
+        deviceName: ctx.device?.name ?? null,
+        category: ctx.category ?? "other",
+        symptom: ctx.symptom ?? "",
+        description: ctx.description,
+        createdAt: new Date().toISOString(),
+        source: "ai",
+        model: res.model,
+        qa: ctx.qa.map((q) => ({ ...q })),
+        content: { standard, elder },
+        riskLevel,
+        conclusion: standard.conclusion,
+        possibleCauses: standard.possibleCauses,
+        evidence: standard.evidence,
+        suggestions: standard.suggestions,
+        tips: standard.tips,
+        riskNote: standard.riskNote,
+        status: "completed",
+      },
     };
   } catch (err) {
-    console.warn("真实 AI 诊断不可用，已回退本地诊断：", err);
-    return fallback;
+    if (err instanceof ApiError) {
+      if (err.code === "aborted") {
+        return { ok: false, kind: "error", error: { code: "aborted", message: "请求已取消" } };
+      }
+      if (err.code === "high_risk_blocked") {
+        const interception = backendInterception(err.detail, tone);
+        if (interception) return { ok: false, kind: "interception", interception };
+      }
+      return {
+        ok: false,
+        kind: "error",
+        error: { code: err.code, message: errorMessage(err.code) },
+      };
+    }
+    return {
+      ok: false,
+      kind: "error",
+      error: { code: "unknown", message: errorMessage("unknown") },
+    };
   }
 }

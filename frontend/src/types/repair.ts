@@ -16,6 +16,8 @@ export interface RepairRecord {
   deviceName: string;
   /** 关联诊断 ID（手动添加时可为空） */
   diagnosisId: string | null;
+  /** 关联诊断的内容来源（模板记录保存后仍保留来源标识；旧记录为空） */
+  diagnosisSource?: "ai" | "template" | "unknown" | "none" | null;
   /** 创建时间 ISO */
   createdAt: string;
   /** 实际维修时间 */

@@ -8,6 +8,7 @@ import type {
 } from "../types/diagnosis";
 import { EMPTY_DRAFT } from "../types/diagnosis";
 import { shortId, formatTime } from "../utils/format";
+import { normalizeDiagnosis, normalizeDraft } from "../utils/diagnosis";
 
 /** 诊断草稿 + 历史（persist：对话与结果刷新不丢失） */
 interface DiagnosisState {
@@ -21,7 +22,7 @@ interface DiagnosisState {
   ) => string;
   /** 覆盖更新草稿中最后一条 AI 消息（loading → 内容） */
   updateLastAi: (patch: Partial<ChatMessage>) => void;
-  /** 保存诊断结果到历史 */
+  /** 保存诊断结果到历史（同 ID 不重复写入） */
   saveDiagnosis: (diagnosis: Diagnosis) => void;
   /** 重置草稿（保留历史） */
   resetDraft: () => void;
@@ -32,7 +33,7 @@ interface DiagnosisState {
 export const useDiagnosisStore = create<DiagnosisState>()(
   persist(
     (set) => ({
-      draft: { ...EMPTY_DRAFT, chat: [], answers: [] },
+      draft: { ...EMPTY_DRAFT, chat: [], qa: [] },
       history: [],
 
       setDraft: (patch) => set((s) => ({ draft: { ...s.draft, ...patch } })),
@@ -63,20 +64,46 @@ export const useDiagnosisStore = create<DiagnosisState>()(
         }),
 
       saveDiagnosis: (diagnosis) =>
-        set((s) => ({ history: [diagnosis, ...s.history].slice(0, 100) })),
+        set((s) => ({
+          history: [
+            diagnosis,
+            ...s.history.filter((item) => item.id !== diagnosis.id),
+          ].slice(0, 100),
+        })),
 
       resetDraft: () =>
-        set({ draft: { ...EMPTY_DRAFT, chat: [], answers: [] } }),
+        set({ draft: { ...EMPTY_DRAFT, chat: [], qa: [] } }),
 
       clearAll: () =>
-        set({ draft: { ...EMPTY_DRAFT, chat: [], answers: [] }, history: [] }),
+        set({ draft: { ...EMPTY_DRAFT, chat: [], qa: [] }, history: [] }),
     }),
-    { name: "fixitai-diagnosis" }
+    {
+      name: "fixitai-diagnosis",
+      version: 2,
+      /**
+       * 旧数据兼容：
+       * - 历史记录缺 source / content / qa → 标为“来源未记录”，保留原有字段
+       * - 草稿缺 qa 时，仅在类别与问题顺序明确时迁移旧 answers，不编造问题
+       */
+      migrate: (persisted) => {
+        const raw = (persisted ?? {}) as {
+          draft?: unknown;
+          history?: unknown;
+        };
+        return {
+          draft: normalizeDraft(raw.draft),
+          history: Array.isArray(raw.history)
+            ? raw.history.map(normalizeDiagnosis).filter((d) => d.id)
+            : [],
+        };
+      },
+    }
   )
 );
 
-/** 按 ID 查询诊断（含历史与草稿生成的最近结果） */
+/** 按 ID 查询诊断（返回兼容化后的记录） */
 export function getDiagnosisById(id: string | undefined): Diagnosis | undefined {
   if (!id) return undefined;
-  return useDiagnosisStore.getState().history.find((d) => d.id === id);
+  const found = useDiagnosisStore.getState().history.find((d) => d.id === id);
+  return found ? normalizeDiagnosis(found) : undefined;
 }

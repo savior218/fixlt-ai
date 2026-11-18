@@ -7,17 +7,73 @@ const HEADERS = {
   "X-User-Id": "1",
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(BASE + path, { headers: HEADERS, ...init });
+export class ApiError extends Error {
+  code: string;
+  status: number;
+  detail?: unknown;
+
+  constructor(message: string, code = "http_error", status = 0, detail?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs = 20_000
+): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const external = init?.signal;
+  const onExternalAbort = () => controller.abort();
+  external?.addEventListener("abort", onExternalAbort);
+
+  let resp: Response;
+  try {
+    resp = await fetch(BASE + path, {
+      headers: HEADERS,
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (timedOut) {
+      throw new ApiError("请求超时，请稍后重试", "timeout", 0);
+    }
+    if (external?.aborted) {
+      throw new ApiError("请求已取消", "aborted", 0);
+    }
+    throw new ApiError("无法连接服务，请检查网络或后端是否启动", "network", 0);
+  } finally {
+    clearTimeout(timer);
+    external?.removeEventListener("abort", onExternalAbort);
+  }
+
   if (!resp.ok) {
-    let detail = `请求失败（HTTP ${resp.status}）`;
+    let message = `请求失败（HTTP ${resp.status}）`;
+    let code = `http_${resp.status}`;
+    let detail: unknown;
     try {
-      const body = (await resp.json()) as { detail?: string };
-      if (body?.detail) detail = body.detail;
+      const body = (await resp.json()) as { detail?: unknown };
+      detail = body?.detail;
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (detail && typeof detail === "object") {
+        const obj = detail as { code?: string; message?: string };
+        if (obj.message) message = obj.message;
+        if (obj.code) code = obj.code;
+      }
     } catch {
       /* 保留默认错误信息 */
     }
-    throw new Error(detail);
+    throw new ApiError(message, code, resp.status, detail);
   }
   if (resp.status === 204) return undefined as T;
   return (await resp.json()) as T;
@@ -28,6 +84,9 @@ export interface HealthInfo {
   app: string;
   version: string;
   time: string;
+  deployment_mode?: string;
+  ai_configured?: boolean;
+  safety_rules_version?: string;
 }
 
 export type DeviceCategory = "ac" | "fridge" | "washer";
@@ -65,14 +124,22 @@ export const updateDevice = (id: number, d: Partial<DeviceInput>) =>
 export const deleteDevice = (id: number) =>
   request<void>(`/devices/${id}`, { method: "DELETE" });
 
-/* ---------- AI 诊断（阶段九：后端转发智谱 GLM，key 不进前端） ---------- */
+/* ---------- AI 诊断（阶段十：完整问答上下文 + 双文案 + 服务端安全下限） ---------- */
 
-/** AI 诊断内容（standard / elder 双文案，单次调用产出） */
+export interface AIQAItem {
+  question_id: string;
+  question_text: string;
+  answer: string;
+  unknown: boolean;
+}
+
+/** AI 诊断内容（standard / elder 双文案，单次调用产出；事实由服务端生成） */
 export interface AIDiagnoseContent {
   conclusion: string;
   conclusion_elder: string;
   possible_causes: { title: string; description: string }[];
   evidence: string[];
+  unknown_information: string[];
   suggestions: { title: string; description: string }[];
   suggestions_elder: { title: string; description: string }[];
   tips: string;
@@ -82,24 +149,32 @@ export interface AIDiagnoseContent {
 }
 
 export interface AIDiagnoseResponse {
-  source: string;
+  source: "ai";
   model: string;
   content: AIDiagnoseContent;
+  risk_floor: "low" | "medium" | "high";
+  risk_matched: string[];
+  safety_rules_version: string;
 }
 
 export interface AIDiagnosePayload {
   category: string;
   symptom: string | null;
   description: string;
-  answers: string[];
+  qa: AIQAItem[];
   device_name?: string | null;
   device_brand?: string | null;
   device_model?: string | null;
 }
 
-/** 真实 AI 诊断：失败抛错，由调用方回退本地 Mock */
-export const requestAIDiagnosis = (p: AIDiagnosePayload) =>
-  request<AIDiagnoseResponse>("/diagnose/complete", {
-    method: "POST",
-    body: JSON.stringify(p),
-  });
+/** 真实 AI 诊断：失败抛 ApiError，由调用方明确提示并允许重试（不自动回退模板） */
+export const requestAIDiagnosis = (p: AIDiagnosePayload, signal?: AbortSignal) =>
+  request<AIDiagnoseResponse>(
+    "/diagnose/complete",
+    {
+      method: "POST",
+      body: JSON.stringify(p),
+      signal,
+    },
+    65_000
+  );
