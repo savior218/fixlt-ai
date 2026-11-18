@@ -8,7 +8,7 @@ export default function NotFound() {
       <p className="mt-1 text-sm text-slate-500">你要找的页面可能已被移除。</p>
       <Link
         to="/"
-        className="mt-5 inline-block rounded-lg bg-cyan-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-cyan-800"
+        className="mt-5 inline-block rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-800"
       >
         返回首页
       </Link>

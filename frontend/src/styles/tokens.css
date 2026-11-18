@@ -1,0 +1,119 @@
+/* ============================================================
+   智修AI FixItAI · 设计 Token（提示词 02 / 任务书第三部分）
+   ------------------------------------------------------------
+   - @theme 块：注册到 Tailwind v4，自动生成工具类
+     （bg-brand-600 / text-warning / w-sidebar / text-title 等）
+   - :root 块：任务书命名的语义变量，供组件与业务样式引用
+   - 间距与圆角沿用 Tailwind 默认刻度，与任务书 8px 体系一致：
+     p-1=4  p-2=8  p-3=12  p-4=16  p-6=24  p-8=32  p-10=40
+     rounded-lg=8  rounded-xl=12  rounded-2xl=16
+   ============================================================ */
+
+@theme static {
+  /* ---- 品牌蓝（--color-primary: #2563EB 对应 brand-600）---- */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* ---- 成功 / 辅助色（青绿）---- */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+
+  /* ---- 风险色（PRD SAFE-001：低=success 中=warning 高=danger）---- */
+  --color-warning: #dc6b45;
+  --color-warning-light: #fff4e8;
+  --color-danger: #dc2626;
+  --color-danger-light: #fef2f2;
+
+  /* ---- 风险色阶（低 #16A34A / 中 #DC6B45 / 高 #DC2626，供工具类生成，
+     页面与组件禁止写死风险颜色）---- */
+  --color-risk-low: #16a34a;
+  --color-risk-low-deep: #15803d;
+  --color-risk-low-bg: #f0fdf4;
+  --color-risk-low-border: #bbf7d0;
+  --color-risk-medium: #dc6b45;
+  --color-risk-medium-deep: #a94f2c;
+  --color-risk-medium-bg: #fff4e8;
+  --color-risk-medium-border: #f3c4a6;
+  --color-risk-high: #dc2626;
+  --color-risk-high-deep: #b91c1c;
+  --color-risk-high-bg: #fef2f2;
+  --color-risk-high-border: #fecaca;
+
+  /* ---- 小贴士（UI 设计稿确认：底 #FDF4E8 / 文字 #92400E）---- */
+  --color-tip-bg: #fdf4e8;
+  --color-tip-text: #92400e;
+  --color-tip-icon: #dc6b45;
+
+  /* ---- 中性色 ---- */
+  --color-background: #e9effd;
+  --color-surface: #ffffff;
+  --color-text-primary: #172033;
+  --color-text-secondary: #64748b;
+  --color-border: #e5ecf6;
+  --color-disabled: #cbd5e1;
+
+  /* ---- 标题字号（任务书 3.2）---- */
+  --text-title: 28px;
+
+  /* ---- 布局尺寸（任务书 3.5）---- */
+  --spacing-sidebar: 240px;
+  --spacing-topbar: 72px;
+}
+
+/* ============================================================
+   语义变量（任务书 3.1–3.5 原命名）
+   值引用 @theme 生成的变量，保证单一数据源
+   ============================================================ */
+:root {
+  /* 品牌 */
+  --color-primary: var(--color-brand-600);
+  --color-primary-hover: var(--color-brand-700);
+  --color-primary-light: var(--color-brand-50);
+  --color-primary-soft: var(--color-brand-100);
+
+  /* 字体 */
+  --font-family:
+    "Source Han Sans SC",
+    "Microsoft YaHei",
+    Inter,
+    sans-serif;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-title: 28px;
+
+  /* 间距（8px 体系，允许 4px 微调） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* 布局 */
+  --sidebar-width: 240px;
+  --topbar-height: 72px;
+  --content-padding: 24px;
+
+  /* 阴影（轻量，避免过重阴影） */
+  --shadow-card:
+    0 1px 3px rgba(23, 32, 51, 0.06),
+    0 1px 2px rgba(23, 32, 51, 0.04);
+}

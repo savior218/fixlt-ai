@@ -1,0 +1,60 @@
+/* ============================================================
+   智修AI FixItAI · 长辈关怀模式（提示词 02 / PRD 第 8 章）
+   ------------------------------------------------------------
+   关怀模式只调整：字体、控件尺寸、信息密度、表达载体。
+   绝不改变：AI 风险判断、危险操作拦截、高风险告警、安全规则
+   （任务书 P9 特别安全要求）。
+   ============================================================ */
+
+/* ---- 关怀模式语义变量（供组件按模式取值）---- */
+html[data-mode="elder"] {
+  --control-min-height: 2.75rem;
+  --chip-min-height: 3rem;
+  --chip-font-size: 1rem;
+}
+
+/* ---- 增大点击区域与控件最小尺寸 ---- */
+html[data-mode="elder"] button,
+html[data-mode="elder"] a,
+html[data-mode="elder"] input,
+html[data-mode="elder"] select,
+html[data-mode="elder"] textarea {
+  min-height: 2.75rem;
+}
+
+html[data-mode="elder"] .chip {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+
+/* ============================================================
+   关怀模式扩展（提示词 02）：四维度全面改变
+   ============================================================ */
+
+/* ---- 1. 信息密度降低：卡片与区块间距增大 50% ---- */
+html[data-mode="elder"] .card-base,
+html[data-mode="elder"] .mb-5 {
+  margin-bottom: 1.5rem;
+}
+
+/* ---- 2. 动画节奏放缓：过渡时间翻倍 ----
+   注意：reduceMotion 模式（html.rm）下 transition:none!important 仍优先生效 */
+html[data-mode="elder"] *,
+html[data-mode="elder"] *::before,
+html[data-mode="elder"] *::after {
+  transition-duration: 0.4s;
+}
+
+/* ---- 3. 导航简化：增大菜单项间距与字号（桌面侧栏 + 移动抽屉共用 .app-nav-link）---- */
+html[data-mode="elder"] .app-nav-link {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+  font-size: 1rem;
+}
+
+/* ---- 4. 安全横幅增大 ---- */
+html[data-mode="elder"] .app-safety-banner {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-size: 1rem;
+}

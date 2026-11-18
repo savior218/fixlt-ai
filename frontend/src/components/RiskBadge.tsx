@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 export type RiskLevel = "low" | "medium" | "high" | "unknown";
 
 const RISK_META: Record<RiskLevel, { label: string; className: string }> = {
-  low: { label: "低风险", className: "bg-green-100 text-green-800 border-green-300" },
-  medium: { label: "中风险", className: "bg-amber-100 text-amber-800 border-amber-300" },
-  high: { label: "高风险", className: "bg-red-100 text-red-800 border-red-300" },
+  low: { label: "低风险", className: "bg-risk-low-bg text-risk-low-deep border-risk-low-border" },
+  medium: { label: "中风险", className: "bg-risk-medium-bg text-risk-medium-deep border-risk-medium-border" },
+  high: { label: "高风险", className: "bg-risk-high-bg text-risk-high-deep border-risk-high-border" },
   unknown: { label: "待评估", className: "bg-slate-100 text-slate-600 border-slate-300" },
 };
 

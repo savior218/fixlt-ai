@@ -10,10 +10,12 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
-    # AI 服务占位（DEV-06 统一模型适配层接入）
-    ai_text_model: str = ""
+    # AI 服务（DEV-06 统一模型适配层：智谱 GLM，OpenAI 兼容协议）
+    ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    ai_text_model: str = "glm-4-flash"
     ai_vision_model: str = ""
     ai_api_key: str = ""
+    ai_timeout_seconds: float = 60.0
 
     model_config = SettingsConfigDict(
         env_prefix="FIXITAI_",

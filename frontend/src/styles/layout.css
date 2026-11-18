@@ -1,0 +1,80 @@
+/* ============================================================
+   智修AI FixItAI · 布局样式（提示词 02 准备 / 提示词 03 启用）
+   桌面双栏：左侧 SidebarNav（240px）+ 顶部 TopBar（72px）
+   ============================================================ */
+
+/* ---- 应用外壳 ---- */
+.app-shell {
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+/* ---- 左侧导航 ---- */
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+}
+
+/* ---- 顶部栏 ---- */
+.app-topbar {
+  height: var(--topbar-height);
+}
+
+/* ---- 中央内容容器 ---- */
+.app-content {
+  padding: var(--content-padding);
+}
+
+/* ---- 跳转链接：平时隐藏，键盘聚焦时可见 ---- */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+/* ---- 底部安全横幅 ---- */
+.app-safety-banner {
+  flex-shrink: 0;
+}
+
+/* ---- 响应式（三端适配：1024px 统一断点）----
+   <1024px（手机 / 平板竖屏）：隐藏侧栏，TopBar 显示汉堡按钮，
+   导航由 MobileNavDrawer 承载，业务入口一个不少；
+   ≥1024px（平板横屏 / PC）：保持桌面双栏布局 */
+@media (max-width: 1023px) {
+  .app-sidebar {
+    display: none;
+  }
+  /* 顶栏收紧高度，内容间距收紧，适配小屏 */
+  .app-topbar {
+    height: 64px;
+  }
+  .app-content {
+    padding: 16px;
+    /* 兼容 iPhone 底部安全区（配合 viewport-fit=cover） */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---- 安全区工具类：固定底部的抽屉、聊天输入条等使用 ---- */
+.safe-pad-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---- 移动抽屉入场动画（reduceMotion 时由 global.css 关闭）---- */
+@keyframes mobile-nav-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.mobile-nav-panel {
+  animation: mobile-nav-in 0.2s ease-out;
+}

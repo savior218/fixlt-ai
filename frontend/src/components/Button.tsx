@@ -24,7 +24,7 @@ export function buttonClass(
 ): string {
   return [
     "inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium",
-    "transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    "min-h-9 transition-colors disabled:cursor-not-allowed disabled:opacity-50",
     VARIANT_CLASSES[variant],
     SIZE_CLASSES[size],
   ].join(" ");

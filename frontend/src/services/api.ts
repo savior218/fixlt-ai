@@ -64,3 +64,42 @@ export const updateDevice = (id: number, d: Partial<DeviceInput>) =>
   });
 export const deleteDevice = (id: number) =>
   request<void>(`/devices/${id}`, { method: "DELETE" });
+
+/* ---------- AI 诊断（阶段九：后端转发智谱 GLM，key 不进前端） ---------- */
+
+/** AI 诊断内容（standard / elder 双文案，单次调用产出） */
+export interface AIDiagnoseContent {
+  conclusion: string;
+  conclusion_elder: string;
+  possible_causes: { title: string; description: string }[];
+  evidence: string[];
+  suggestions: { title: string; description: string }[];
+  suggestions_elder: { title: string; description: string }[];
+  tips: string;
+  tips_elder: string;
+  risk_note: string;
+  risk_note_elder: string;
+}
+
+export interface AIDiagnoseResponse {
+  source: string;
+  model: string;
+  content: AIDiagnoseContent;
+}
+
+export interface AIDiagnosePayload {
+  category: string;
+  symptom: string | null;
+  description: string;
+  answers: string[];
+  device_name?: string | null;
+  device_brand?: string | null;
+  device_model?: string | null;
+}
+
+/** 真实 AI 诊断：失败抛错，由调用方回退本地 Mock */
+export const requestAIDiagnosis = (p: AIDiagnosePayload) =>
+  request<AIDiagnoseResponse>("/diagnose/complete", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
