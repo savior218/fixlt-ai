@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -42,13 +42,9 @@ app.include_router(devices.router)
 app.include_router(diagnose.router)
 
 
-@app.get("/")
-def root() -> dict:
-    return {"app": settings.app_name, "docs": "/docs", "health": "/api/health"}
-
-
 # 生产部署：FastAPI 统一托管前端构建产物（单服务部署，前端与 /api 同源无需跨域）
 # 仅当 FRONTEND_DIST_DIR 指向有效目录时启用；本地开发留空走 Vite dev server。
+# 注意：SPA 回退需注册在显式路由之前，否则 "/" 会被 API 根路由抢占。
 if settings.frontend_dist_dir:
     _dist = Path(settings.frontend_dist_dir).resolve()
     if (_dist / "index.html").is_file():
@@ -56,6 +52,9 @@ if settings.frontend_dist_dir:
 
         @app.get("/{full_path:path}", include_in_schema=False)
         async def spa_fallback(full_path: str) -> FileResponse:
+            # API 路径不回退（未匹配的 /api/* 返回 404 而非 index.html）
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not Found")
             candidate = _dist / full_path
             # 防目录穿越：解析后必须仍位于 dist 内
             if candidate.is_file() and _dist in candidate.resolve().parents:
