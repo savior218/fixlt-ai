@@ -201,7 +201,7 @@ export default function Records() {
                               "rounded-lg border px-3 py-1.5 text-sm transition-colors",
                               r.verificationStatus === o.value
                                 ? "border-brand-600 bg-brand-50 font-medium text-brand-700"
-                                : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100",
+                                : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
                             ].join(" ")}
                           >
                             {o.label}

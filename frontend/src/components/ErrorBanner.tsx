@@ -16,7 +16,7 @@ export default function ErrorBanner({
         <button
           type="button"
           onClick={onRetry}
-          className="shrink-0 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+          className="shrink-0 rounded-lg border border-red-300 bg-surface px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
         >
           重试
         </button>

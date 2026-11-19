@@ -79,7 +79,7 @@ export default function RepairHistory() {
                 {/* 时间轴节点 */}
                 <span
                   aria-hidden
-                  className={`absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 border-white ${
+                  className={`absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 border-surface ${
                     r.verificationStatus === "recovered"
                       ? "bg-risk-low"
                       : r.verificationStatus === "notRecovered"

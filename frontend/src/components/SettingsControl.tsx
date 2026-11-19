@@ -119,7 +119,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             className={`rounded-lg font-medium transition-colors ${
               size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"
-            } ${active ? "bg-white text-brand-700 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
+            } ${active ? "bg-surface text-brand-700 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
           >
             {o.label}
           </button>
@@ -205,7 +205,7 @@ export function ZoomControl({
         aria-label="减小字号"
         disabled={currentIndex <= 0}
         onClick={() => onChange(scales[Math.max(0, currentIndex - 1)])}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-surface text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Minus className="h-4 w-4" />
       </button>
@@ -220,7 +220,7 @@ export function ZoomControl({
             className={`rounded-lg border px-3 py-1.5 font-medium transition-colors ${
               value === s
                 ? "border-brand-600 bg-brand-50 text-brand-700"
-                : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50"
+                : "border-stone-200 bg-surface text-stone-500 hover:bg-stone-50"
             } ${FONT_SCALE_META[s].sample}`}
           >
             A
@@ -233,7 +233,7 @@ export function ZoomControl({
         aria-label="增大字号"
         disabled={currentIndex >= scales.length - 1}
         onClick={() => onChange(scales[Math.min(scales.length - 1, currentIndex + 1)])}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-surface text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Plus className="h-4 w-4" />
       </button>

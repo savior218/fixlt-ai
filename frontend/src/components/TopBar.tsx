@@ -11,7 +11,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const { mode, setMode } = usePrefs();
 
   return (
-    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-white/95 px-4 backdrop-blur sm:px-6">
+    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
       {/* 左：移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
       <div className="flex min-w-0 items-center gap-1">
         <button
@@ -42,7 +42,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
             "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
             mode === "elder"
               ? "border-amber-500 bg-amber-100 text-amber-800"
-              : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100",
+              : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >
           <span className="sm:hidden">{mode === "elder" ? "👵 长辈" : "长辈模式"}</span>

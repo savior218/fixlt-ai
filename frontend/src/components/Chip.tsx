@@ -15,7 +15,7 @@ export default function Chip({ selected, children, className, ...rest }: ChipPro
         "chip inline-flex items-center rounded-full border px-4 py-2 text-sm transition-colors",
         selected
           ? "border-brand-600 bg-brand-50 font-medium text-brand-800"
-          : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100",
+          : "border-stone-300 bg-surface text-stone-700 hover:bg-stone-100",
         className ?? "",
       ].join(" ")}
       {...rest}

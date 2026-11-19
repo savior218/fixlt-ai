@@ -53,7 +53,7 @@ export default function InputField({
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -transtone-y-1/2 text-stone-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
           />
           <input
             id={id}

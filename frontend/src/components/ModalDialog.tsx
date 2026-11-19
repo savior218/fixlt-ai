@@ -61,7 +61,7 @@ export default function ModalDialog({
     >
       {/* 移动端：底部弹层（bottom sheet）；≥sm：居中弹窗 */}
       <div
-        className={`flex max-h-[85dvh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl ${width} sm:max-h-[85vh]`}
+        className={`flex max-h-[85dvh] w-full flex-col rounded-t-2xl bg-surface shadow-card sm:rounded-2xl ${width} sm:max-h-[85vh]`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-100 p-5 pb-4">

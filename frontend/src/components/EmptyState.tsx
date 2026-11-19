@@ -14,7 +14,7 @@ export default function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-4 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-stone-300 bg-surface px-4 py-10 text-center">
       <p aria-hidden className="text-3xl">
         {icon}
       </p>

@@ -37,13 +37,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex -transtone-x-1/2 flex-col items-center gap-2"
+        className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
       >
         {items.map((t) => (
           <div
             key={t.id}
             role="status"
-            className={`toast-item pointer-events-auto rounded-xl px-4 py-2.5 text-sm shadow-lg ${TYPE_STYLES[t.type]}`}
+            className={`toast-item pointer-events-auto rounded-xl px-4 py-2.5 text-sm shadow-card ${TYPE_STYLES[t.type]}`}
           >
             {t.message}
           </div>

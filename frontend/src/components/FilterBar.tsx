@@ -32,7 +32,7 @@ export default function FilterBar({
   searchPlaceholder?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-stone-200 bg-surface p-4 shadow-card">
       {/* 搜索框：移动端占满整行 */}
       <div className="w-full sm:min-w-48 sm:w-auto sm:flex-1">
         <InputField
@@ -49,7 +49,7 @@ export default function FilterBar({
           <select
             value={f.value}
             onChange={(e) => f.onChange(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-auto"
+            className="w-full rounded-lg border border-stone-300 bg-surface px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-auto"
           >
             {f.options.map((o) => (
               <option key={o.value} value={o.value}>
@@ -63,7 +63,7 @@ export default function FilterBar({
       <button
         type="button"
         onClick={onReset}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 sm:w-auto"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-stone-300 bg-surface px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 sm:w-auto"
       >
         <RotateCcw aria-hidden className="h-4 w-4" />
         重置

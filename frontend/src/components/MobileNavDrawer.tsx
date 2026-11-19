@@ -64,7 +64,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         role="dialog"
         aria-modal="true"
         aria-label="导航菜单"
-        className="mobile-nav-panel safe-pad-bottom fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-stone-200 bg-white shadow-xl"
+        className="mobile-nav-panel safe-pad-bottom fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-stone-200 bg-surface shadow-card"
       >
         {/* Logo 区 + 关闭按钮 */}
         <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">

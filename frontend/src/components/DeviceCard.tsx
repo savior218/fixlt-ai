@@ -38,7 +38,7 @@ export default function DeviceCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border border-stone-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
+      className="w-full rounded-2xl border border-stone-200 bg-surface p-4 text-left shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
     >
       <div className="flex items-start gap-3">
         {/* 设备图标（图片 URL 缺省时按类型回退） */}

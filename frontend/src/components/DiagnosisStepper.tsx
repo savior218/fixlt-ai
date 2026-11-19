@@ -79,7 +79,7 @@ export default function DiagnosisStepper({
                   ? "bg-brand-50 text-brand-700"
                   : active
                     ? "bg-brand-600 text-white"
-                    : "bg-white text-stone-400 ring-1 ring-stone-200"
+                    : "bg-surface text-stone-400 ring-1 ring-stone-200"
               }`}
             >
               <span

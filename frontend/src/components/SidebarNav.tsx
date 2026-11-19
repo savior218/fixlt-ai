@@ -6,7 +6,7 @@ export default function SidebarNav() {
   const SafetyIcon = SAFETY_ITEM.icon;
 
   return (
-    <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-white">
+    <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-surface">
       {/* Logo 区：高度与 TopBar 对齐 */}
       <div
         className="flex items-center gap-2 border-b border-stone-200 px-5"
