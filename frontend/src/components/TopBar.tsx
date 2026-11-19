@@ -57,9 +57,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-stone-900">欢迎使用修必达</p>
+          <p className="truncate text-sm font-semibold text-stone-900">FixIt AI</p>
           <p className="hidden truncate text-xs text-stone-500 sm:block">
-            家电故障分诊与维修决策助手
+            AI 家电维修助手
           </p>
         </div>
       </div>
