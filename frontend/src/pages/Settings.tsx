@@ -229,6 +229,16 @@ export default function Settings() {
         </div>
       </SectionCard>
 
+      {/* B2. 消息通知：免打扰开关 */}
+      <SectionCard title="消息通知">
+        <SwitchControl
+          label="消息免打扰"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          checked={prefs.doNotDisturb}
+          onChange={prefs.setDoNotDisturb}
+        />
+      </SectionCard>
+
       {/* C. 显示设置 */}
       <SectionCard title="显示设置">
         <SettingsRow label="字体大小" description="标准 / 大号 / 超大">

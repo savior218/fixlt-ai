@@ -25,6 +25,8 @@ interface PrefsState {
   speechRate: number;
   /** 播报嗓音（voiceURI）；null = 自动挑选温柔女声 */
   voiceURI: string | null;
+  /** 消息免打扰：开启后新通知不再弹窗，仅保留未读小红点 */
+  doNotDisturb: boolean;
   reduceMotion: boolean;
   setMode: (mode: InteractionMode) => void;
   setFontScale: (scale: FontScale) => void;
@@ -34,6 +36,7 @@ interface PrefsState {
   setAutoRead: (v: boolean) => void;
   setSpeechRate: (v: number) => void;
   setVoiceURI: (v: string | null) => void;
+  setDoNotDisturb: (v: boolean) => void;
   setReduceMotion: (v: boolean) => void;
   reset: () => void;
 }
@@ -53,6 +56,7 @@ const INITIAL = {
   autoRead: false,
   speechRate: 1,
   voiceURI: null,
+  doNotDisturb: false,
   reduceMotion: false,
 };
 
@@ -80,6 +84,7 @@ export const usePrefs = create<PrefsState>()(
         }),
       setVoiceURI: (voiceURI) => set({ voiceURI }),
       setReduceMotion: (reduceMotion) => set({ reduceMotion }),
+      setDoNotDisturb: (doNotDisturb) => set({ doNotDisturb }),
       reset: () => set({ ...INITIAL }),
     }),
     { name: "fixitai-prefs" }

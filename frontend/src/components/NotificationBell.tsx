@@ -14,7 +14,8 @@ import {
 } from "../stores/notifications";
 import { relativeTime } from "../utils/format";
 
-const TYPE_META: Record<
+/** 通知类型 → 图标 / 配色 / 标签（通知面板与弹窗共用） */
+export const TYPE_META: Record<
   NotificationType,
   { icon: typeof Bell; cls: string; label: string }
 > = {
