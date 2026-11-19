@@ -5,16 +5,41 @@ POST /api/diagnose/complete
 - 出参：standard / elder 双文案诊断内容（单次调用）
 - 安全：风险等级由前端本地规则引擎判定，LLM 不参与风险判断
 - 降级：GLM 未配置或调用失败时返回 503，前端回退本地 Mock 诊断
+
+POST /api/diagnose/photo（模块③ AI 看图）
+- multipart 上传故障照片（JPG/PNG，≤10MB），base64 存库后返回 ID
+- 诊断请求携带 photo_id 时自动切换视觉模型（glm-4v-flash）看图诊断
 """
+import base64
+import binascii
 import json
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 
 from app.ai import glm_client
+from app.api.deps import get_current_user
 from app.core.config import settings
-from app.schemas.diagnosis import DiagnoseContent, DiagnoseRequest, DiagnoseResponse
+from app.database.session import get_db
+from app.models.photo import DiagnosisPhoto
+from app.models.user import User
+from app.schemas.diagnosis import (
+    DiagnoseContent,
+    DiagnoseRequest,
+    DiagnoseResponse,
+    PhotoOut,
+)
 
 router = APIRouter(prefix="/api/diagnose", tags=["diagnose"])
+
+ALLOWED_MIME = {"image/jpeg", "image/png"}
+MAX_PHOTO_BYTES = 10 * 1024 * 1024
 
 SYSTEM_PROMPT = """你是"修必达（FixIt AI）"家用家电维修助手，负责根据用户提供的信息生成家电故障诊断内容。
 
@@ -58,17 +83,57 @@ def _build_user_payload(req: DiagnoseRequest) -> str:
     return json.dumps(payload, ensure_ascii=False)
 
 
+def _normalize_content(raw: dict) -> dict:
+    """兼容模型偶发的嵌套双文案输出。
+
+    标准输出应为平铺字段（conclusion / conclusion_elder …），但模型偶尔会
+    输出 {"conclusion": {"standard": ..., "elder": ...}}，这里统一展开。
+    """
+    out = dict(raw)
+    for key in list(out.keys()):
+        value = out[key]
+        if isinstance(value, dict) and "standard" in value:
+            out[key] = value.get("standard")
+            elder_key = f"{key}_elder"
+            if elder_key not in out:
+                out[elder_key] = value.get("elder")
+    return out
+
+
 @router.post("/complete", response_model=DiagnoseResponse)
-async def complete_diagnosis(req: DiagnoseRequest) -> DiagnoseResponse:
+async def complete_diagnosis(
+    req: DiagnoseRequest,
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+) -> DiagnoseResponse:
     if not glm_client.is_configured():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="AI 服务未配置（缺少 FIXITAI_AI_API_KEY），前端将回退本地诊断",
         )
 
+    # 模块③ AI 看图：携带 photo_id 时取照片并切换视觉模型
+    image: dict | None = None
+    if req.photo_id is not None:
+        photo = db.get(DiagnosisPhoto, req.photo_id)
+        if photo is None or photo.user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="故障照片不存在"
+            )
+        image = {"mime": photo.mime, "base64": photo.image_base64}
+
+    user_payload = _build_user_payload(req)
+    if image:
+        user_payload += (
+            "\n用户还上传了一张故障照片（见附图）。请结合照片可见的细节"
+            "（外观损伤、安装环境、显示的异常现象等）与上述文字信息一起生成诊断，"
+            "照片中无法确认的信息不要编造。"
+        )
+
+    model = settings.ai_vision_model or settings.ai_text_model if image else settings.ai_text_model
     try:
-        raw = await glm_client.chat_json(SYSTEM_PROMPT, _build_user_payload(req))
-        content = DiagnoseContent.model_validate(raw)
+        raw = await glm_client.chat_json(SYSTEM_PROMPT, user_payload, image=image, model=model)
+        content = DiagnoseContent.model_validate(_normalize_content(raw))
     except glm_client.GLMError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -80,6 +145,45 @@ async def complete_diagnosis(req: DiagnoseRequest) -> DiagnoseResponse:
             detail=f"AI 输出格式异常：{e}",
         ) from e
 
-    return DiagnoseResponse(
-        source="ai", model=settings.ai_text_model, content=content
+    return DiagnoseResponse(source="ai", model=model, content=content)
+
+
+@router.post("/photo", response_model=PhotoOut, status_code=status.HTTP_201_CREATED)
+async def upload_photo(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+) -> DiagnosisPhoto:
+    """故障照片上传（模块③）：JPG/PNG、≤10MB，base64 存库。"""
+    if (file.content_type or "").lower() not in ALLOWED_MIME:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="仅支持 JPG / PNG 格式图片",
+        )
+    raw = await file.read()
+    if len(raw) > MAX_PHOTO_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="图片超过 10MB 限制，请压缩后重试",
+        )
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="图片内容为空"
+        )
+    try:
+        b64 = base64.b64encode(raw).decode("ascii")
+        base64.b64decode(b64, validate=True)
+    except (binascii.Error, UnicodeDecodeError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="图片数据无效"
+        ) from e
+
+    photo = DiagnosisPhoto(
+        user_id=user.id,
+        mime=(file.content_type or "image/jpeg").lower(),
+        image_base64=b64,
     )
+    db.add(photo)
+    db.commit()
+    db.refresh(photo)
+    return photo

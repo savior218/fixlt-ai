@@ -1,5 +1,6 @@
-﻿import { Bell, Menu, User } from "lucide-react";
+﻿﻿import { Menu, User } from "lucide-react";
 
+import NotificationBell from "./NotificationBell";
 import { usePrefs } from "../stores/prefs";
 
 interface TopBarProps {
@@ -51,17 +52,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           </span>
         </button>
 
-        {/* 演示状态标识（窄屏隐藏，减少拥挤） */}
-        <span className="hidden text-xs text-stone-400 md:inline">演示</span>
-
-        {/* 通知按钮 - 未接入后端，标注演示状态 */}
-        <button
-          type="button"
-          aria-label="通知（演示状态）"
-          className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700"
-        >
-          <Bell className="h-5 w-5" />
-        </button>
+        {/* 通知中心（模块⑤：本地通知 + 未读徽标） */}
+        <NotificationBell />
 
         {/* 用户头像 - 未接入后端，标注演示状态 */}
         <button

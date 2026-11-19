@@ -80,6 +80,8 @@ export interface AskContext {
   description: string;
   answers: string[];
   device?: Device | null;
+  /** 故障照片 ID（模块③ AI 看图；null/undefined = 无照片） */
+  photoId?: number | null;
 }
 
 export type AskResult =
@@ -306,6 +308,7 @@ export async function generateDiagnosis(
       device_name: ctx.device?.name ?? null,
       device_brand: ctx.device?.brand ?? null,
       device_model: ctx.device?.model ?? null,
+      photo_id: ctx.photoId ?? null,
     });
     const c = res.content;
     return {

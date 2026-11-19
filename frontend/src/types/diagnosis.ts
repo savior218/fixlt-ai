@@ -51,6 +51,10 @@ export interface DiagnosisDraft {
   chat: ChatMessage[];
   /** 高风险拦截（触发后诊断流程暂停） */
   riskInterception: RiskInterception | null;
+  /** 故障照片：后端照片 ID（null = 未上传成功，仅本地预览） */
+  photoId: number | null;
+  /** 本地预览 data URL（模块③，随草稿持久化） */
+  photoPreview: string | null;
 }
 
 /** 诊断结果（P2 结果页 / P3 报告页数据源） */
@@ -87,4 +91,6 @@ export const EMPTY_DRAFT: DiagnosisDraft = {
   answers: [],
   chat: [],
   riskInterception: null,
+  photoId: null,
+  photoPreview: null,
 };

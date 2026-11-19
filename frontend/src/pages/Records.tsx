@@ -1,14 +1,19 @@
-﻿import { useMemo, useState } from "react";
+﻿﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, FastForward, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
+import SectionCard from "../components/SectionCard";
+import TicketTracker from "../components/TicketTracker";
+import { TICKET_STATUS_LABELS } from "../services/api";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
+import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
+import { useTicketStore } from "../stores/ticketStore";
 import {
   REPAIR_STATUS_LABELS,
   VERIFICATION_LABELS,
@@ -86,6 +91,9 @@ export default function Records() {
           </Button>
         }
       />
+
+      {/* 报修工单跟踪（模块②） */}
+      <TicketsSection />
 
       {/* 顶部安全提示条 */}
       <div
@@ -244,5 +252,86 @@ function Field({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-stone-400">{label}</p>
       <p className="mt-0.5 text-sm font-medium text-stone-800">{value}</p>
     </div>
+  );
+}
+
+/** 报修工单跟踪区（模块②）：状态跟踪条 + 演示推进 + 状态变化通知 */
+function TicketsSection() {
+  const { notify } = useToast();
+  const tickets = useTicketStore((s) => s.tickets);
+  const syncFromBackend = useTicketStore((s) => s.syncFromBackend);
+  const advance = useTicketStore((s) => s.advance);
+  const addNotification = useNotificationStore((s) => s.add);
+
+  useEffect(() => {
+    void syncFromBackend();
+  }, [syncFromBackend]);
+
+  async function handleAdvance(id: number) {
+    const ticket = tickets.find((t) => t.id === id);
+    if (!ticket) return;
+    const ok = await advance(id);
+    if (ok) {
+      const next = useTicketStore
+        .getState()
+        .tickets.find((t) => t.id === id);
+      addNotification({
+        type: "ticket",
+        title: "工单状态更新",
+        body: `「${ticket.symptom}」工单已流转到「${
+          next ? TICKET_STATUS_LABELS[next.status] : "下一阶段"
+        }」。`,
+      });
+      notify("工单状态已更新", "success");
+    } else {
+      notify("工单状态推进失败，请稍后重试", "error");
+    }
+  }
+
+  return (
+    <SectionCard title={`报修工单（${tickets.length}）`}>
+      {tickets.length === 0 ? (
+        <p className="text-sm text-stone-500">
+          暂无报修工单。在
+          <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
+            智能报修助手
+          </Link>
+          生成报修说明后点击「一键提交报修」，工单进度会在这里展示。
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {tickets.map((t) => (
+            <li key={t.id} className="rounded-xl border border-stone-200 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-stone-900">
+                  {t.symptom}
+                  <span className="ml-2 text-xs font-normal text-stone-400">
+                    #{t.id} · {relativeTime(t.created_at)}
+                  </span>
+                </p>
+                {t.status !== "completed" && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleAdvance(t.id)}
+                    aria-label="演示推进工单状态"
+                  >
+                    <FastForward className="h-3.5 w-3.5" /> 推进状态（演示）
+                  </Button>
+                )}
+              </div>
+              {t.brand || t.model ? (
+                <p className="mt-1 text-xs text-stone-500">
+                  {[t.brand, t.model].filter(Boolean).join(" ")}
+                </p>
+              ) : null}
+              <div className="mt-3">
+                <TicketTracker status={t.status} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SectionCard>
   );
 }

@@ -1,6 +1,9 @@
-﻿import { Bot } from "lucide-react";
+﻿﻿import { Bot, Pause, Volume2 } from "lucide-react";
 
 import Chip from "./Chip";
+import { usePrefs } from "../stores/prefs";
+import { isSpeechSupported, speak, stopSpeech } from "../utils/speech";
+import { useState } from "react";
 
 /** AI 问诊对话气泡（TASK-11）：AI 消息 / 用户消息 / 加载中 / 建议选项 */
 export default function AIMessageBubble({
@@ -25,6 +28,19 @@ export default function AIMessageBubble({
   tone?: "standard" | "elder";
 }) {
   const elder = tone === "elder";
+  const speechRate = usePrefs((s) => s.speechRate);
+  const [speaking, setSpeaking] = useState(false);
+  const canSpeak = isSpeechSupported();
+
+  /** 朗读/停止本条消息（模块④） */
+  function toggleSpeak() {
+    if (speaking) {
+      stopSpeech();
+      setSpeaking(false);
+      return;
+    }
+    if (content && speak(content, speechRate)) setSpeaking(true);
+  }
 
   if (role === "user") {
     return (
@@ -71,6 +87,25 @@ export default function AIMessageBubble({
                   {s}
                 </Chip>
               ))}
+            </div>
+          )}
+
+          {/* 朗读按钮（模块④：浏览器不支持时隐藏） */}
+          {!loading && content && canSpeak && (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={toggleSpeak}
+                aria-label={speaking ? "停止朗读" : "朗读这条消息"}
+                className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-brand-700"
+              >
+                {speaking ? (
+                  <Pause className="h-3.5 w-3.5" />
+                ) : (
+                  <Volume2 className="h-3.5 w-3.5" />
+                )}
+                {speaking ? "停止" : "朗读"}
+              </button>
             </div>
           )}
         </div>

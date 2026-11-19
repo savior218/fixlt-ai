@@ -40,16 +40,42 @@ def _parse_json(content: str) -> dict:
         raise GLMError(f"GLM 输出 JSON 解析失败：{e}") from e
 
 
-async def chat_json(system: str, user: str) -> dict:
-    """调用 GLM chat/completions，返回解析后的 JSON dict。"""
+async def chat_json(
+    system: str,
+    user: str,
+    image: dict | None = None,
+    model: str | None = None,
+) -> dict:
+    """调用 GLM chat/completions，返回解析后的 JSON dict。
+
+    image（可选）：{"mime": "image/jpeg", "base64": "..."}，传入时以
+    OpenAI 兼容的 image_url 消息格式附带图片（模块③ AI 看图）。
+    model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
+    """
     if not is_configured():
         raise GLMError("GLM API key 未配置（FIXITAI_AI_API_KEY）")
 
+    if image:
+        user_message = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{image['mime']};base64,{image['base64']}"
+                    },
+                },
+            ],
+        }
+    else:
+        user_message = {"role": "user", "content": user}
+
     payload = {
-        "model": settings.ai_text_model,
+        "model": model or settings.ai_text_model,
         "messages": [
             {"role": "system", "content": system},
-            {"role": "user", "content": user},
+            user_message,
         ],
         "temperature": 0.4,
         "response_format": {"type": "json_object"},

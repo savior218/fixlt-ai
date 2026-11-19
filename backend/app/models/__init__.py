@@ -4,7 +4,8 @@ from app.models.preference import UserPreference
 from app.models.device import Device
 from app.models.diagnosis import Diagnosis
 from app.models.message import DiagnosisMessage
-from app.models.repair import RepairRecord
+from app.models.repair import RepairRecord, RepairTicket
+from app.models.photo import DiagnosisPhoto
 from app.models.knowledge import KnowledgeDocument
 
 __all__ = [
@@ -14,5 +15,7 @@ __all__ = [
     "Diagnosis",
     "DiagnosisMessage",
     "RepairRecord",
+    "RepairTicket",
+    "DiagnosisPhoto",
     "KnowledgeDocument",
 ]

@@ -16,6 +16,7 @@ class DiagnoseRequest(BaseModel):
     device_name: str | None = Field(None, description="关联设备名称")
     device_brand: str | None = None
     device_model: str | None = None
+    photo_id: int | None = Field(None, description="故障照片 ID（/api/diagnose/photo 上传后返回）")
 
 
 class PossibleCause(BaseModel):
@@ -34,7 +35,8 @@ class DiagnoseContent(BaseModel):
     conclusion: str
     conclusion_elder: str
     possible_causes: list[PossibleCause] = Field(min_length=1, max_length=4)
-    evidence: list[str] = Field(min_length=1, max_length=6)
+    # 看图诊断时模型可能给不出照片证据，允许为空数组
+    evidence: list[str] = Field(min_length=0, max_length=6)
     suggestions: list[RepairSuggestion] = Field(min_length=1, max_length=4)
     suggestions_elder: list[RepairSuggestion] = Field(min_length=1, max_length=4)
     # 提示类字段允许模型省略：空值时前端回退本地文案
@@ -48,3 +50,11 @@ class DiagnoseResponse(BaseModel):
     source: str = "ai"
     model: str
     content: DiagnoseContent
+
+
+class PhotoOut(BaseModel):
+    """照片上传结果（base64 存库，前端用它做本地预览与后续诊断关联）。"""
+
+    id: int
+    mime: str
+    image_base64: str

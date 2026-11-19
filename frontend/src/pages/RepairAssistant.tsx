@@ -1,15 +1,18 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, ClipboardCopy, PhoneCall, ShieldAlert } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Send, ShieldAlert } from "lucide-react";
 
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import InputField from "../components/InputField";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
+import TicketTracker from "../components/TicketTracker";
 import { useToast } from "../components/Toast";
 import { useDeviceStore } from "../stores/deviceStore";
 import { getDiagnosisById } from "../stores/diagnosisStore";
+import { useNotificationStore } from "../stores/notifications";
+import { useTicketStore } from "../stores/ticketStore";
 import { formatDate } from "../utils/format";
 import { usePrefs } from "../stores/prefs";
 
@@ -76,10 +79,24 @@ export default function RepairAssistant() {
   const [editing, setEditing] = useState<string | null>(null);
   /** elder 模式分两步填写 */
   const [wizardStep, setWizardStep] = useState(0);
+  /** 本次会话已提交的工单 ID（null = 未提交 / 降级为复制说明） */
+  const [submittedTicketId, setSubmittedTicketId] = useState<number | null>(null);
+
+  const { tickets, syncFromBackend } = useTicketStore();
+  const addNotification = useNotificationStore((s) => s.add);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void syncFromBackend();
+  }, [load, syncFromBackend]);
+
+  const submittedTicket = useMemo(
+    () =>
+      submittedTicketId != null
+        ? tickets.find((t) => t.id === submittedTicketId) ?? null
+        : null,
+    [tickets, submittedTicketId]
+  );
 
   /** 从诊断结果带入（P3 → P5） */
   useEffect(() => {
@@ -163,6 +180,56 @@ export default function RepairAssistant() {
       notify("报修内容已复制到剪贴板", "success");
     } catch {
       notify("复制失败，请手动选择文本复制", "error");
+    }
+  }
+
+  /** 一键提交报修（模块②）：优先后端工单入库；后端不可用时降级为复制报修说明 */
+  async function submitTicket() {
+    const content = editing ?? generated;
+    if (!content) return;
+    if (!form.category || !form.symptom) {
+      notify("请先选择设备类型和故障现象", "error");
+      return;
+    }
+    const checks = [...form.checks];
+    if (form.customCheck.trim()) checks.push(form.customCheck.trim());
+
+    const backendOk = await useTicketStore.getState().submit({
+      category: form.category,
+      symptom: form.symptom,
+      description: form.description.trim() || null,
+      brand: form.brand.trim() || null,
+      model: form.model.trim() || null,
+      found_at: form.foundAt || null,
+      checks,
+      content,
+      device_id: form.deviceId,
+      diagnosis_ref: diagnosis?.id ?? null,
+    });
+
+    if (backendOk) {
+      const id = useTicketStore.getState().tickets[0]?.id ?? null;
+      setSubmittedTicketId(id);
+      addNotification({
+        type: "ticket",
+        title: "报修工单已提交",
+        body: `${form.symptom} · 工单已进入「待受理」状态，进度可在维修档案查看。`,
+      });
+      notify(
+        elder
+          ? "报修已提交好啦！进度可以到「维修档案」里查看"
+          : "报修工单已提交，可在维修档案查看状态进度",
+        "success"
+      );
+    } else {
+      // 降级：未登录 / 离线 → 保留原有复制说明行为
+      setSubmittedTicketId(null);
+      try {
+        await navigator.clipboard.writeText(content);
+        notify("当前为离线演示模式：报修说明已复制，可手动联系售后", "info");
+      } catch {
+        notify("当前为离线演示模式，请手动复制报修说明", "info");
+      }
     }
   }
 
@@ -401,16 +468,31 @@ export default function RepairAssistant() {
                 </ul>
               </div>
 
+              {/* 已提交工单的状态跟踪条（模块②） */}
+              {submittedTicket && (
+                <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+                  <p className="mb-2 flex items-center justify-between text-sm font-semibold text-stone-800">
+                    工单状态跟踪
+                    <span className="text-xs font-normal text-stone-400">
+                      #{submittedTicket.id}
+                    </span>
+                  </p>
+                  <TicketTracker status={submittedTicket.status} compact />
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <Button onClick={copy}>
                   <ClipboardCopy className="h-4 w-4" /> 复制报修内容
                 </Button>
-                <Button variant="secondary" onClick={() => notify("演示功能，暂未对接真实售后平台", "info")}>
-                  <PhoneCall className="h-4 w-4" /> 一键联系维修
+                <Button onClick={submitTicket}>
+                  <Send className="h-4 w-4" /> {elder ? "一键提交报修" : "一键提交报修"}
                 </Button>
               </div>
               <p className="text-xs text-stone-400">
-                「一键联系维修 / 联系售后」为演示功能，暂未对接真实售后平台。
+                提交后工单将进入「待受理」状态，进度可在
+                <a href="#/records" className="text-brand-700 hover:underline">维修档案</a>
+                跟踪；离线或未登录时自动降级为复制报修说明。
               </p>
             </div>
           )}

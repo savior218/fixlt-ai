@@ -22,6 +22,7 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
 } from "../stores/prefs";
+import { isSpeechSupported, speak } from "../utils/speech";
 import { DEMO_USER } from "../types/user";
 import { maskPhone } from "../utils/format";
 
@@ -190,9 +191,26 @@ export default function Settings() {
             maxLabel="快"
             formatValue={(v) => `${v.toFixed(1)}x`}
           />
-          <Button variant="secondary" size="sm" onClick={() => notify("语音功能开发中", "info")}>
-            <Volume2 className="h-4 w-4" /> 播放测试语音
-          </Button>
+          {isSpeechSupported() ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const ok = speak(
+                  "您好，我是修必达AI助手。这是语音播报测试，如果您能听到这句话，说明语音功能正常。",
+                  prefs.speechRate
+                );
+                notify(ok ? "正在播放测试语音" : "语音播放未启动", ok ? "success" : "error");
+              }}
+            >
+              <Volume2 className="h-4 w-4" /> 播放测试语音
+            </Button>
+          ) : (
+            <p className="flex items-center gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">
+              <Volume2 className="h-4 w-4 text-stone-400" />
+              当前浏览器不支持语音播报（Web Speech API），朗读功能不可用。
+            </p>
+          )}
         </div>
       </SectionCard>
 
@@ -224,6 +242,8 @@ export default function Settings() {
             prefs.reset();
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
+            localStorage.removeItem("fixitai-notifications");
+            localStorage.removeItem("fixitai-tickets");
             setClearOpen(false);
             notify("本机数据已清除", "success");
           }}

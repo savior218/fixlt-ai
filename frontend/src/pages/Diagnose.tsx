@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Camera,
   Lightbulb,
+  Loader2,
   Mic,
   PhoneCall,
   ShieldAlert,
   Undo2,
+  X,
 } from "lucide-react";
 
 import Button from "../components/Button";
@@ -17,6 +19,7 @@ import AIMessageBubble from "../components/AIMessageBubble";
 import SectionCard from "../components/SectionCard";
 import { useToast } from "../components/Toast";
 import { CATEGORY_LABELS } from "../services/api";
+import { uploadDiagnosisPhoto } from "../services/api";
 import type { DiagnoseCategory } from "../services/diagnosisService";
 import {
   SYMPTOM_OPTIONS,
@@ -27,8 +30,15 @@ import type { Diagnosis } from "../types/diagnosis";
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
+import { speak } from "../utils/speech";
+import {
+  compressImage,
+  fileToDataUrl,
+  validatePhoto,
+} from "../utils/image";
 
 /** 设备类型卡片（P1 步骤一） */
 const CATEGORY_CARDS: { key: DiagnoseCategory; emoji: string; title: string; hint: string }[] = [
@@ -63,6 +73,41 @@ export default function Diagnose() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  /* ---------- 模块③：故障照片上传 ---------- */
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const addNotification = useNotificationStore((s) => s.add);
+
+  /** 校验 → 压缩 → 本地预览 → 优先后端入库；后端不可用时仅本地预览（Mock 模式） */
+  async function handlePhotoFile(file: File) {
+    const err = validatePhoto(file);
+    if (err) return notify(err, "error");
+
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const preview = await fileToDataUrl(compressed);
+      try {
+        const res = await uploadDiagnosisPhoto(compressed);
+        setDraft({ photoId: res.id, photoPreview: preview });
+        notify("照片已上传，AI 看图诊断将结合照片分析", "success");
+      } catch {
+        // 后端不可用 / 未登录：仅本地预览，不参与 AI 看图
+        setDraft({ photoId: null, photoPreview: preview });
+        notify("AI 服务不可用，照片仅在本地预览，不参与诊断", "info");
+      }
+    } catch {
+      notify("图片处理失败，请换一张试试", "error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removePhoto() {
+    setDraft({ photoId: null, photoPreview: null });
+  }
 
   useEffect(() => {
     void load();
@@ -146,6 +191,12 @@ export default function Diagnose() {
       appendMessage({ role: "ai", content: turn.text, suggestions: turn.suggestions });
     } else if (turn.kind === "interception") {
       setDraft({ riskInterception: turn.interception });
+      // 通知中心（模块⑤）：高风险告警
+      addNotification({
+        type: "risk",
+        title: `高风险告警 · ${turn.interception.title}`,
+        body: turn.interception.description,
+      });
     } else {
       // 问诊信息已齐（防御分支）：异步生成真实 AI 结果
       void generateDiagnosis(ctx, tone).then((diagnosis) => {
@@ -164,6 +215,7 @@ export default function Diagnose() {
       description: draft.description,
       answers: draft.answers,
       device: selectedDevice,
+      photoId: draft.photoId,
     };
   }
 
@@ -182,6 +234,7 @@ export default function Diagnose() {
       description: draft.description,
       answers: newAnswers,
       device: selectedDevice,
+      photoId: draft.photoId,
     };
     const tone = elder ? "elder" : "standard";
     const turn = nextTurn(ctx, tone);
@@ -203,6 +256,12 @@ export default function Diagnose() {
         appendMessage({ role: "ai", content: turn.text, suggestions: turn.suggestions });
       } else if (turn.kind === "interception") {
         setDraft({ answers: newAnswers, riskInterception: turn.interception });
+        // 通知中心（模块⑤）：高风险告警
+        addNotification({
+          type: "risk",
+          title: `高风险告警 · ${turn.interception.title}`,
+          body: turn.interception.description,
+        });
       }
       setThinking(false);
     }, 500);
@@ -216,6 +275,12 @@ export default function Diagnose() {
       content: elder
         ? "问好了！我已经整理好诊断结果，这就带您去看。"
         : "诊断完成，已为您生成详细的维修建议。",
+    });
+    // 通知中心（模块⑤）：诊断完成
+    addNotification({
+      type: "diagnosis",
+      title: "诊断完成",
+      body: `${diagnosis.symptom || "自定义故障"}：${diagnosis.conclusion.slice(0, 50)}`,
     });
     saveDiagnosis(diagnosis);
     setDraft({ step: 3 });
@@ -237,6 +302,23 @@ export default function Diagnose() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [draft.chat.length, thinking]);
+
+  /* ---------- 模块④：自动朗读新 AI 消息（需开启语音朗读 + 自动朗读） ---------- */
+  const autoRead = usePrefs((s) => s.autoRead);
+  const voiceEnabled = usePrefs((s) => s.voiceEnabled);
+  const speechRate = usePrefs((s) => s.speechRate);
+  const lastChatMsgId = draft.chat[draft.chat.length - 1]?.id;
+  const lastChatAiContent = useMemo(() => {
+    const last = draft.chat[draft.chat.length - 1];
+    return last && last.role === "ai" ? last.content : null;
+  }, [draft.chat]);
+  useEffect(() => {
+    if (autoRead && voiceEnabled && lastChatAiContent) {
+      speak(lastChatAiContent, speechRate);
+    }
+    // 仅在最后一条消息变化时触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastChatMsgId]);
 
   const symptoms = draft.category ? SYMPTOM_OPTIONS[draft.category] : [];
 
@@ -287,7 +369,7 @@ export default function Diagnose() {
         </SectionCard>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="danger" size="lg" onClick={() => notify("演示功能，暂未对接真实售后平台", "info")}>
+          <Button variant="danger" size="lg" onClick={() => navigate("/repair")}>
             <PhoneCall className="h-4 w-4" /> 一键联系维修
           </Button>
           <Button
@@ -407,18 +489,103 @@ export default function Diagnose() {
             </div>
           )}
 
-          {/* 图片上传（演示） */}
+          {/* 图片上传（模块③：点击/拖拽上传 + 本地预览 + AI 看图） */}
           <SectionCard title="上传故障照片（可选）">
-            <div className="rounded-xl border border-dashed border-stone-300 p-6 text-center">
-              <Camera aria-hidden className="mx-auto h-8 w-8 text-stone-400" />
-              <p className="mt-2 text-sm text-stone-600">点击上传或拖拽图片到此处</p>
-              <p className="mt-1 text-xs text-stone-400">
-                支持 JPG、PNG 格式，单张不超过 10MB（演示状态：图片暂不上传服务器）
-              </p>
-              <Button variant="secondary" size="sm" className="mt-3" onClick={() => notify("演示状态：图片上传暂未接入", "info")}>
-                暂不上传，直接描述
-              </Button>
-            </div>
+            {/* 隐藏的文件选择器（label 触发，兼容移动端） */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="sr-only"
+              aria-label="选择故障照片"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handlePhotoFile(f);
+                e.target.value = ""; // 允许重复选择同一文件
+              }}
+            />
+
+            {draft.photoPreview ? (
+              /* 已选照片：预览 + 移除 */
+              <div className="flex items-center gap-4">
+                <img
+                  src={draft.photoPreview}
+                  alt="故障照片预览"
+                  className="h-28 w-28 rounded-xl border border-stone-200 object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-stone-700">
+                    {draft.photoId != null ? "照片已上传 ✓" : "照片仅本地预览"}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-400">
+                    {draft.photoId != null
+                      ? "AI 看图诊断将结合这张照片分析"
+                      : "未连接 AI 服务：照片不参与本次诊断"}
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      重新选择
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={removePhoto}>
+                      <X className="h-3.5 w-3.5" /> 移除
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* 空状态：点击 / 拖拽上传 */
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="上传故障照片"
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) void handlePhotoFile(f);
+                }}
+                className={[
+                  "rounded-xl border border-dashed p-6 text-center transition-colors",
+                  dragOver
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-stone-300 hover:border-brand-400",
+                ].join(" ")}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 aria-hidden className="mx-auto h-8 w-8 animate-spin text-brand-600" />
+                    <p className="mt-2 text-sm text-stone-600">照片处理中…</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera aria-hidden className="mx-auto h-8 w-8 text-stone-400" />
+                    <p className="mt-2 text-sm text-stone-600">
+                      {elder ? "点这里，拍一张或选一张故障照片" : "点击上传或拖拽图片到此处"}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-400">
+                      支持 JPG、PNG 格式，单张不超过 10MB；配置 AI 服务后自动看图诊断
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
           </SectionCard>
 
           {/* 小贴士 */}
@@ -478,7 +645,10 @@ export default function Diagnose() {
                   <p className="font-medium text-stone-600">已收集信息</p>
                   <p className="mt-1">故障现象：{draft.symptom ?? "自定义描述"}</p>
                   <p>描述字数：{draft.description.length}/500</p>
-                  <p>相关图片：0 张</p>
+                  <p>
+                    相关图片：{draft.photoPreview ? "1 张" : "0 张"}
+                    {draft.photoPreview && draft.photoId == null && "（仅本地预览）"}
+                  </p>
                 </div>
                 <Button size="lg" className="w-full" onClick={submitCustomSymptom}>
                   {elder ? "写好了，开始问诊" : "开始 AI 问诊"}

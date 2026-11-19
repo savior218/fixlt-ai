@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     # AI 服务（DEV-06 统一模型适配层：智谱 GLM，OpenAI 兼容协议）
     ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
     ai_text_model: str = "glm-4-flash"
-    ai_vision_model: str = ""
+    # 视觉模型（模块③ AI 看图）：glm-4v-flash 免费、支持视觉；留空则回退文本模型
+    ai_vision_model: str = "glm-4v-flash"
     ai_api_key: str = ""
     ai_timeout_seconds: float = 60.0
 

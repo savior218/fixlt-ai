@@ -95,6 +95,7 @@ export interface AIDiagnosePayload {
   device_name?: string | null;
   device_brand?: string | null;
   device_model?: string | null;
+  photo_id?: number | null;
 }
 
 /** 真实 AI 诊断：失败抛错，由调用方回退本地 Mock */
@@ -102,4 +103,99 @@ export const requestAIDiagnosis = (p: AIDiagnosePayload) =>
   request<AIDiagnoseResponse>("/diagnose/complete", {
     method: "POST",
     body: JSON.stringify(p),
+  });
+
+/* ---------- 模块③：故障照片上传（multipart，base64 存库） ---------- */
+
+export interface PhotoUploadResult {
+  id: number;
+  mime: string;
+  image_base64: string;
+}
+
+/** 上传故障照片：不走 request()（multipart 不能带 JSON Content-Type） */
+export async function uploadDiagnosisPhoto(file: File): Promise<PhotoUploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const resp = await fetch(`${BASE}/diagnose/photo`, {
+    method: "POST",
+    body: form,
+  });
+  if (!resp.ok) {
+    let detail = `上传失败（HTTP ${resp.status}）`;
+    try {
+      const body = (await resp.json()) as { detail?: string };
+      if (body?.detail) detail = body.detail;
+    } catch {
+      /* 保留默认错误信息 */
+    }
+    throw new Error(detail);
+  }
+  return (await resp.json()) as PhotoUploadResult;
+}
+
+/* ---------- 模块②：报修工单闭环 ---------- */
+
+export type TicketStatus = "pending" | "accepted" | "in_progress" | "completed";
+
+/** 状态机顺序：待受理 → 已受理 → 维修中 → 已完成 */
+export const TICKET_STATUS_ORDER: TicketStatus[] = [
+  "pending",
+  "accepted",
+  "in_progress",
+  "completed",
+];
+
+export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+  pending: "待受理",
+  accepted: "已受理",
+  in_progress: "维修中",
+  completed: "已完成",
+};
+
+export interface TicketStatusPoint {
+  status: TicketStatus;
+  at: string;
+}
+
+export interface RepairTicket {
+  id: number;
+  device_id: number | null;
+  diagnosis_ref: string | null;
+  category: string;
+  brand: string | null;
+  model: string | null;
+  symptom: string;
+  description: string | null;
+  found_at: string | null;
+  checks: string[];
+  content: string;
+  status: TicketStatus;
+  status_history: TicketStatusPoint[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketInput {
+  category: string;
+  symptom: string;
+  description?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  found_at?: string | null;
+  checks?: string[];
+  content: string;
+  device_id?: number | null;
+  diagnosis_ref?: string | null;
+}
+
+export const createTicket = (p: TicketInput) =>
+  request<RepairTicket>("/repairs", { method: "POST", body: JSON.stringify(p) });
+
+export const listTickets = () => request<RepairTicket[]>("/repairs");
+
+export const updateTicketStatus = (id: number, status: TicketStatus) =>
+  request<RepairTicket>(`/repairs/${id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
   });
