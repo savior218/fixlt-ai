@@ -229,6 +229,8 @@ export interface AIDiagnoseResponse {
   risk_floor: "low" | "medium" | "high";
   risk_matched: string[];
   safety_rules_version: string;
+  /** 登录用户的保存回执；游客为 null */
+  receipt?: string | null;
 }
 
 export interface AIDiagnosePayload {
@@ -252,3 +254,149 @@ export const requestAIDiagnosis = (p: AIDiagnosePayload, signal?: AbortSignal) =
     },
     65_000
   );
+
+/* ---------- 云端诊断报告 / 维修记录（阶段十二） ---------- */
+
+export interface CloudContentItem {
+  title: string;
+  description: string;
+}
+
+export interface CloudDiagnosisContent {
+  conclusion: string;
+  possible_causes: CloudContentItem[];
+  evidence: string[];
+  unknown_information: string[];
+  suggestions: CloudContentItem[];
+  tips: string | null;
+  risk_note: string | null;
+}
+
+export interface CloudDiagnosisRecord {
+  id: number;
+  client_ref: string;
+  device_id: number | null;
+  device_name: string | null;
+  category: string | null;
+  symptom: string;
+  description: string;
+  source: "ai" | "template" | "unknown";
+  ai_model: string | null;
+  risk_level: "low" | "medium" | "high";
+  risk_rules_version: string | null;
+  qa: AIQAItem[];
+  content: { standard: CloudDiagnosisContent; elder?: CloudDiagnosisContent };
+  verified: boolean;
+  imported: boolean;
+  created_at: string;
+}
+
+export interface CloudDiagnosisPayload {
+  client_ref: string;
+  device_id: number | null;
+  device_name: string | null;
+  category: string | null;
+  symptom: string;
+  description: string;
+  source: "ai" | "template" | "unknown";
+  ai_model: string | null;
+  risk_level: "low" | "medium" | "high";
+  risk_rules_version: string | null;
+  qa: AIQAItem[];
+  content: {
+    standard: CloudDiagnosisContent;
+    elder?: CloudDiagnosisContent;
+  };
+  receipt?: string | null;
+  created_at: string;
+}
+
+export interface CloudRepairRecord {
+  id: number;
+  client_ref: string;
+  device_id: number | null;
+  device_name: string;
+  diagnosis_ref: string | null;
+  diagnosis_source: string | null;
+  fault_description: string;
+  repair_method: string;
+  repair_time: string | null;
+  technician: string | null;
+  cost: number | null;
+  status: "pending" | "recovered" | "partial" | "failed";
+  images: string[];
+  verification_status:
+    | "unverified"
+    | "recovered"
+    | "partial"
+    | "notRecovered"
+    | "unknown";
+  imported: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CloudRepairPayload {
+  client_ref: string;
+  device_id: number | null;
+  device_name: string;
+  diagnosis_ref: string | null;
+  fault_description: string;
+  repair_method: string;
+  repair_time: string | null;
+  technician: string | null;
+  cost: number | null;
+  status: "pending" | "recovered" | "partial" | "failed";
+  images: string[];
+  verification_status:
+    | "unverified"
+    | "recovered"
+    | "partial"
+    | "notRecovered"
+    | "unknown";
+  created_at: string;
+}
+
+export interface CloudRepairPatch {
+  verification_status?:
+    | "unverified"
+    | "recovered"
+    | "partial"
+    | "notRecovered"
+    | "unknown";
+  status?: "pending" | "recovered" | "partial" | "failed";
+  technician?: string | null;
+  repair_method?: string;
+  repair_time?: string | null;
+  cost?: number | null;
+}
+
+export const listCloudDiagnoses = () =>
+  request<CloudDiagnosisRecord[]>("/diagnoses");
+export const saveCloudDiagnosis = (p: CloudDiagnosisPayload) =>
+  request<CloudDiagnosisRecord>("/diagnoses", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+export const importCloudDiagnoses = (items: CloudDiagnosisPayload[]) =>
+  request<CloudDiagnosisRecord[]>("/diagnoses/import", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
+
+export const listCloudRepairs = () => request<CloudRepairRecord[]>("/repairs");
+export const saveCloudRepair = (p: CloudRepairPayload) =>
+  request<CloudRepairRecord>("/repairs", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+export const patchCloudRepair = (id: number, p: CloudRepairPatch) =>
+  request<CloudRepairRecord>(`/repairs/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(p),
+  });
+export const importCloudRepairs = (items: CloudRepairPayload[]) =>
+  request<CloudRepairRecord[]>("/repairs/import", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });

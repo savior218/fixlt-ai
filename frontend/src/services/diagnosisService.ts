@@ -311,6 +311,7 @@ export function buildTemplateDiagnosis(ctx: AskContext): Diagnosis {
     tips: standard.tips,
     riskNote: standard.riskNote,
     status: "completed",
+    saveStatus: "local",
   };
 }
 
@@ -459,6 +460,9 @@ export async function generateAIDiagnosis(
         tips: standard.tips,
         riskNote: standard.riskNote,
         status: "completed",
+        saveStatus: "local",
+        // 服务端回执：登录用户保存报告时用于核验真实 AI 来源
+        receipt: res.receipt ?? null,
       },
     };
   } catch (err) {

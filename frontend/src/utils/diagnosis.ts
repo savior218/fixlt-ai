@@ -113,6 +113,19 @@ export function normalizeDiagnosis(value: unknown): Diagnosis {
     qa: asQAPairs(raw.qa),
     content: { standard, ...(elder ? { elder } : {}) },
     riskLevel: asRisk(raw.riskLevel),
+    // 云端同步状态：保留服务端记录 ID 与保存状态，刷新后仍能正确显示
+    serverId: typeof raw.serverId === "number" ? raw.serverId : undefined,
+    cloud: raw.cloud === true ? true : undefined,
+    verified: raw.verified === true,
+    imported: raw.imported === true,
+    saveStatus:
+      raw.saveStatus === "saved" ||
+      raw.saveStatus === "failed" ||
+      raw.saveStatus === "saving" ||
+      raw.saveStatus === "local"
+        ? raw.saveStatus
+        : undefined,
+    receipt: typeof raw.receipt === "string" ? raw.receipt : null,
     conclusion: standard.conclusion,
     possibleCauses: standard.possibleCauses,
     evidence: standard.evidence,

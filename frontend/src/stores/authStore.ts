@@ -56,6 +56,14 @@ function syncOwner(ownerKey: string): void {
   useDeviceStore.getState().applyOwner(ownerKey);
 }
 
+/** 登录后拉取当前账号的报告与维修记录；失败不阻断登录 */
+async function syncCloudRecords(): Promise<void> {
+  await Promise.allSettled([
+    useDiagnosisStore.getState().loadCloud(),
+    useRepairStore.getState().loadCloud(),
+  ]);
+}
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
   status: "loading",
   user: null,
@@ -71,6 +79,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       const payload = await getCurrentAccount();
       syncOwner(ownerKeyForUser(payload.user.id));
       setCsrfToken(payload.csrf_token);
+      await syncCloudRecords();
       set((s) => ({
         status: "authenticated",
         user: payload.user,
@@ -100,6 +109,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const payload = await loginAccount({ username, password });
     syncOwner(ownerKeyForUser(payload.user.id));
     setCsrfToken(payload.csrf_token);
+    await syncCloudRecords();
     set((s) => ({
       status: "authenticated",
       user: payload.user,
@@ -113,6 +123,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const payload = await registerAccount({ username, password, nickname });
     syncOwner(ownerKeyForUser(payload.user.id));
     setCsrfToken(payload.csrf_token);
+    await syncCloudRecords();
     set((s) => ({
       status: "authenticated",
       user: payload.user,

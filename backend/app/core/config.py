@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "修必达 FixIt AI"
-    app_version: str = "0.3.0-stage11"
+    app_version: str = "0.4.0-stage12"
 
     # 运行边界：dev = 本机/比赛演示；public = 对外公开服务
     # public 模式会关闭交互式 API 文档，并要求显式配置 CORS 与调用额度

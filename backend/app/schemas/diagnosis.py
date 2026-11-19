@@ -85,3 +85,5 @@ class DiagnoseResponse(BaseModel):
     risk_floor: RiskLevel
     risk_matched: list[str] = Field(default_factory=list)
     safety_rules_version: str
+    # 登录用户的保存回执：保存报告时服务端据此确认“真实 AI 来源”
+    receipt: str | None = None

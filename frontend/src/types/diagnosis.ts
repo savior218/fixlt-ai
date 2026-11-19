@@ -121,6 +121,20 @@ export interface Diagnosis {
   /** 风险等级：前端规则与后端风险下限取较高者 */
   riskLevel: RiskLevel;
 
+  /* ---- 云端同步（阶段十二） ---- */
+  /** 服务端记录 ID；仅云端记录有 */
+  serverId?: number;
+  /** 来自服务端（非本机草稿/缓存） */
+  cloud?: boolean;
+  /** 服务端回执校验为真实 AI 结果；本机导入恒为 false */
+  verified?: boolean;
+  /** 由本机历史主动导入 */
+  imported?: boolean;
+  /** 保存状态：local=尚未保存到云端 */
+  saveStatus?: "local" | "saving" | "saved" | "failed";
+  /** 生成该 AI 结果时服务端签发的保存回执（只用于保存，不作为登录凭据） */
+  receipt?: string | null;
+
   /* ---- 兼容字段：始终等于 standard 内容，供旧页面 / 旧数据读取 ---- */
   conclusion: string;
   possibleCauses: PossibleCause[];

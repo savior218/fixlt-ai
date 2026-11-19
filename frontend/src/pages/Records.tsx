@@ -6,20 +6,26 @@ import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
+import SectionCard from "../components/SectionCard";
+import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
+import {
+  diagnosesForOwner,
+  useDiagnosisStore,
+} from "../stores/diagnosisStore";
 import {
   localRepairCount,
   recordsForOwner,
   useRepairStore,
 } from "../stores/repairStore";
+import { formatDateTime, relativeTime } from "../utils/format";
 import {
   REPAIR_STATUS_LABELS,
   VERIFICATION_LABELS,
   type RepairRecord,
   type VerificationStatus,
 } from "../types/repair";
-import { formatDateTime, relativeTime } from "../utils/format";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "全部状态" },
@@ -55,6 +61,18 @@ export default function Records() {
     [allRecords, ownerKey]
   );
   const localCount = localRepairCount(allRecords, ownerKey);
+  const retryCloud = useRepairStore((s) => s.retryCloud);
+
+  const allDiagnoses = useDiagnosisStore((s) => s.history);
+  const diagnosisOwner = useDiagnosisStore((s) => s.ownerKey);
+  /** 诊断历史：云端已保存 + 本账号本地记录（跨浏览器登录后可从服务端恢复） */
+  const reports = useMemo(
+    () =>
+      diagnosesForOwner(allDiagnoses, diagnosisOwner)
+        .filter((d) => d.status === "completed")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [allDiagnoses, diagnosisOwner]
+  );
 
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -81,9 +99,25 @@ export default function Records() {
     });
   }, [records, keyword, statusFilter, timeFilter]);
 
-  function verify(r: RepairRecord, v: VerificationStatus) {
-    updateVerification(r.id, v);
-    notify(`已更新验证结果：${VERIFICATION_LABELS[v]}`, "success");
+  async function verify(r: RepairRecord, v: VerificationStatus) {
+    try {
+      await updateVerification(r.id, v);
+      notify(`已更新验证结果：${VERIFICATION_LABELS[v]}`, "success");
+    } catch (e) {
+      notify(
+        `更新失败，已还原原状态：${(e as Error).message || "请稍后重试"}`,
+        "error"
+      );
+    }
+  }
+
+  async function retry(r: RepairRecord) {
+    try {
+      await retryCloud(r.id);
+      notify("已重新保存到云端", "success");
+    } catch (e) {
+      notify((e as Error).message || "重试失败，内容仍保留在本机", "error");
+    }
   }
 
   return (
@@ -103,6 +137,39 @@ export default function Records() {
           另有 <strong>{localCount}</strong> 条本机历史维修记录未归属任何账号，仍保留在本机，
           切换到游客演示可查看；不会自动归入当前账号。
         </p>
+      )}
+
+      {/* 诊断历史：已保存报告可在另一浏览器登录同一账号后查看 */}
+      {reports.length > 0 && (
+        <SectionCard title={`诊断报告（${reports.length}）`} padding="sm">
+          <ul className="divide-y divide-stone-100">
+            {reports.slice(0, 10).map((d) => (
+              <li key={d.id}>
+                <Link
+                  to={`/diagnosis/${d.id}/report`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 transition-colors hover:bg-stone-50"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-stone-800">
+                      {d.deviceName ?? "未关联设备"} · {d.symptom || "自定义描述"}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-stone-400">
+                      {formatDateTime(d.createdAt)}
+                      {d.imported ? " · 本机导入（未经服务端校验）" : ""}
+                      {d.saveStatus === "failed" ? " · 未同步到云端" : ""}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <SourceBadge source={d.source} model={d.model} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {reports.length > 10 && (
+            <p className="mt-2 text-xs text-stone-400">仅显示最近 10 份报告。</p>
+          )}
+        </SectionCard>
       )}
 
       {/* 顶部安全提示条 */}
@@ -185,6 +252,9 @@ export default function Records() {
                     <p className="mt-0.5 text-xs text-stone-400">
                       {relativeTime(r.createdAt)} · {REPAIR_STATUS_LABELS[r.status]} · 验证：
                       {VERIFICATION_LABELS[r.verificationStatus]}
+                      {r.cloud ? " · 云端" : ""}
+                      {r.imported ? " · 本机导入" : ""}
+                      {r.saveStatus === "failed" ? " · 未同步" : ""}
                     </p>
                   </div>
                   <span aria-hidden className="text-stone-300">
@@ -237,9 +307,21 @@ export default function Records() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-stone-400">
-                        如问题再次出现，可点击「再次诊断」或联系客服。
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {r.saveStatus === "failed" && (
+                          <>
+                            <span className="text-xs text-risk-high-deep">
+                              保存失败，内容仍保留在本机
+                            </span>
+                            <Button variant="secondary" size="sm" onClick={() => void retry(r)}>
+                              重试保存
+                            </Button>
+                          </>
+                        )}
+                        <span className="text-xs text-stone-400">
+                          如问题再次出现，可点击「再次诊断」或联系客服。
+                        </span>
+                      </div>
                       <Link to="/diagnose" className={buttonClass("secondary", "sm")}>
                         <RotateCcw className="h-3.5 w-3.5" /> 再次诊断
                       </Link>

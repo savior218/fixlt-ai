@@ -27,6 +27,7 @@ import {
 import { useAuthStore } from "../stores/authStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useRepairStore } from "../stores/repairStore";
+import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import { loginHref } from "../utils/redirect";
 
 type SaveState = "idle" | "saving" | "saved";
@@ -49,6 +50,13 @@ export default function Settings() {
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+
+  // 本机历史（未归属账号的旧记录），可主动导入当前账号
+  const diagnosisHistory = useDiagnosisStore((s) => s.history);
+  const repairRecords = useRepairStore((s) => s.records);
+  const localCounts = countLocalHistory(diagnosisHistory, repairRecords);
 
   // 账户资料 / 密码弹窗
   const [profileOpen, setProfileOpen] = useState(false);
@@ -135,6 +143,27 @@ export default function Settings() {
       setAccountError((e as Error).message);
     } finally {
       setAccountBusy(false);
+    }
+  }
+
+  async function runImport() {
+    if (importBusy) return;
+    setImportBusy(true);
+    try {
+      const result = await importLocalHistory();
+      setImportOpen(false);
+      notify(
+        `已导入 ${result.diagnoses} 份诊断报告、${result.repairs} 条维修记录`,
+        "success"
+      );
+    } catch (e) {
+      setImportOpen(false);
+      notify(
+        `导入失败：${(e as Error).message || "请稍后重试"}；本机数据未删除，可再次导入`,
+        "error"
+      );
+    } finally {
+      setImportBusy(false);
     }
   }
 
@@ -334,7 +363,37 @@ export default function Settings() {
         </div>
       </SectionCard>
 
-      {/* E. 隐私与数据 */}
+      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示） */}
+      {authStatus === "authenticated" &&
+        localCounts.diagnoses + localCounts.repairs > 0 && (
+          <SectionCard title="本机历史">
+            <p className="text-sm leading-relaxed text-stone-600">
+              检测到本机还有 <strong>{localCounts.diagnoses}</strong> 份诊断报告、{" "}
+              <strong>{localCounts.repairs}</strong> 条维修记录未归属任何账号。
+              导入后会归属当前账号（<strong>{user?.username}</strong>）并保存到云端，
+              其他设备登录同一账号可查看；本机原记录仍会保留。
+            </p>
+            <p className="mt-2 text-xs text-stone-400">
+              旧设备无法可靠对应时只保留设备名称，不会强行绑定到现有设备；重复导入不会产生重复记录。
+            </p>
+            <div className="mt-3">
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                导入本机历史
+              </Button>
+            </div>
+            <ConfirmDialog
+              open={importOpen}
+              title="确认导入本机历史？"
+              message={`将把 ${localCounts.diagnoses} 份诊断报告、${localCounts.repairs} 条维修记录导入账号 ${user?.username ?? ""} 并保存到云端。导入不会删除本机原数据，重复导入不会产生重复记录。`}
+              confirmLabel={importBusy ? "导入中…" : "确认导入"}
+              danger={false}
+              onConfirm={() => void runImport()}
+              onCancel={() => setImportOpen(false)}
+            />
+          </SectionCard>
+        )}
+
+      {/* F. 隐私与数据 */}
       <SectionCard title="隐私与数据">
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setPrivacyOpen(true)}>
@@ -396,7 +455,7 @@ export default function Settings() {
             </p>
             <p>
               <strong>2. 数据的存储。</strong>
-              界面偏好、诊断草稿与维修记录保存在你的浏览器本地，并按登录账号隔离；设备保存在服务端数据库中，只归当前登录账号所有。未归属的旧本机记录会独立保留为本机历史，不会自动归属新注册账号。
+              界面偏好与诊断草稿保存在你的浏览器本地，并按登录账号隔离；设备、你主动保存的诊断报告与维修记录保存在服务端数据库中，只归当前登录账号所有，其他账号无法读取。未归属的旧本机记录会独立保留为本机历史，不会自动归属新注册账号，需你在本页主动导入。
             </p>
             <p>
               <strong>3. AI 诊断说明。</strong>

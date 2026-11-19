@@ -38,6 +38,7 @@ from app.services.limiter import (
     RateLimitExceeded,
     get_limiter,
 )
+from app.services.receipts import issue_diagnosis_receipt
 
 router = APIRouter(prefix="/api/diagnose", tags=["diagnose"])
 logger = logging.getLogger(__name__)
@@ -245,6 +246,20 @@ async def complete_diagnosis(
             elapsed_ms,
         )
 
+        # 登录用户获得保存回执：保存报告时服务端据此核验 AI 来源与风险下限
+        receipt = None
+        if auth is not None:
+            receipt = issue_diagnosis_receipt(
+                user_id=auth.user.id,
+                category=req.category,
+                symptom=req.symptom,
+                description=req.description,
+                qa=[item.model_dump() for item in req.qa],
+                risk_floor=risk_floor["level"],
+                ai_model=settings.ai_text_model,
+                rules_version=SAFETY_RULES_VERSION,
+            )
+
         return DiagnoseResponse(
             source="ai",
             model=settings.ai_text_model,
@@ -256,6 +271,7 @@ async def complete_diagnosis(
             risk_floor=risk_floor["level"],
             risk_matched=risk_floor["matched"],
             safety_rules_version=SAFETY_RULES_VERSION,
+            receipt=receipt,
         )
     finally:
         await limiter.release()

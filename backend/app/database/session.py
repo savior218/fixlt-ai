@@ -34,16 +34,60 @@ def init_db() -> None:
 
 
 def ensure_schema_migrations(db_engine=None) -> None:
-    """旧库增量迁移：只加列，不删表、不重建、不清空历史数据。
+    """旧库增量迁移：只加列 / 加索引，不删表、不重建、不清空历史数据。
 
-    当前版本为 users.nickname（账号昵称）。SQLite 与 PostgreSQL 均支持
-    ALTER TABLE ... ADD COLUMN，且对已有数据不产生改写。
+    SQLite 与 PostgreSQL 均支持 ALTER TABLE ... ADD COLUMN 与
+    CREATE [UNIQUE] INDEX IF NOT EXISTS，对已有数据不产生改写。
     """
     target = db_engine or engine
-    inspector = inspect(target)
-    if "users" not in inspector.get_table_names():
-        return
-    columns = {col["name"] for col in inspector.get_columns("users")}
-    if "nickname" not in columns:
+    tables = set(inspect(target).get_table_names())
+    for table, columns in _MIGRATION_COLUMNS.items():
+        if table not in tables:
+            continue
+        existing = {col["name"] for col in inspect(target).get_columns(table)}
+        for name, ddl in columns:
+            if name in existing:
+                continue
+            with target.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+
+    for name, table, columns in _MIGRATION_INDEXES:
+        if table not in tables:
+            continue
         with target.begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN nickname VARCHAR(64)"))
+            conn.execute(
+                text(
+                    f"CREATE UNIQUE INDEX IF NOT EXISTS {name} "
+                    f"ON {table} ({columns})"
+                )
+            )
+
+
+# 增量列定义（SQLite / PostgreSQL 通用类型）
+_MIGRATION_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "users": [("nickname", "VARCHAR(64)")],
+    "diagnoses": [
+        ("client_ref", "VARCHAR(64)"),
+        ("category", "VARCHAR(16)"),
+        ("device_name", "VARCHAR(64)"),
+        ("model_name", "VARCHAR(64)"),
+        ("risk_rules_version", "VARCHAR(32)"),
+        ("verified", "BOOLEAN DEFAULT FALSE"),
+        ("imported", "BOOLEAN DEFAULT FALSE"),
+    ],
+    "repair_records": [
+        ("client_ref", "VARCHAR(64)"),
+        ("device_name", "VARCHAR(64)"),
+        ("fault_description", "TEXT"),
+        ("technician", "VARCHAR(64)"),
+        ("status", "VARCHAR(16) DEFAULT 'pending'"),
+        ("imported", "BOOLEAN DEFAULT FALSE"),
+        ("updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+    ],
+}
+
+# 同一用户下客户端记录 ID 唯一：重复提交不会产生多条记录
+_MIGRATION_INDEXES: list[tuple[str, str, str]] = [
+    ("ux_diagnoses_user_client", "diagnoses", "user_id, client_ref"),
+    ("ux_repair_records_user_client", "repair_records", "user_id, client_ref"),
+]

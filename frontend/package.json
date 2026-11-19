@@ -11,6 +11,7 @@
     "capture:stage10": "node scripts/capture-stage10.mjs",
     "e2e:stage10": "node scripts/e2e-stage10.mjs",
     "e2e:stage11": "node scripts/e2e-stage11.mjs",
+    "e2e:stage12": "node scripts/e2e-stage12.mjs",
     "preview": "node node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {

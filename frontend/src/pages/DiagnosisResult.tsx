@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ChevronDown, FileText, RotateCcw, Save } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, FileText, RotateCcw, Save } from "lucide-react";
 
 import { buttonClass } from "../components/Button";
 import Button from "../components/Button";
@@ -12,8 +12,10 @@ import { useToast } from "../components/Toast";
 import { createRecordFromDiagnosis } from "../services/repairService";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { recordsForOwner, useRepairStore } from "../stores/repairStore";
+import { useAuthStore } from "../stores/authStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDateTime } from "../utils/format";
+import { loginHref } from "../utils/redirect";
 import { contentFor, hasElderCopy, normalizeDiagnosis } from "../utils/diagnosis";
 
 /** elder 分步引导文案（节奏层：先结论 → 再原因 → 再建议） */
@@ -34,9 +36,12 @@ export default function DiagnosisResult() {
   const history = useDiagnosisStore((s) => s.history);
   const diagnosisOwner = useDiagnosisStore((s) => s.ownerKey);
   const resetDraft = useDiagnosisStore((s) => s.resetDraft);
+  const saveToCloud = useDiagnosisStore((s) => s.saveToCloud);
   const addRecord = useRepairStore((s) => s.addRecord);
   const allRecords = useRepairStore((s) => s.records);
   const recordOwner = useRepairStore((s) => s.ownerKey);
+  const authStatus = useAuthStore((s) => s.status);
+  const authed = authStatus === "authenticated";
   const records = useMemo(
     () => recordsForOwner(allRecords, recordOwner),
     [allRecords, recordOwner]
@@ -52,12 +57,24 @@ export default function DiagnosisResult() {
     return found ? normalizeDiagnosis(found) : undefined;
   }, [history, diagnosisOwner, id]);
 
-  /** 是否已保存过（防止重复生成维修记录） */
+  /** 是否已保存过（防止重复生成维修记录；未同步成功的不算） */
   const saved = useMemo(
-    () => (diagnosis ? records.some((r) => r.diagnosisId === diagnosis.id) : false),
+    () =>
+      diagnosis
+        ? records.some(
+            (r) =>
+              r.diagnosisId === diagnosis.id &&
+              (r.cloud || r.saveStatus === "saved")
+          )
+        : false,
     [records, diagnosis]
   );
-  const [justSaved, setJustSaved] = useState(false);
+  const [repairBusy, setRepairBusy] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+
+  const reportSaved = !!diagnosis && (!!diagnosis.cloud || diagnosis.saveStatus === "saved");
+  const reportFailed = diagnosis?.saveStatus === "failed";
+  const reportSaving = diagnosis?.saveStatus === "saving" || reportBusy;
 
   if (!diagnosis) {
     return (
@@ -70,15 +87,52 @@ export default function DiagnosisResult() {
     );
   }
 
-  function saveRecord() {
+  async function saveReport() {
+    if (!diagnosis || reportBusy) return;
+    if (!authed) {
+      notify("登录后才能保存到云端", "info");
+      navigate(loginHref(`/diagnosis/${diagnosis.id}/result`));
+      return;
+    }
+    setReportBusy(true);
+    try {
+      await saveToCloud(diagnosis.id);
+      notify("报告已保存到云端，其他设备登录同一账号可查看", "success");
+    } catch (e) {
+      notify((e as Error).message || "报告保存失败，请稍后重试", "error");
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
+  async function saveRecord() {
     if (!diagnosis) return;
-    if (saved || justSaved) {
+    if (saved) {
       notify("该诊断已保存过维修记录", "info");
       return;
     }
-    addRecord(createRecordFromDiagnosis(diagnosis, elder ? "elder" : "standard"));
-    setJustSaved(true);
-    notify("已保存到维修档案", "success");
+    if (repairBusy) return;
+    const record = createRecordFromDiagnosis(
+      diagnosis,
+      elder ? "elder" : "standard"
+    );
+    if (!authed) {
+      addRecord(record);
+      notify("已保存到本机维修档案（登录后可保存到云端）", "info");
+      return;
+    }
+    setRepairBusy(true);
+    try {
+      await useRepairStore.getState().saveToCloud(record);
+      notify("已保存到云端维修档案", "success");
+    } catch (e) {
+      notify(
+        (e as Error).message || "维修记录保存失败，内容已保留，可重试",
+        "error"
+      );
+    } finally {
+      setRepairBusy(false);
+    }
   }
 
   const view = contentFor(diagnosis, elder ? "elder" : "standard");
@@ -108,7 +162,32 @@ export default function DiagnosisResult() {
             </p>
           </div>
         </div>
-        <SourceBadge source={diagnosis.source} model={diagnosis.model} />
+        <div className="flex flex-wrap items-center gap-2">
+          <SourceBadge source={diagnosis.source} model={diagnosis.model} />
+          {authed ? (
+            reportSaved ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-risk-low-bg px-2.5 py-1 text-xs font-medium text-risk-low-deep">
+                <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> 已保存到云端
+              </span>
+            ) : reportFailed ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-risk-high-bg px-2.5 py-1 text-xs font-medium text-risk-high-deep">
+                <AlertTriangle aria-hidden className="h-3.5 w-3.5" /> 保存失败
+              </span>
+            ) : reportSaving ? (
+              <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-500">
+                保存中…
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                待保存到云端
+              </span>
+            )
+          ) : (
+            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-500">
+              游客：仅保存在本机
+            </span>
+          )}
+        </div>
       </div>
 
       {showSourceNote && (
@@ -236,13 +315,38 @@ export default function DiagnosisResult() {
           >
             <RotateCcw className="h-4 w-4" /> {elder ? "再诊断一次" : "重新诊断"}
           </Button>
-          <Button onClick={saveRecord} disabled={saved || justSaved}>
+          {authed ? (
+            <Button
+              variant={reportSaved ? "secondary" : "primary"}
+              onClick={() => void saveReport()}
+              disabled={reportSaved || reportSaving}
+            >
+              <Save className="h-4 w-4" />
+              {reportSaved
+                ? "报告已保存"
+                : reportSaving
+                  ? "保存中…"
+                  : reportFailed
+                    ? "重试保存报告"
+                    : "保存报告到云端"}
+            </Button>
+          ) : (
+            <Link
+              to={loginHref(`/diagnosis/${diagnosis.id}/result`)}
+              className={buttonClass("primary", "md")}
+            >
+              <Save className="h-4 w-4" /> 登录后保存报告
+            </Link>
+          )}
+          <Button onClick={() => void saveRecord()} disabled={saved || repairBusy}>
             <Save className="h-4 w-4" />
-            {saved || justSaved
-              ? "已保存维修记录"
-              : elder
-                ? "保存到维修档案"
-                : "保存维修记录"}
+            {repairBusy
+              ? "保存中…"
+              : saved
+                ? "已保存维修记录"
+                : elder
+                  ? "保存到维修档案"
+                  : "保存维修记录"}
           </Button>
           <Link to={`/diagnosis/${diagnosis.id}/report`} className={buttonClass("primary", "md")}>
             {elder ? "看完整报告" : "查看完整报告"} <ArrowRight className="h-4 w-4" />

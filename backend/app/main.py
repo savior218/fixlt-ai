@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, demo, devices, diagnose, health
+from app.api import auth, demo, devices, diagnose, health, records
 from app.core.config import settings
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
@@ -96,6 +96,7 @@ app.include_router(auth.router)
 app.include_router(demo.router)
 app.include_router(devices.router)
 app.include_router(diagnose.router)
+app.include_router(records.router)
 
 
 # 生产部署：FastAPI 统一托管前端构建产物（单服务部署，前端与 /api 同源无需跨域）

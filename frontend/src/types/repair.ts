@@ -31,6 +31,12 @@ export interface RepairRecord {
   status: RepairStatus;
   images: string[];
   verificationStatus: VerificationStatus;
+
+  /* ---- 云端同步（阶段十二） ---- */
+  serverId?: number;
+  cloud?: boolean;
+  imported?: boolean;
+  saveStatus?: "local" | "saving" | "saved" | "failed";
 }
 
 /** 维修档案统计（P4 顶部卡片，从 repairStore 计算） */
