@@ -1,19 +1,21 @@
-﻿import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, ClipboardCopy, Send, ShieldAlert } from "lucide-react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Camera, CheckCircle2, ClipboardCopy, Loader2, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import InputField from "../components/InputField";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import TicketTracker from "../components/TicketTracker";
 import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { useDeviceStore } from "../stores/deviceStore";
 import { getDiagnosisById } from "../stores/diagnosisStore";
+import { useAuthStore } from "../stores/authStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useTicketStore } from "../stores/ticketStore";
+import { uploadDiagnosisPhoto } from "../services/api";
+import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 import { formatDate } from "../utils/format";
 import { contentFor } from "../utils/diagnosis";
 import { usePrefs } from "../stores/prefs";
@@ -84,16 +86,45 @@ export default function RepairAssistant() {
   const [editing, setEditing] = useState<string | null>(null);
   /** elder 模式分两步填写 */
   const [wizardStep, setWizardStep] = useState(0);
-  /** 本次会话已提交的工单 ID（null = 未提交 / 降级为复制说明） */
+  /** 本次会话已保存的报修事项 ID（仅服务端确认成功后才有值） */
   const [submittedTicketId, setSubmittedTicketId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  /** 幂等标识：超时重试沿用同一个，服务端会返回同一条而不是重复创建 */
+  const clientRef = useRef(
+    `ticket-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now()}`
+  );
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoId, setPhotoId] = useState<number | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const authStatus = useAuthStore((s) => s.status);
 
-  const { tickets, syncFromBackend } = useTicketStore();
+  const tickets = useTicketStore((s) => s.tickets);
+  const loadTickets = useTicketStore((s) => s.load);
   const addNotification = useNotificationStore((s) => s.add);
 
   useEffect(() => {
     void load();
-    void syncFromBackend();
-  }, [load, syncFromBackend]);
+  }, [load]);
+
+  useEffect(() => {
+    if (authStatus === "authenticated") void loadTickets(1);
+  }, [authStatus, loadTickets]);
+
+  // 未登录时离开页面去登录：保留文字表单，回来后仍能继续提交
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("fixitai-repair-draft");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<FormState>;
+      setForm((f) => ({ ...f, ...saved }));
+      sessionStorage.removeItem("fixitai-repair-draft");
+    } catch {
+      /* 忽略损坏草稿 */
+    }
+  }, []);
 
   const submittedTicket = useMemo(
     () =>
@@ -200,18 +231,68 @@ export default function RepairAssistant() {
     }
   }
 
-  /** 一键提交报修（模块②）：优先后端工单入库；后端不可用时降级为复制报修说明 */
+  async function handlePhoto(file: File | null | undefined) {
+    if (!file) return;
+    const err = validatePhoto(file);
+    if (err) {
+      notify(err, "error");
+      return;
+    }
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const compressed = await compressImage(file);
+      setPhotoPreview(await fileToDataUrl(compressed));
+      try {
+        const uploaded = await uploadDiagnosisPhoto(compressed);
+        setPhotoId(uploaded.id);
+        notify("照片已上传，保存报修事项后会一并关联", "success");
+      } catch {
+        // 上传失败不能显示“已上传”：保留预览，但明确标记未保存
+        setPhotoId(null);
+        setPhotoError("照片未上传成功，保存时不会包含这张照片；可重试或先保存文字说明");
+        notify("照片未上传成功", "error");
+      }
+    } catch {
+      setPhotoPreview(null);
+      setPhotoId(null);
+      notify("图片处理失败，请换一张试试", "error");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function removePhoto() {
+    setPhotoPreview(null);
+    setPhotoId(null);
+    setPhotoError(null);
+  }
+
+  function keepFormForLogin() {
+    try {
+      sessionStorage.setItem("fixitai-repair-draft", JSON.stringify(form));
+    } catch {
+      /* 隐私模式不可写时仅保留当前页面状态 */
+    }
+  }
+
+  /** 保存报修事项：只有服务端确认成功才显示“已保存”；失败不创建本地工单 */
   async function submitTicket() {
     const content = editing ?? generated;
     if (!content) return;
     if (!form.category || !form.symptom) {
+      setSubmitError("请先选择设备类型和故障现象");
       notify("请先选择设备类型和故障现象", "error");
       return;
     }
+    if (submitting) return;
     const checks = [...form.checks];
     if (form.customCheck.trim()) checks.push(form.customCheck.trim());
 
-    const backendOk = await useTicketStore.getState().submit({
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await useTicketStore.getState().submit({
+      client_ref: clientRef.current,
       category: form.category,
       symptom: form.symptom,
       description: form.description.trim() || null,
@@ -222,32 +303,36 @@ export default function RepairAssistant() {
       content,
       device_id: form.deviceId,
       diagnosis_ref: diagnosis?.id ?? null,
+      photo_ids: photoId != null ? [photoId] : [],
     });
+    setSubmitting(false);
 
-    if (backendOk) {
-      const id = useTicketStore.getState().tickets[0]?.id ?? null;
-      setSubmittedTicketId(id);
+    if (result.ok) {
+      setSubmittedTicketId(result.ticket.id);
+      setSubmitError(null);
+      // 同一内容再次保存视为新事项：换一个幂等标识
+      clientRef.current = `ticket-${
+        typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now()
+      }`;
       addNotification({
         type: "ticket",
-        title: "报修工单已提交",
-        body: `${form.symptom} · 工单已进入「待受理」状态，进度可在维修档案查看。`,
+        title: "报修事项已保存",
+        body: `${form.symptom} · 待联系。仅记录在你的账号中，不会自动通知维修人员。`,
       });
       notify(
         elder
-          ? "报修已提交好啦！进度可以到「维修档案」里查看"
-          : "报修工单已提交，可在维修档案查看状态进度",
+          ? "报修事项已保存好啦，可以点开查看详情"
+          : "报修事项已保存，可打开详情记录联系进度",
         "success"
       );
-    } else {
-      // 降级：未登录 / 离线 → 保留原有复制说明行为
-      setSubmittedTicketId(null);
-      try {
-        await navigator.clipboard.writeText(content);
-        notify("当前为离线演示模式：报修说明已复制，可手动联系售后", "info");
-      } catch {
-        notify("当前为离线演示模式，请手动复制报修说明", "info");
-      }
+      return;
     }
+
+    if (result.kind === "unauthenticated" || result.kind === "session_expired") {
+      keepFormForLogin();
+    }
+    setSubmitError(result.message);
+    notify(result.message, "error");
   }
 
   const step1Valid = form.category !== "" && form.symptom !== "";
@@ -359,9 +444,61 @@ export default function RepairAssistant() {
         </div>
       </fieldset>
 
-      <div className="rounded-xl border border-dashed border-stone-300 p-4 text-center">
-        <p className="text-sm text-stone-500">上传照片（可选）</p>
-        <p className="mt-1 text-xs text-stone-400">图片上传为演示状态，暂未接入后端</p>
+      <div className="rounded-xl border border-stone-200 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="repair-photo" className="text-sm font-medium text-stone-700">
+            故障照片（可选）
+          </label>
+          {photoPreview && (
+            <button
+              type="button"
+              onClick={removePhoto}
+              aria-label="移除照片"
+              className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
+            >
+              <X className="h-3.5 w-3.5" /> 移除
+            </button>
+          )}
+        </div>
+        <input
+          id="repair-photo"
+          ref={photoInputRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="sr-only"
+          onChange={(e) => void handlePhoto(e.target.files?.[0])}
+        />
+        {!photoPreview ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={photoBusy}
+          >
+            {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            {photoBusy ? "正在上传…" : "拍照或选择图片"}
+          </Button>
+        ) : (
+          <div className="mt-2 space-y-2">
+            <img
+              src={photoPreview}
+              alt="报修照片预览"
+              className="max-h-40 rounded-lg border border-stone-200 object-contain"
+            />
+            <p className={photoId != null ? "text-xs text-risk-low" : "text-xs text-amber-700"}>
+              {photoId != null
+                ? "照片已上传，保存报修事项后会关联到该事项"
+                : photoBusy
+                  ? "正在上传照片…"
+                  : "照片仅本地预览，尚未保存"}
+            </p>
+            {photoError && <p className="text-xs text-risk-high">{photoError}</p>}
+          </div>
+        )}
+        <p className="mt-2 text-xs text-stone-400">
+          照片保存在服务端数据库，重新部署后仍可查看；仅当前账号可读取。
+        </p>
       </div>
     </>
   );
@@ -494,31 +631,75 @@ export default function RepairAssistant() {
                 </ul>
               </div>
 
-              {/* 已提交工单的状态跟踪条（模块②） */}
               {submittedTicket && (
                 <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
-                  <p className="mb-2 flex items-center justify-between text-sm font-semibold text-stone-800">
-                    工单状态跟踪
-                    <span className="text-xs font-normal text-stone-400">
-                      #{submittedTicket.id}
-                    </span>
+                  <p className="text-sm font-semibold text-stone-800">
+                    报修事项已保存
                   </p>
-                  <TicketTracker status={submittedTicket.status} compact />
+                  <p className="mt-1 text-xs text-stone-600">
+                    编号 #{submittedTicket.id} · 当前进度：
+                    {" "}
+                    {submittedTicket.progress_status === "pending_contact"
+                      ? "待联系"
+                      : submittedTicket.progress_status === "contacted"
+                        ? "已联系"
+                        : submittedTicket.progress_status === "scheduled"
+                          ? "已预约"
+                          : submittedTicket.progress_status === "completed"
+                            ? "已完成"
+                            : submittedTicket.progress_status === "canceled"
+                              ? "已取消"
+                              : "旧状态"}
+                    。仅记录在你的账号中，不会自动通知维修人员。
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link to={`/tickets/${submittedTicket.id}`}>
+                      <Button size="sm">打开事项详情</Button>
+                    </Link>
+                    <Link to="/records">
+                      <Button variant="secondary" size="sm">去维修档案</Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {submitError && (
+                <div role="alert" className="rounded-xl border border-risk-high-border bg-risk-high-bg p-3 text-sm text-risk-high-deep">
+                  <p>{submitError}</p>
+                  {authStatus !== "authenticated" ? (
+                    <Link to="/login" className="mt-2 inline-block font-semibold underline">
+                      去登录（表单内容已暂存在本机，登录后返回本页继续提交）
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => void submitTicket()}
+                      disabled={submitting}
+                    >
+                      {submitting ? "重试中…" : "重试提交"}
+                    </Button>
+                  )}
                 </div>
               )}
 
               <div className="flex flex-wrap gap-2">
-                <Button onClick={copy}>
-                  <ClipboardCopy className="h-4 w-4" /> 复制报修内容
+                <Button variant="secondary" onClick={copy}>
+                  <ClipboardCopy className="h-4 w-4" /> 复制报修说明（自行发给售后）
                 </Button>
-                <Button onClick={submitTicket}>
-                  <Send className="h-4 w-4" /> {elder ? "一键提交报修" : "一键提交报修"}
+                <Button onClick={() => void submitTicket()} disabled={submitting || photoBusy}>
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {submitting ? "保存中…" : elder ? "保存报修事项" : "保存报修事项"}
                 </Button>
               </div>
               <p className="text-xs text-stone-400">
-                提交后工单将进入「待受理」状态，进度可在
-                <a href="#/records" className="text-brand-700 hover:underline">维修档案</a>
-                跟踪；离线或未登录时自动降级为复制报修说明。
+                这里只保存你个人的报修跟踪，不会自动通知维修人员。你可复制说明自行联系售后，
+                并在详情里记录联系对象、联系时间、预约时间和处理备注。
               </p>
             </div>
           )}

@@ -411,25 +411,43 @@ export async function uploadDiagnosisPhoto(file: File): Promise<PhotoUploadResul
     } catch {
       /* 保留默认错误信息 */
     }
-    throw new Error(detail);
+    throw new ApiError(detail, "photo_upload_failed", resp.status);
   }
   return (await resp.json()) as PhotoUploadResult;
 }
 
-/* ---------- 模块②：报修工单闭环 ---------- */
-/* 工单接口与云端维修记录分开挂载，避免覆盖 /api/repairs 记录接口 */
+/** 本人照片读取地址（同源 Cookie 鉴权，无需额外令牌） */
+export const photoUrl = (id: number) => `${BASE}/diagnose/photo/${id}`;
 
-export type TicketStatus = "pending" | "accepted" | "in_progress" | "completed";
+/* ---------- 模块②：个人报修跟踪 ---------- */
 
-/** 状态机顺序：待受理 → 已受理 → 维修中 → 已完成 */
-export const TICKET_STATUS_ORDER: TicketStatus[] = [
-  "pending",
-  "accepted",
-  "in_progress",
+export type ProgressStatus =
+  | "pending_contact"
+  | "contacted"
+  | "scheduled"
+  | "completed"
+  | "canceled";
+
+export const PROGRESS_STATUS_LABELS: Record<ProgressStatus, string> = {
+  pending_contact: "待联系",
+  contacted: "已联系",
+  scheduled: "已预约",
+  completed: "已完成",
+  canceled: "已取消",
+};
+
+export const PROGRESS_STATUS_ORDER: ProgressStatus[] = [
+  "pending_contact",
+  "contacted",
+  "scheduled",
   "completed",
+  "canceled",
 ];
 
-export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+/** 旧版工单状态：仅用于原样展示历史，不代表真实受理 */
+export type LegacyTicketStatus = "pending" | "accepted" | "in_progress" | "completed";
+
+export const LEGACY_STATUS_LABELS: Record<LegacyTicketStatus, string> = {
   pending: "待受理",
   accepted: "已受理",
   in_progress: "维修中",
@@ -437,12 +455,15 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
 };
 
 export interface TicketStatusPoint {
-  status: TicketStatus;
+  status: string;
   at: string;
+  by?: string | null;
+  source?: string | null;
 }
 
 export interface RepairTicket {
   id: number;
+  client_ref: string | null;
   device_id: number | null;
   diagnosis_ref: string | null;
   category: string;
@@ -453,13 +474,24 @@ export interface RepairTicket {
   found_at: string | null;
   checks: string[];
   content: string;
-  status: TicketStatus;
+  /** 旧状态：原样保留 */
+  status: LegacyTicketStatus;
   status_history: TicketStatusPoint[];
+  progress_status: ProgressStatus | null;
+  progress_history: TicketStatusPoint[];
+  progress_updated_by: string | null;
+  contact_target: string | null;
+  contacted_at: string | null;
+  appointment_at: string | null;
+  contact_note: string | null;
+  repair_record_id: number | null;
+  photo_ids: number[];
   created_at: string;
   updated_at: string;
 }
 
 export interface TicketInput {
+  client_ref: string;
   category: string;
   symptom: string;
   description?: string | null;
@@ -470,20 +502,123 @@ export interface TicketInput {
   content: string;
   device_id?: number | null;
   diagnosis_ref?: string | null;
+  photo_ids?: number[];
+}
+
+export interface TicketPage {
+  items: RepairTicket[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 export const createTicket = (p: TicketInput) =>
-  request<RepairTicket>("/repair-tickets", {
-    method: "POST",
+  request<RepairTicket>(
+    "/repair-tickets",
+    { method: "POST", body: JSON.stringify(p) },
+    25_000
+  );
+
+export const listTickets = (page = 1, pageSize = 10) =>
+  request<TicketPage>(`/repair-tickets?page=${page}&page_size=${pageSize}`);
+
+export const getTicket = (id: number) =>
+  request<RepairTicket>(`/repair-tickets/${id}`);
+
+export const updateTicketProgress = (
+  id: number,
+  p: {
+    progress_status: ProgressStatus;
+    contact_target?: string | null;
+    contacted_at?: string | null;
+    appointment_at?: string | null;
+    contact_note?: string | null;
+  }
+) =>
+  request<RepairTicket>(`/repair-tickets/${id}/progress`, {
+    method: "PATCH",
     body: JSON.stringify(p),
   });
 
-export const listTickets = () => request<RepairTicket[]>("/repair-tickets");
-
-export const updateTicketStatus = (id: number, status: TicketStatus) =>
-  request<RepairTicket>(`/repair-tickets/${id}/status`, {
+export const linkTicketRepairRecord = (id: number, repairRecordId: number | null) =>
+  request<RepairTicket>(`/repair-tickets/${id}/repair-record`, {
     method: "POST",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ repair_record_id: repairRecordId }),
+  });
+
+/* ---------- 个人数据管理 ---------- */
+
+export type DataItemType = "device" | "diagnosis" | "repair" | "ticket" | "photo";
+
+export const DATA_TYPE_LABELS: Record<DataItemType, string> = {
+  device: "设备",
+  diagnosis: "诊断报告",
+  repair: "维修记录",
+  ticket: "报修事项",
+  photo: "照片",
+};
+
+export interface DataSummary {
+  devices: number;
+  diagnoses: number;
+  repairs: number;
+  tickets: number;
+  photos: number;
+}
+
+export interface DataItem {
+  type: DataItemType;
+  id: number;
+  title: string;
+  subtitle: string | null;
+  created_at: string | null;
+  meta: Record<string, unknown>;
+}
+
+export interface DataPage {
+  items: DataItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export const getDataSummary = () => request<DataSummary>("/data/summary");
+
+export const listDataItems = (type: DataItemType, page = 1, pageSize = 10) =>
+  request<DataPage>(
+    `/data/items?type=${type}&page=${page}&page_size=${pageSize}`
+  );
+
+export async function exportMyData(): Promise<void> {
+  const resp = await fetch(`${BASE}/data/export`, { credentials: "include" });
+  if (!resp.ok) {
+    let message = "导出失败，请稍后重试";
+    try {
+      const body = (await resp.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") message = body.detail;
+    } catch {
+      /* 保留默认信息 */
+    }
+    throw new ApiError(message, "export_failed", resp.status);
+  }
+  const blob = await resp.blob();
+  const disposition = resp.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="?([^";]+)"?/);
+  const filename = match?.[1] || "fixitai-data.json";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export const deleteDataItems = (
+  items: Array<{ type: DataItemType; id: number }>
+) =>
+  request<{ deleted: number; summary: DataSummary }>("/data/items", {
+    method: "DELETE",
+    body: JSON.stringify({ items }),
   });
 
 /* ---------- 云端诊断报告 / 维修记录：导入与维修记录保存 ---------- */

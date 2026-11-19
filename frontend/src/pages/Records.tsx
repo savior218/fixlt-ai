@@ -1,18 +1,19 @@
 ﻿﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, FastForward, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import TicketTracker from "../components/TicketTracker";
 import SourceBadge from "../components/SourceBadge";
-import { TICKET_STATUS_LABELS } from "../services/api";
+import {
+  LEGACY_STATUS_LABELS,
+  PROGRESS_STATUS_LABELS,
+} from "../services/api";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
-import { useNotificationStore } from "../stores/notifications";
 import {
   localRepairCount,
   recordsForOwner,
@@ -362,82 +363,106 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 报修工单跟踪区（模块②）：状态跟踪条 + 演示推进 + 状态变化通知 */
+/** 报修事项跟踪：分页读取当前账号数据；旧版本本地草稿单独标注 */
 function TicketsSection() {
   const { notify } = useToast();
   const tickets = useTicketStore((s) => s.tickets);
-  const syncFromBackend = useTicketStore((s) => s.syncFromBackend);
-  const advance = useTicketStore((s) => s.advance);
-  const addNotification = useNotificationStore((s) => s.add);
+  const total = useTicketStore((s) => s.total);
+  const page = useTicketStore((s) => s.page);
+  const pageSize = useTicketStore((s) => s.pageSize);
+  const loading = useTicketStore((s) => s.loading);
+  const legacyDrafts = useTicketStore((s) => s.legacyDrafts);
+  const load = useTicketStore((s) => s.load);
 
   useEffect(() => {
-    void syncFromBackend();
-  }, [syncFromBackend]);
+    void load(1);
+  }, [load]);
 
-  async function handleAdvance(id: number) {
-    const ticket = tickets.find((t) => t.id === id);
-    if (!ticket) return;
-    const ok = await advance(id);
-    if (ok) {
-      const next = useTicketStore
-        .getState()
-        .tickets.find((t) => t.id === id);
-      addNotification({
-        type: "ticket",
-        title: "工单状态更新",
-        body: `「${ticket.symptom}」工单已流转到「${
-          next ? TICKET_STATUS_LABELS[next.status] : "下一阶段"
-        }」。`,
-      });
-      notify("工单状态已更新", "success");
-    } else {
-      notify("工单状态推进失败，请稍后重试", "error");
-    }
+  async function changePage(next: number) {
+    const ok = await load(next);
+    if (!ok) notify("报修事项加载失败，请稍后重试", "error");
   }
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
   return (
-    <SectionCard title={`报修工单（${tickets.length}）`}>
-      {tickets.length === 0 ? (
+    <SectionCard title={`报修事项（${total}）`}>
+      {legacyDrafts.length > 0 && (
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          另有 {legacyDrafts.length} 条旧版本本地草稿（未提交到服务端，仅保留在本机，不会被当作已保存事项）：
+          <ul className="mt-1 space-y-0.5">
+            {legacyDrafts.slice(0, 3).map((t) => (
+              <li key={t.id}>{t.symptom} · {t.created_at}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {tickets.length === 0 && !loading ? (
         <p className="text-sm text-stone-500">
-          暂无报修工单。在
+          当前账号暂无报修事项。在
           <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
             智能报修助手
           </Link>
-          生成报修说明后点击「一键提交报修」，工单进度会在这里展示。
+          点击「保存报修事项」后，会在这里按你的联系进度展示。
         </p>
       ) : (
-        <ul className="space-y-3">
-          {tickets.map((t) => (
-            <li key={t.id} className="rounded-xl border border-stone-200 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-stone-900">
-                  {t.symptom}
-                  <span className="ml-2 text-xs font-normal text-stone-400">
-                    #{t.id} · {relativeTime(t.created_at)}
+        <>
+          <ul className="space-y-3">
+            {tickets.map((t) => (
+              <li key={t.id} className="rounded-xl border border-stone-200 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Link to={`/tickets/${t.id}`} className="text-sm font-semibold text-stone-900 hover:underline">
+                    {t.symptom}
+                    <span className="ml-2 text-xs font-normal text-stone-400">
+                      #{t.id} · {relativeTime(t.created_at)}
+                    </span>
+                  </Link>
+                  <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+                    {t.progress_status
+                      ? `${PROGRESS_STATUS_LABELS[t.progress_status]}（由 ${t.progress_updated_by ?? "本人"} 更新）`
+                      : `旧状态：${LEGACY_STATUS_LABELS[t.status]}（未经本轮确认）`}
                   </span>
-                </p>
-                {t.status !== "completed" && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleAdvance(t.id)}
-                    aria-label="演示推进工单状态"
-                  >
-                    <FastForward className="h-3.5 w-3.5" /> 推进状态（演示）
-                  </Button>
+                </div>
+                {t.brand || t.model ? (
+                  <p className="mt-1 text-xs text-stone-500">
+                    {[t.brand, t.model].filter(Boolean).join(" ")}
+                  </p>
+                ) : null}
+                {t.photo_ids.length > 0 && (
+                  <p className="mt-1 text-xs text-stone-500">关联照片 {t.photo_ids.length} 张</p>
                 )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Link to={`/tickets/${t.id}`} className="text-xs text-brand-700 hover:underline">
+                    查看详情并更新进度
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
+              <span>第 {page} / {totalPages} 页 · 共 {total} 条</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page <= 1 || loading}
+                  onClick={() => void changePage(page - 1)}
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => void changePage(page + 1)}
+                >
+                  下一页
+                </Button>
               </div>
-              {t.brand || t.model ? (
-                <p className="mt-1 text-xs text-stone-500">
-                  {[t.brand, t.model].filter(Boolean).join(" ")}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <TicketTracker status={t.status} />
-              </div>
-            </li>
-          ))}
-        </ul>
+            </div>
+          )}
+        </>
       )}
     </SectionCard>
   );

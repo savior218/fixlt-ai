@@ -14,13 +14,29 @@ VERIFICATION_STATUSES = (
     "unconfirmed",
 )
 
-# 报修工单状态机：待受理 → 已受理 → 维修中 → 已完成（只允许正向流转）
+# 旧工单状态机（仅用于历史数据展示，不再产生“已受理/维修中”等未经确认的事实）
 TICKET_STATUSES = ("pending", "accepted", "in_progress", "completed")
 TICKET_STATUS_LABELS = {
     "pending": "待受理",
     "accepted": "已受理",
     "in_progress": "维修中",
     "completed": "已完成",
+}
+
+# 用户自报进度：只代表用户自己的联系/预约情况，不代表维修方确认
+PROGRESS_STATUSES = (
+    "pending_contact",
+    "contacted",
+    "scheduled",
+    "completed",
+    "canceled",
+)
+PROGRESS_STATUS_LABELS = {
+    "pending_contact": "待联系",
+    "contacted": "已联系",
+    "scheduled": "已预约",
+    "completed": "已完成",
+    "canceled": "已取消",
 }
 
 
@@ -67,6 +83,8 @@ class RepairTicket(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    # 客户端幂等标识：同一用户下唯一，超时重试返回同一条，不产生重复工单
+    client_ref: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     device_id: Mapped[int | None] = mapped_column(
         ForeignKey("devices.id"), nullable=True
     )
@@ -80,8 +98,21 @@ class RepairTicket(Base):
     found_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
     checks: Mapped[str] = mapped_column(Text, default="[]")  # JSON 数组
     content: Mapped[str] = mapped_column(Text)  # 报修说明全文
+    # 旧状态机字段：保留旧数据原值，不由新流程改写
     status: Mapped[str] = mapped_column(String(32), default="pending")
     status_history: Mapped[str] = mapped_column(Text, default="[]")
+    # 用户自报进度（与旧状态分开，避免把用户操作当成维修方受理）
+    progress_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    progress_history: Mapped[str] = mapped_column(Text, default="[]")
+    progress_updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    contact_target: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    contacted_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    appointment_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    contact_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 关联已有维修结果：只关联，不复制，避免与 /api/repairs 记录重复
+    repair_record_id: Mapped[int | None] = mapped_column(
+        ForeignKey("repair_records.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )

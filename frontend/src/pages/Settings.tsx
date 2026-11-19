@@ -521,7 +521,7 @@ export default function Settings() {
           <Button variant="secondary" onClick={() => setPrivacyOpen(true)}>
             隐私说明
           </Button>
-          <Button variant="secondary" onClick={() => notify("个人数据管理为演示状态", "info")}>
+          <Button variant="secondary" onClick={() => navigate("/data")}>
             个人数据管理
           </Button>
           <Button variant="secondary" onClick={() => setClearOpen(true)}>

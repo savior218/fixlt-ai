@@ -10,6 +10,7 @@ import TopBar from "../components/TopBar";
 import { ToastProvider } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
+import { useTicketStore } from "../stores/ticketStore";
 import { initSpeech, stopSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
 
@@ -28,6 +29,11 @@ export default function AppLayout() {
   useEffect(() => {
     initSpeech();
   }, []);
+
+  // 账号切换 / 退出登录时清空上一账号的报修事项缓存（旧本地草稿单独保留）
+  useEffect(() => {
+    useTicketStore.getState().clearAccountData();
+  }, [epoch]);
 
   // 页面切换、退出登录、账号切换时停止朗读，避免旧内容跟着新页面
   useEffect(() => {
