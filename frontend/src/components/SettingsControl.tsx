@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import Toggle from "./Toggle";
@@ -19,9 +19,9 @@ export function SettingsRow({
   return (
     <div className="flex flex-col items-start gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-slate-800">{label}</span>
+        <span className="block text-sm font-medium text-stone-800">{label}</span>
         {description && (
-          <span className="block text-xs text-slate-500">{description}</span>
+          <span className="block text-xs text-stone-500">{description}</span>
         )}
       </span>
       {/* 移动端控件占满整行，桌面端靠右 */}
@@ -67,7 +67,7 @@ export function RadioGroup({
   onChange: (v: string) => void;
 }) {
   return (
-    <div role="radiogroup" className="divide-y divide-slate-100">
+    <div role="radiogroup" className="divide-y divide-stone-100">
       {options.map((o) => (
         <label key={o.value} className="flex cursor-pointer items-start gap-3 py-3">
           <input
@@ -79,9 +79,9 @@ export function RadioGroup({
             className="mt-0.5 h-4.5 w-4.5 shrink-0 accent-brand-600"
           />
           <span>
-            <span className="block text-sm font-medium text-slate-800">{o.label}</span>
+            <span className="block text-sm font-medium text-stone-800">{o.label}</span>
             {o.description && (
-              <span className="block text-xs text-slate-500">{o.description}</span>
+              <span className="block text-xs text-stone-500">{o.description}</span>
             )}
           </span>
         </label>
@@ -106,7 +106,7 @@ export function SegmentedControl<T extends string>({
   return (
     <div
       role="tablist"
-      className="inline-flex max-w-full flex-wrap rounded-xl bg-slate-100 p-1"
+      className="inline-flex max-w-full flex-wrap rounded-xl bg-stone-100 p-1"
     >
       {options.map((o) => {
         const active = o.value === value;
@@ -119,7 +119,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             className={`rounded-lg font-medium transition-colors ${
               size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"
-            } ${active ? "bg-white text-brand-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            } ${active ? "bg-white text-brand-700 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
           >
             {o.label}
           </button>
@@ -156,13 +156,13 @@ export function SliderControl({
   return (
     <div className="py-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-800">{label}</span>
+        <span className="text-sm font-medium text-stone-800">{label}</span>
         <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
           {formatValue ? formatValue(value) : value}
         </span>
       </div>
       <div className="flex items-center gap-3">
-        {minLabel && <span className="text-xs text-slate-400">{minLabel}</span>}
+        {minLabel && <span className="text-xs text-stone-400">{minLabel}</span>}
         <input
           type="range"
           min={min}
@@ -170,10 +170,10 @@ export function SliderControl({
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-slate-200 accent-brand-600"
+          className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-stone-200 accent-brand-600"
           aria-label={label}
         />
-        {maxLabel && <span className="text-xs text-slate-400">{maxLabel}</span>}
+        {maxLabel && <span className="text-xs text-stone-400">{maxLabel}</span>}
       </div>
     </div>
   );
@@ -205,7 +205,7 @@ export function ZoomControl({
         aria-label="减小字号"
         disabled={currentIndex <= 0}
         onClick={() => onChange(scales[Math.max(0, currentIndex - 1)])}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Minus className="h-4 w-4" />
       </button>
@@ -220,7 +220,7 @@ export function ZoomControl({
             className={`rounded-lg border px-3 py-1.5 font-medium transition-colors ${
               value === s
                 ? "border-brand-600 bg-brand-50 text-brand-700"
-                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50"
             } ${FONT_SCALE_META[s].sample}`}
           >
             A
@@ -233,12 +233,12 @@ export function ZoomControl({
         aria-label="增大字号"
         disabled={currentIndex >= scales.length - 1}
         onClick={() => onChange(scales[Math.min(scales.length - 1, currentIndex + 1)])}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Plus className="h-4 w-4" />
       </button>
 
-      <span className="w-10 text-center text-sm text-slate-500">
+      <span className="w-10 text-center text-sm text-stone-500">
         {FONT_SCALE_META[value].label}
       </span>
     </div>

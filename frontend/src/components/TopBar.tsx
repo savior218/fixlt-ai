@@ -1,4 +1,4 @@
-import { Bell, Menu, User } from "lucide-react";
+﻿import { Bell, Menu, User } from "lucide-react";
 
 import { usePrefs } from "../stores/prefs";
 
@@ -11,20 +11,20 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const { mode, setMode } = usePrefs();
 
   return (
-    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
+    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-white/95 px-4 backdrop-blur sm:px-6">
       {/* 左：移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
       <div className="flex min-w-0 items-center gap-1">
         <button
           type="button"
           onClick={onMenuClick}
           aria-label="打开导航菜单"
-          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+          className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">欢迎使用修必达</p>
-          <p className="hidden truncate text-xs text-slate-500 sm:block">
+          <p className="truncate text-sm font-medium text-stone-900">欢迎使用修必达</p>
+          <p className="hidden truncate text-xs text-stone-500 sm:block">
             家电故障分诊与维修决策助手
           </p>
         </div>
@@ -42,7 +42,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
             "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
             mode === "elder"
               ? "border-amber-500 bg-amber-100 text-amber-800"
-              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100",
+              : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >
           <span className="sm:hidden">{mode === "elder" ? "👵 长辈" : "长辈模式"}</span>
@@ -52,13 +52,13 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         </button>
 
         {/* 演示状态标识（窄屏隐藏，减少拥挤） */}
-        <span className="hidden text-xs text-slate-400 md:inline">演示</span>
+        <span className="hidden text-xs text-stone-400 md:inline">演示</span>
 
         {/* 通知按钮 - 未接入后端，标注演示状态 */}
         <button
           type="button"
           aria-label="通知（演示状态）"
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700"
         >
           <Bell className="h-5 w-5" />
         </button>

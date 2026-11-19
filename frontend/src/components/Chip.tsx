@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+﻿import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   selected?: boolean;
@@ -15,7 +15,7 @@ export default function Chip({ selected, children, className, ...rest }: ChipPro
         "chip inline-flex items-center rounded-full border px-4 py-2 text-sm transition-colors",
         selected
           ? "border-brand-600 bg-brand-50 font-medium text-brand-800"
-          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100",
+          : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100",
         className ?? "",
       ].join(" ")}
       {...rest}

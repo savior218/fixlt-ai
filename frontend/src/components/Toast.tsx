@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+﻿import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -17,7 +17,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const TYPE_STYLES: Record<ToastType, string> = {
   success: "bg-green-600 text-white",
   error: "bg-red-600 text-white",
-  info: "bg-slate-800 text-white",
+  info: "bg-stone-800 text-white",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
+        className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex -transtone-x-1/2 flex-col items-center gap-2"
       >
         {items.map((t) => (
           <div

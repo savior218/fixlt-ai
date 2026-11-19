@@ -1,12 +1,12 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+﻿import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-brand-700 text-white hover:bg-brand-800 border-transparent",
+  primary: "bg-brand-600 text-white hover:bg-brand-700 border-transparent",
   secondary:
-    "bg-white text-slate-700 border-slate-300 hover:bg-slate-100",
+    "bg-stone-200 text-stone-700 border-transparent hover:bg-stone-300",
   danger: "bg-red-600 text-white hover:bg-red-700 border-transparent",
   ghost: "bg-transparent text-brand-700 border-transparent hover:bg-brand-50",
 };
@@ -23,8 +23,8 @@ export function buttonClass(
   size: ButtonSize = "md"
 ): string {
   return [
-    "inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium",
-    "min-h-9 transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-xl border font-medium",
+    "min-h-9 transition-all disabled:cursor-not-allowed disabled:opacity-50",
     VARIANT_CLASSES[variant],
     SIZE_CLASSES[size],
   ].join(" ");

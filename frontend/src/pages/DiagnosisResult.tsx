@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ChevronDown, FileText, RotateCcw, Save } from "lucide-react";
 
@@ -86,10 +86,10 @@ export default function DiagnosisResult() {
       <div className="card-base flex items-center gap-3 p-5">
         <CheckCircle2 aria-hidden className="h-8 w-8 shrink-0 text-risk-low" />
         <div>
-          <h1 className={elder ? "text-xl font-bold text-slate-900" : "text-lg font-bold text-slate-900"}>
+          <h1 className={elder ? "text-xl font-bold text-stone-900" : "text-lg font-bold text-stone-900"}>
             {elder ? "诊断完成！这就告诉您怎么办" : "诊断完成！为您生成详细的维修建议"}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-stone-500">
             {diagnosis.deviceName ?? "未关联设备"} · {diagnosis.symptom || "自定义描述"} ·{" "}
             {formatDateTime(diagnosis.createdAt)}
           </p>
@@ -98,7 +98,7 @@ export default function DiagnosisResult() {
 
       {/* 核心结论 */}
       <SectionCard title="诊断结论">
-        <p className={`text-slate-800 ${elder ? "text-lg leading-loose" : "text-sm leading-relaxed"}`}>
+        <p className={`text-stone-800 ${elder ? "text-lg leading-loose" : "text-sm leading-relaxed"}`}>
           {diagnosis.conclusion}
         </p>
       </SectionCard>
@@ -126,10 +126,10 @@ export default function DiagnosisResult() {
                   {i + 1}
                 </span>
                 <div>
-                  <p className={`font-semibold text-slate-800 ${elder ? "text-base" : "text-sm"}`}>
+                  <p className={`font-semibold text-stone-800 ${elder ? "text-base" : "text-sm"}`}>
                     {c.title}
                   </p>
-                  <p className={`mt-0.5 text-slate-500 ${elder ? "text-base leading-relaxed" : "text-sm"}`}>
+                  <p className={`mt-0.5 text-stone-500 ${elder ? "text-base leading-relaxed" : "text-sm"}`}>
                     {c.description}
                   </p>
                 </div>
@@ -153,7 +153,7 @@ export default function DiagnosisResult() {
             {diagnosis.evidence.map((e) => (
               <li
                 key={e}
-                className={`flex items-start gap-2 text-slate-600 ${elder ? "text-base leading-relaxed" : "text-sm"}`}
+                className={`flex items-start gap-2 text-stone-600 ${elder ? "text-base leading-relaxed" : "text-sm"}`}
               >
                 <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
                 {e}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Volume2 } from "lucide-react";
 
 import Button from "../components/Button";
@@ -63,7 +63,7 @@ export default function Settings() {
         actions={
           <span
             aria-live="polite"
-            className={`text-xs ${saveState === "saved" ? "text-risk-low-deep" : "text-slate-400"}`}
+            className={`text-xs ${saveState === "saved" ? "text-risk-low-deep" : "text-stone-400"}`}
           >
             {saveState === "saving" ? "保存中…" : saveState === "saved" ? "✓ 设置已自动保存" : ""}
           </span>
@@ -78,14 +78,14 @@ export default function Settings() {
               {DEMO_USER.nickname.slice(0, 1)}
             </span>
             <div>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-stone-900">
                 {DEMO_USER.nickname}
-                <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
+                <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-normal text-stone-500">
                   演示账号
                 </span>
               </p>
-              <p className="mt-0.5 text-sm text-slate-500">{maskPhone(DEMO_USER.phone)}</p>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-sm text-stone-500">{maskPhone(DEMO_USER.phone)}</p>
+              <p className="mt-0.5 text-xs text-stone-400">
                 当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
               </p>
             </div>
@@ -111,7 +111,7 @@ export default function Settings() {
             },
           ]}
         />
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
           <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" />
           <p>
             安全说明：关怀模式只改变字体大小与表达方式，<span className="font-medium">不改变</span>
@@ -133,13 +133,13 @@ export default function Settings() {
             ]}
           />
         </SettingsRow>
-        <div className="divide-y divide-slate-100 border-y border-slate-100">
+        <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
             <div className="flex w-56 items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>
-              <span className="w-12 text-center text-sm font-medium text-slate-700">{prefs.zoom}%</span>
+              <span className="w-12 text-center text-sm font-medium text-stone-700">{prefs.zoom}%</span>
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom + 10)} aria-label="放大">
                 +
               </Button>
@@ -164,7 +164,7 @@ export default function Settings() {
 
       {/* D. 语音设置 */}
       <SectionCard title="语音设置">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
             description="将 AI 回复转为语音播报"
@@ -212,7 +212,7 @@ export default function Settings() {
             注销账号
           </Button>
         </div>
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-stone-400">
           用户体系（USER-001）接入前以演示账号运行，注销操作不会删除任何真实数据。
         </p>
         <ConfirmDialog
@@ -252,7 +252,7 @@ export default function Settings() {
             </Button>
           }
         >
-          <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <div className="space-y-3 text-sm leading-relaxed text-stone-700">
             <p>
               <strong>1. 收集的数据。</strong>
               为提供家电故障诊断服务，本产品会收集你主动填写的内容：设备信息（名称、品牌、型号、位置）、故障描述与问诊对话、维修记录，以及界面偏好设置（字体、缩放、对比度、长辈关怀模式等）。
@@ -273,7 +273,7 @@ export default function Settings() {
               <strong>5. 你的控制权。</strong>
               你可以在本页「清除本机数据」随时删除本地保存的偏好、草稿与维修记录；当前版本为演示账号运行，未接入真实用户体系，不会收集手机号等真实身份信息。
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-400">
               本说明与产品当前实际功能一致。功能更新导致数据处理方式变化时，我们将同步更新本说明。
             </p>
           </div>
@@ -284,7 +284,7 @@ export default function Settings() {
       <SectionCard title="长辈关怀模式 · AI 回复对比">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-500">标准模式</p>
+            <p className="mb-2 text-xs font-medium text-stone-500">标准模式</p>
             <AIMessageBubble
               role="ai"
               content="该故障可能是由于电路板接触不良，建议您先检查电源连接是否正常。"
@@ -292,7 +292,7 @@ export default function Settings() {
             />
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-500">长辈关怀模式</p>
+            <p className="mb-2 text-xs font-medium text-stone-500">长辈关怀模式</p>
             <AIMessageBubble
               role="ai"
               content="可能是电源插头没插好，您先检查一下插头和插座，看看有没有松动哦~"
@@ -300,12 +300,12 @@ export default function Settings() {
             />
           </div>
         </div>
-        <ul className="mt-4 grid gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600 sm:grid-cols-3">
+        <ul className="mt-4 grid gap-2 border-t border-stone-100 pt-3 text-sm text-stone-600 sm:grid-cols-3">
           <li>· 使用更通俗的语言</li>
           <li>· 提供更清晰的操作指引</li>
           <li>· 界面更简洁</li>
         </ul>
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-stone-400">
           注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
         </p>
       </SectionCard>

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
 
@@ -6,16 +6,16 @@ export default function SidebarNav() {
   const SafetyIcon = SAFETY_ITEM.icon;
 
   return (
-    <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-slate-200 bg-white">
+    <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-white">
       {/* Logo 区：高度与 TopBar 对齐 */}
       <div
-        className="flex items-center gap-2 border-b border-slate-200 px-5"
+        className="flex items-center gap-2 border-b border-stone-200 px-5"
         style={{ height: "var(--topbar-height)" }}
       >
         <span className="text-xl" aria-hidden>
           🔧
         </span>
-        <span className="text-base font-bold text-slate-900">修必达</span>
+        <span className="text-base font-bold text-stone-900">修必达</span>
       </div>
 
       {/* 导航菜单（与 MobileNavDrawer 共用 NAV_ITEMS） */}
@@ -33,7 +33,7 @@ export default function SidebarNav() {
                       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-brand-100 text-brand-800"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
                     ].join(" ")
                   }
                 >
@@ -47,7 +47,7 @@ export default function SidebarNav() {
       </nav>
 
       {/* 底部安全守护入口 */}
-      <div className="border-t border-slate-200 px-3 py-3">
+      <div className="border-t border-stone-200 px-3 py-3">
         <NavLink
           to={SAFETY_ITEM.to}
           className={({ isActive }) =>
@@ -55,7 +55,7 @@ export default function SidebarNav() {
               "app-nav-link flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               isActive
                 ? "bg-brand-100 text-brand-800"
-                : "text-slate-600 hover:bg-slate-100",
+                : "text-stone-600 hover:bg-stone-100",
             ].join(" ")
           }
         >

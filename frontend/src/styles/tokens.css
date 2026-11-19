@@ -10,17 +10,18 @@
    ============================================================ */
 
 @theme static {
-  /* ---- 品牌蓝（--color-primary: #2563EB 对应 brand-600）---- */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* ---- 品牌陶土（Claude 暖纸风：600=陶土主色 #C96442，400=珊瑚亮色 #D97757，
+     700=深陶土悬停色；名称保持 brand-*，全站工具类无需改动）---- */
+  --color-brand-50: #fbf2ec;
+  --color-brand-100: #f6e3d9;
+  --color-brand-200: #eec4b0;
+  --color-brand-300: #e39b7f;
+  --color-brand-400: #d97757;
+  --color-brand-500: #c96442;
+  --color-brand-600: #c96442;
+  --color-brand-700: #a94f2c;
+  --color-brand-800: #8c3f23;
+  --color-brand-900: #6f321c;
 
   /* ---- 成功 / 辅助色（青绿）---- */
   --color-success: #16a34a;
@@ -52,13 +53,13 @@
   --color-tip-text: #92400e;
   --color-tip-icon: #dc6b45;
 
-  /* ---- 中性色 ---- */
-  --color-background: #e9effd;
-  --color-surface: #ffffff;
-  --color-text-primary: #172033;
-  --color-text-secondary: #64748b;
-  --color-border: #e5ecf6;
-  --color-disabled: #cbd5e1;
+  /* ---- 中性色（Claude 暖纸风：全部暖调，灰里带黄褐底，无冷蓝灰）---- */
+  --color-background: #f5f4ed;
+  --color-surface: #faf9f5;
+  --color-text-primary: #141413;
+  --color-text-secondary: #5e5d59;
+  --color-border: #e8e6dc;
+  --color-disabled: #b0aea5;
 
   /* ---- 标题字号（任务书 3.2）---- */
   --text-title: 28px;
@@ -66,6 +67,11 @@
   /* ---- 布局尺寸（任务书 3.5）---- */
   --spacing-sidebar: 240px;
   --spacing-topbar: 72px;
+
+  /* ---- 暖纸风卡片阴影（注册到 Tailwind：可用 shadow-card 工具类）---- */
+  --shadow-card:
+    0 0 0 1px rgba(20, 20, 19, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.05);
 }
 
 /* ============================================================
@@ -85,6 +91,15 @@
     "Microsoft YaHei",
     Inter,
     sans-serif;
+
+  /* 衬线标题（Claude 暖纸风：标题用宋体衬线，正文保持黑体） */
+  --font-family-heading:
+    "Noto Serif SC",
+    "Source Han Serif SC",
+    "STSong",
+    "SimSun",
+    Georgia,
+    serif;
 
   --font-size-xs: 12px;
   --font-size-sm: 14px;
@@ -112,8 +127,8 @@
   --topbar-height: 72px;
   --content-padding: 24px;
 
-  /* 阴影（轻量，避免过重阴影） */
+  /* 阴影（暖纸风：ring 描边 + 极轻投影，暖色黑） */
   --shadow-card:
-    0 1px 3px rgba(23, 32, 51, 0.06),
-    0 1px 2px rgba(23, 32, 51, 0.04);
+    0 0 0 1px rgba(20, 20, 19, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.05);
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Wrench } from "lucide-react";
 
@@ -103,8 +103,8 @@ export default function UiKit() {
             <StatusBadge key={s} status={s} />
           ))}
         </div>
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <p className="mb-2 text-xs text-slate-400">RiskBadge（旧组件，P3 前页面继续使用）：</p>
+        <div className="mt-3 border-t border-stone-100 pt-3">
+          <p className="mb-2 text-xs text-stone-400">RiskBadge（旧组件，P3 前页面继续使用）：</p>
           <div className="flex flex-wrap gap-2">
             <RiskBadge level="low" />
             <RiskBadge level="medium" />
@@ -172,13 +172,13 @@ export default function UiKit() {
           <RiskAlert level="medium" description="操作前请务必断电，避免触电。" />
           <RiskAlert level="low" description="按引导步骤操作即可，注意工具安全。" />
         </div>
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-stone-400">
           长辈模式下标题自动替换为通俗文案（等级与拦截规则不变）。
         </p>
       </SectionCard>
 
       <SectionCard title="AIMessageBubble 对话气泡（TASK-11）">
-        <div className="space-y-4 rounded-xl bg-slate-50 p-4">
+        <div className="space-y-4 rounded-xl bg-stone-50 p-4">
           <AIMessageBubble
             role="ai"
             content="您好，请问是哪台设备出了问题？可以点击下方卡片快速选择。"
@@ -249,13 +249,13 @@ export default function UiKit() {
             setStatusFilter("all");
           }}
         />
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-stone-400">
           当前筛选：{keyword || "（无关键词）"} · {category} · {statusFilter}
         </p>
       </SectionCard>
 
       <SectionCard title="SettingsControl 设置控件（TASK-15：switch / radio / segmented / slider / zoom）">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
             description="诊断结果自动朗读（switch）"
@@ -263,7 +263,7 @@ export default function UiKit() {
             onChange={setToggle}
           />
           <div className="py-3">
-            <p className="mb-1 text-sm font-medium text-slate-800">交互模式（radio）</p>
+            <p className="mb-1 text-sm font-medium text-stone-800">交互模式（radio）</p>
             <RadioGroup
               name="mode-demo"
               value={radio}
@@ -275,7 +275,7 @@ export default function UiKit() {
             />
           </div>
           <div className="py-3">
-            <p className="mb-2 text-sm font-medium text-slate-800">界面模式（segmented）</p>
+            <p className="mb-2 text-sm font-medium text-stone-800">界面模式（segmented）</p>
             <SegmentedControl
               value={segment}
               onChange={setSegment}
@@ -355,7 +355,7 @@ export default function UiKit() {
               </Chip>
             ))}
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-stone-100">
             <Toggle label="高对比度" description="开关控件示例" checked={toggle} onChange={setToggle} />
           </div>
           <div className="space-y-3">

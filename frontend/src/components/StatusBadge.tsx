@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 /** 统一状态徽章（TASK-06）：覆盖设备 / 诊断 / 维修全流程十种状态 */
 export type Status =
@@ -45,8 +45,8 @@ const STATUS_META: Record<Status, { label: string; dot: string; className: strin
   },
   pending: {
     label: "待处理",
-    dot: "bg-slate-400",
-    className: "bg-slate-100 text-slate-600 border-slate-200",
+    dot: "bg-stone-400",
+    className: "bg-stone-100 text-stone-600 border-stone-200",
   },
   failed: {
     label: "失败",

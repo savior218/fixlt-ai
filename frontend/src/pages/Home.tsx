@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, AlertTriangle } from "lucide-react";
 
 import EmptyState from "../components/EmptyState";
@@ -33,8 +33,8 @@ export default function Home() {
 
   return (
     <div className="space-y-5">
-      {/* 欢迎横幅 */}
-      <section className="rounded-2xl bg-brand-700 p-6 text-white shadow-sm">
+      {/* 欢迎横幅（暖纸风：陶土主色 + 衬线标题，像杂志开篇） */}
+      <section className="rounded-2xl bg-brand-600 p-6 text-white shadow-card">
         <h1 className={elder ? "text-2xl font-bold" : "text-xl font-bold"}>
           {elder ? "你好！家里电器坏了吗？" : "你好，欢迎使用修必达！"}
         </h1>
@@ -46,7 +46,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => navigate("/diagnose")}
-          className={`mt-4 inline-flex items-center gap-2 rounded-xl bg-white font-semibold text-brand-700 transition-colors hover:bg-brand-50 ${
+          className={`mt-4 inline-flex items-center gap-2 rounded-xl bg-white font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50 ${
             elder ? "px-6 py-3.5 text-lg" : "px-5 py-2.5 text-sm"
           }`}
         >
@@ -57,7 +57,7 @@ export default function Home() {
 
       {/* 快速入口三张卡片 */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-600">快速入口</h2>
+        <h2 className="mb-3 text-sm font-semibold text-stone-600">快速入口</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {QUICK_ENTRIES.map((e) => (
             <Link
@@ -69,10 +69,10 @@ export default function Home() {
                 {e.emoji}
               </span>
               <span>
-                <span className={`block font-semibold text-slate-900 ${elder ? "text-lg" : "text-base"}`}>
+                <span className={`block font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
                   {e.title}
                 </span>
-                <span className="block text-sm text-slate-500">{e.hint}</span>
+                <span className="block text-sm text-stone-500">{e.hint}</span>
               </span>
             </Link>
           ))}
@@ -96,18 +96,18 @@ export default function Home() {
             description="完成首次诊断后，记录会自动展示在这里。"
           />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-stone-100">
             {recent.map((d) => (
               <li key={d.id}>
                 <Link
                   to={`/diagnosis/${d.id}/result`}
-                  className="flex items-center justify-between gap-3 px-1 py-3 transition-colors hover:bg-slate-50"
+                  className="flex items-center justify-between gap-3 px-1 py-3 transition-colors hover:bg-stone-50"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-slate-800">
+                    <span className="block truncate text-sm font-medium text-stone-800">
                       {d.deviceName ?? "未关联设备"} · {d.symptom}
                     </span>
-                    <span className="block text-xs text-slate-400">{relativeTime(d.createdAt)}</span>
+                    <span className="block text-xs text-stone-400">{relativeTime(d.createdAt)}</span>
                   </span>
                   <RiskBadge level={d.riskLevel} />
                 </Link>
@@ -130,10 +130,10 @@ export default function Home() {
         >
           <ul>
             {FAQ_ITEMS.map((item) => (
-              <li key={item.q} className="border-b border-slate-100 last:border-0">
+              <li key={item.q} className="border-b border-stone-100 last:border-0">
                 <Link
                   to={item.to}
-                  className="flex items-center justify-between py-2.5 text-sm text-slate-700 transition-colors hover:text-brand-700"
+                  className="flex items-center justify-between py-2.5 text-sm text-stone-700 transition-colors hover:text-brand-700"
                 >
                   {item.q}
                   <span aria-hidden>›</span>

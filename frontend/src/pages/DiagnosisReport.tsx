@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Lightbulb, PhoneCall } from "lucide-react";
 
@@ -49,8 +49,8 @@ export default function DiagnosisReport() {
 
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">诊断报告</h1>
-          <p className="mt-1 text-sm text-slate-500">{formatDateTime(diagnosis.createdAt)} 生成</p>
+          <h1 className="text-xl font-bold text-stone-900">诊断报告</h1>
+          <p className="mt-1 text-sm text-stone-500">{formatDateTime(diagnosis.createdAt)} 生成</p>
         </div>
         <Link to={`/repair?diagnosisId=${diagnosis.id}`} className={buttonClass("primary", "md")}>
           生成报修说明
@@ -62,17 +62,17 @@ export default function DiagnosisReport() {
         <div className="space-y-5">
           <SectionCard title="设备信息">
             <div className="space-y-2 text-sm">
-              <p className="text-slate-800">
-                <span className="text-slate-400">设备：</span>
+              <p className="text-stone-800">
+                <span className="text-stone-400">设备：</span>
                 {deviceLabel}
               </p>
-              <p className="text-slate-800">
-                <span className="text-slate-400">故障现象：</span>
+              <p className="text-stone-800">
+                <span className="text-stone-400">故障现象：</span>
                 {diagnosis.symptom || "自定义描述"}
               </p>
               {diagnosis.description.trim() && (
-                <p className="text-slate-800">
-                  <span className="text-slate-400">补充描述：</span>
+                <p className="text-stone-800">
+                  <span className="text-stone-400">补充描述：</span>
                   {diagnosis.description.trim()}
                 </p>
               )}
@@ -80,20 +80,20 @@ export default function DiagnosisReport() {
           </SectionCard>
 
           <SectionCard title="诊断结论">
-            <p className="text-sm leading-relaxed text-slate-800">{diagnosis.conclusion}</p>
+            <p className="text-sm leading-relaxed text-stone-800">{diagnosis.conclusion}</p>
           </SectionCard>
 
           {/* 已确认的事实（独立区块，与可能原因严格分离） */}
           <SectionCard title="已确认的事实">
             <ul className="space-y-2">
               {diagnosis.evidence.map((e) => (
-                <li key={e} className="flex items-start gap-2 text-sm text-slate-700">
+                <li key={e} className="flex items-start gap-2 text-sm text-stone-700">
                   <CheckCircle2 aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" />
                   {e}
                 </li>
               ))}
             </ul>
-            <p className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-400">
+            <p className="mt-3 border-t border-stone-100 pt-2 text-xs text-stone-400">
               以上均为诊断过程中确认的信息，与右侧「可能原因」中的推测严格区分。
             </p>
           </SectionCard>
@@ -111,8 +111,8 @@ export default function DiagnosisReport() {
                     {i + 1}
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{c.title}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">{c.description}</p>
+                    <p className="text-sm font-semibold text-stone-800">{c.title}</p>
+                    <p className="mt-0.5 text-sm text-stone-500">{c.description}</p>
                   </div>
                 </li>
               ))}
@@ -122,7 +122,7 @@ export default function DiagnosisReport() {
           <SectionCard title="判断依据">
             <ul className="space-y-2">
               {diagnosis.evidence.map((e) => (
-                <li key={e} className="flex items-start gap-2 text-sm text-slate-600">
+                <li key={e} className="flex items-start gap-2 text-sm text-stone-600">
                   <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
                   {e}
                 </li>
@@ -133,18 +133,18 @@ export default function DiagnosisReport() {
           <SectionCard title="维修建议（三步）">
             <ol className="space-y-3">
               {diagnosis.suggestions.map((s, i) => (
-                <li key={s.title} className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm font-semibold text-slate-800">
+                <li key={s.title} className="rounded-xl border border-stone-200 p-3">
+                  <p className="text-sm font-semibold text-stone-800">
                     第 {i + 1} 步 · {s.title}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">{s.description}</p>
+                  <p className="mt-1 text-sm text-stone-500">{s.description}</p>
                 </li>
               ))}
             </ol>
           </SectionCard>
 
           <SectionCard title="联系维修人员">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-stone-600">
               如需专业维修，可使用智能报修生成结构化报修说明。
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -155,7 +155,7 @@ export default function DiagnosisReport() {
                 一键联系维修
               </Button>
             </div>
-            <p className="mt-2 text-xs text-slate-400">联系维修为演示功能，暂未对接真实售后平台。</p>
+            <p className="mt-2 text-xs text-stone-400">联系维修为演示功能，暂未对接真实售后平台。</p>
           </SectionCard>
         </div>
       </div>

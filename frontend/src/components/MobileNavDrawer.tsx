@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { ShieldCheck, X } from "lucide-react";
 
@@ -47,7 +47,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
       isActive
         ? "bg-brand-100 text-brand-800"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+        : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
     ].join(" ");
 
   return (
@@ -64,11 +64,11 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         role="dialog"
         aria-modal="true"
         aria-label="导航菜单"
-        className="mobile-nav-panel safe-pad-bottom fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white shadow-xl"
+        className="mobile-nav-panel safe-pad-bottom fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-stone-200 bg-white shadow-xl"
       >
         {/* Logo 区 + 关闭按钮 */}
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 pl-5 pr-3">
-          <span className="flex items-center gap-2 text-base font-bold text-slate-900">
+        <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">
+          <span className="flex items-center gap-2 text-base font-bold text-stone-900">
             <span aria-hidden className="text-xl">🔧</span>修必达
           </span>
           <button
@@ -76,7 +76,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
             ref={closeBtnRef}
             onClick={onClose}
             aria-label="关闭导航菜单"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-2 text-stone-500 hover:bg-stone-100"
           >
             <X className="h-5 w-5" />
           </button>
@@ -105,7 +105,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         </nav>
 
         {/* 底部安全守护入口（与桌面侧栏一致） */}
-        <div className="border-t border-slate-200 px-3 py-3">
+        <div className="border-t border-stone-200 px-3 py-3">
           <NavLink
             to={SAFETY_ITEM.to}
             onClick={onClose}

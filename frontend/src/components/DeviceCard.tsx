@@ -1,4 +1,4 @@
-import { Wrench } from "lucide-react";
+﻿import { Wrench } from "lucide-react";
 
 import type { DeviceCategory } from "../services/api";
 import { CATEGORY_LABELS } from "../services/api";
@@ -38,7 +38,7 @@ export default function DeviceCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
+      className="w-full rounded-2xl border border-stone-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
     >
       <div className="flex items-start gap-3">
         {/* 设备图标（图片 URL 缺省时按类型回退） */}
@@ -59,7 +59,7 @@ export default function DeviceCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className={`truncate font-semibold text-slate-900 ${elder ? "text-lg" : "text-base"}`}>
+            <p className={`truncate font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
               {device.name}
             </p>
             <span className="shrink-0">
@@ -69,19 +69,19 @@ export default function DeviceCard({
 
           {/* 标准模式：完整信息；长辈模式：仅保留类型 + 位置 */}
           {elder ? (
-            <p className="mt-1 text-base text-slate-600">
+            <p className="mt-1 text-base text-stone-600">
               {CATEGORY_LABELS[device.category]}
               {device.location ? ` · ${device.location}` : ""}
             </p>
           ) : (
             <>
-              <p className="mt-1 truncate text-sm text-slate-500">
+              <p className="mt-1 truncate text-sm text-stone-500">
                 {CATEGORY_LABELS[device.category]}
                 {device.brand ? ` · ${device.brand}` : ""}
                 {device.model ? ` ${device.model}` : ""}
                 {device.location ? ` · ${device.location}` : ""}
               </p>
-              <p className="mt-1.5 flex items-center gap-1 text-xs text-slate-400">
+              <p className="mt-1.5 flex items-center gap-1 text-xs text-stone-400">
                 <Wrench aria-hidden className="h-3.5 w-3.5" />
                 历史维修 {repairCount} 次
               </p>
