@@ -7,6 +7,7 @@ import {
   type DeviceInput as ApiDeviceInput,
   createDevice,
   deleteDevice,
+  listDemoDevices,
   listDevices,
   updateDevice,
 } from "./api";
@@ -27,6 +28,7 @@ function fromApi(d: ApiDevice): Device {
     imageUrl: d.image_url,
     note: d.note,
     createdAt: d.created_at,
+    demo: d.demo ?? false,
   };
 }
 
@@ -46,6 +48,7 @@ export function toApiInput(form: DeviceForm): ApiDeviceInput {
 
 export const deviceService = {
   list: async (): Promise<Device[]> => (await listDevices()).map(fromApi),
+  listDemo: async (): Promise<Device[]> => (await listDemoDevices()).map(fromApi),
   create: async (form: DeviceForm): Promise<Device> =>
     fromApi(await createDevice(toApiInput(form))),
   update: async (id: number, form: DeviceForm): Promise<Device> =>

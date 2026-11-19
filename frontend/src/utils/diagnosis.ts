@@ -106,6 +106,8 @@ export function normalizeDiagnosis(value: unknown): Diagnosis {
     symptom: asString(raw.symptom),
     description: asString(raw.description),
     createdAt: asString(raw.createdAt, new Date().toISOString()),
+    // 旧记录没有归属字段：保留为独立的本机历史，不自动归属当前账号
+    ownerKey: typeof raw.ownerKey === "string" ? raw.ownerKey : "local",
     source: asSource(raw.source),
     model: typeof raw.model === "string" ? raw.model : null,
     qa: asQAPairs(raw.qa),

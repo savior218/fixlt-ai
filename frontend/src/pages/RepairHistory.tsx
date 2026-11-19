@@ -8,7 +8,11 @@ import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import StatusBadge, { type Status } from "../components/StatusBadge";
 import { useDeviceStore } from "../stores/deviceStore";
-import { recordsOfDevice, useRepairStore } from "../stores/repairStore";
+import {
+  recordsForOwner,
+  recordsOfDevice,
+  useRepairStore,
+} from "../stores/repairStore";
 import { REPAIR_STATUS_LABELS, VERIFICATION_LABELS, type RepairStatus, type VerificationStatus } from "../types/repair";
 import { formatDateTime } from "../utils/format";
 
@@ -44,10 +48,14 @@ export default function RepairHistory() {
   const { id } = useParams();
   const devices = useDeviceStore((s) => s.devices);
   const records = useRepairStore((s) => s.records);
+  const ownerKey = useRepairStore((s) => s.ownerKey);
 
   const deviceId = Number(id);
   const device = devices.find((d) => d.id === deviceId);
-  const mine = useMemo(() => recordsOfDevice(records, deviceId), [records, deviceId]);
+  const mine = useMemo(
+    () => recordsOfDevice(recordsForOwner(records, ownerKey), deviceId),
+    [records, ownerKey, deviceId]
+  );
 
   return (
     <div className="space-y-5">

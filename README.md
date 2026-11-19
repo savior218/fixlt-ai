@@ -85,6 +85,7 @@ npm run dev
 
 # 前端（在 frontend 目录）
 npm test
+npm run e2e:stage11   # 需先启动前后端；浏览器验收注册/登录/设备隔离/三端
 ```
 
 ## 环境变量与密钥安全
@@ -92,7 +93,11 @@ npm test
 - 复制 `backend/.env.example` 为 `backend/.env`，填入智谱 API Key（https://open.bigmodel.cn 控制台获取）。
 - **真实密钥仅存放在后端 `.env`（已在 .gitignore 中排除，严禁提交/泄露到前端）**。
 - 留空 = AI 未配置：诊断请求会返回 `ai_not_configured`，前端明确提示并提供「重试真实 AI / 查看模板演示（非 AI）」。
-- 公开服务建议设置 `FIXITAI_DEPLOYMENT_MODE=public`，会关闭交互式文档；`X-User-Id` 仅为演示身份，不是正式认证。
+- 公开服务建议设置 `FIXITAI_DEPLOYMENT_MODE=public`，会关闭交互式文档。
+- 账号会话使用 HttpOnly Cookie + 服务端可撤销会话；`public` 模式必须配置 `FIXITAI_SESSION_SECRET`，否则服务拒绝启动，禁止使用硬编码默认密钥。
+- 修改数据的接口要求 `X-CSRF-Token`；设备归属由服务端会话决定，旧的 `X-User-Id` 机制已移除。
+- 线上账号与设备必须配置可持久化的 `FIXITAI_DATABASE_URL`（PostgreSQL）。未配置时容器内 SQLite 会在重新部署后丢失。
+- 本地开发默认 SQLite；数据库连接凭据不要提交到版本库或发送到聊天。
 
 ## 三端适配约定（团队协作必读）
 
@@ -109,7 +114,7 @@ npm test
 - **后端没启动会怎样？** 前端正常打开，设备列表显示错误横幅与重试按钮；诊断明确提示无法连接，不伪造 AI 结果。
 - **真实 AI 诊断要多久？** 取决于模型服务，前端显示真实等待状态，不显示虚构进度；可随时取消等待。
 - **没有 AI 密钥如何演示？** 在失败提示中主动点击「查看模板演示（非 AI）」，结果页与报告页会持续标注来源。
-- **诊断数据存在哪？** 开发期 SQLite（`backend/fixitai.db`，已 gitignore），首次启动自动建表并写入演示用户与示例设备。
+- **诊断数据存在哪？** 设备等账号私有数据保存在服务端数据库（本地默认 SQLite，线上需 PostgreSQL）；诊断草稿与维修记录保存在浏览器本地并按账号隔离，旧记录保留为独立的本机历史。
 - **问诊草稿会丢吗？** 不会。草稿/偏好/维修记录本地持久化；旧版本草稿会在对应关系明确时迁移，不编造问题。
 
 ## 开发阶段（对应 PRD 第 17 章）

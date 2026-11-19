@@ -1,6 +1,7 @@
 """全局配置：仅通过环境变量注入，密钥不写入代码。"""
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,8 +23,23 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
-    # 演示用户（仅用于设备 CRUD 演示；不是正式身份认证）
+    # 历史演示用户（仅作为旧种子数据的归属，不可登录；游客演示改用只读样例接口）
     demo_user_id: int = 1
+
+    # 账号会话（HttpOnly Cookie + 服务端可撤销会话）
+    session_cookie_name: str = "fixitai_session"
+    session_ttl_seconds: int = 7 * 24 * 60 * 60
+    # None = 自动：public 模式启用 Secure，本地 HTTP 开发不启用
+    session_cookie_secure: bool | None = None
+    session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    # 生产必须通过环境变量提供；dev 模式缺失时使用进程内随机值（重启后 CSRF 令牌失效）
+    session_secret: str = ""
+
+    # 认证接口限流（单实例内存；多实例部署需改用 Redis 等共享存储）
+    auth_login_rate_limit_per_minute: int = 10
+    auth_register_rate_limit_per_minute: int = 5
+    # 游客（未登录）真实的模型调用额度更低
+    guest_ai_rate_limit_per_minute: int = 2
 
     # AI 服务（智谱 GLM，OpenAI 兼容协议）
     ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
@@ -44,6 +60,22 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_database_url(cls, value: str) -> str:
+        """兼容 Render / 云厂商常见的 postgres:// 连接串，统一使用 psycopg 驱动。"""
+        if value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value[len("postgres://") :]
+        if value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value[len("postgresql://") :]
+        return value
+
+    @property
+    def effective_cookie_secure(self) -> bool:
+        if self.session_cookie_secure is not None:
+            return self.session_cookie_secure
+        return self.deployment_mode == "public"
 
 
 settings = Settings()

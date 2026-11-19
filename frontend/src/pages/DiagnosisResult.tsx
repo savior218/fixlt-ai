@@ -10,8 +10,8 @@ import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { createRecordFromDiagnosis } from "../services/repairService";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
-import { useRepairStore } from "../stores/repairStore";
+import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
+import { recordsForOwner, useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDateTime } from "../utils/format";
 import { contentFor, hasElderCopy, normalizeDiagnosis } from "../utils/diagnosis";
@@ -32,9 +32,15 @@ export default function DiagnosisResult() {
   const elder = mode === "elder";
 
   const history = useDiagnosisStore((s) => s.history);
+  const diagnosisOwner = useDiagnosisStore((s) => s.ownerKey);
   const resetDraft = useDiagnosisStore((s) => s.resetDraft);
   const addRecord = useRepairStore((s) => s.addRecord);
-  const records = useRepairStore((s) => s.records);
+  const allRecords = useRepairStore((s) => s.records);
+  const recordOwner = useRepairStore((s) => s.ownerKey);
+  const records = useMemo(
+    () => recordsForOwner(allRecords, recordOwner),
+    [allRecords, recordOwner]
+  );
 
   /** elder 分步展示：0 结论 / 1 +可能原因 / 2 全部；standard 恒为全部 */
   const [elderStage, setElderStage] = useState(0);
@@ -42,9 +48,9 @@ export default function DiagnosisResult() {
   const showRest = !elder || elderStage >= 2;
 
   const diagnosis = useMemo(() => {
-    const found = history.find((d) => d.id === id);
+    const found = diagnosesForOwner(history, diagnosisOwner).find((d) => d.id === id);
     return found ? normalizeDiagnosis(found) : undefined;
-  }, [history, id]);
+  }, [history, diagnosisOwner, id]);
 
   /** 是否已保存过（防止重复生成维修记录） */
   const saved = useMemo(

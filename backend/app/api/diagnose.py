@@ -13,10 +13,11 @@ import json
 import logging
 import time
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import ValidationError
 
 from app.ai import glm_client
+from app.api.deps import AuthContext, get_optional_auth
 from app.core.config import settings
 from app.safety.rules import (
     SAFETY_RULES_VERSION,
@@ -146,7 +147,9 @@ def _check_model_output(content: ModelDiagnosisContent) -> None:
 
 @router.post("/complete", response_model=DiagnoseResponse)
 async def complete_diagnosis(
-    req: DiagnoseRequest, request: Request
+    req: DiagnoseRequest,
+    request: Request,
+    auth: AuthContext | None = Depends(get_optional_auth),
 ) -> DiagnoseResponse:
     text = _scan_text(req)
     detected = detect_risk(text)
@@ -167,10 +170,16 @@ async def complete_diagnosis(
     # 2) 访问保护（每分钟次数 + 并发上限）
     limiter = get_limiter()
     client_key = request.client.host if request.client else "unknown"
+    # 游客（未登录）使用更严格的真实模型调用额度，避免公开页面被无限消耗
+    per_minute = (
+        settings.ai_rate_limit_per_minute
+        if auth is not None
+        else settings.guest_ai_rate_limit_per_minute
+    )
     try:
         await limiter.acquire(
             client_key,
-            settings.ai_rate_limit_per_minute,
+            per_minute,
             settings.ai_max_concurrent,
         )
     except RateLimitExceeded as e:

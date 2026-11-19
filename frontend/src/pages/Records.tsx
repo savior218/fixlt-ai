@@ -8,7 +8,11 @@ import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
-import { useRepairStore } from "../stores/repairStore";
+import {
+  localRepairCount,
+  recordsForOwner,
+  useRepairStore,
+} from "../stores/repairStore";
 import {
   REPAIR_STATUS_LABELS,
   VERIFICATION_LABELS,
@@ -42,8 +46,15 @@ const VERIFY_OPTIONS: { value: VerificationStatus; label: string }[] = [
 export default function Records() {
   const { notify } = useToast();
 
-  const records = useRepairStore((s) => s.records);
+  const allRecords = useRepairStore((s) => s.records);
+  const ownerKey = useRepairStore((s) => s.ownerKey);
   const updateVerification = useRepairStore((s) => s.updateVerification);
+  /** 只展示当前账号的记录；旧本机历史保留但不混入 */
+  const records = useMemo(
+    () => recordsForOwner(allRecords, ownerKey),
+    [allRecords, ownerKey]
+  );
+  const localCount = localRepairCount(allRecords, ownerKey);
 
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -86,6 +97,13 @@ export default function Records() {
           </Button>
         }
       />
+
+      {localCount > 0 && (
+        <p role="note" className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          另有 <strong>{localCount}</strong> 条本机历史维修记录未归属任何账号，仍保留在本机，
+          切换到游客演示可查看；不会自动归入当前账号。
+        </p>
+      )}
 
       {/* 顶部安全提示条 */}
       <div

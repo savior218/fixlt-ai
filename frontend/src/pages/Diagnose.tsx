@@ -35,8 +35,8 @@ import type { Diagnosis, QAPair } from "../types/diagnosis";
 import { isUnknownAnswer } from "../utils/risk";
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
-import { useRepairStore } from "../stores/repairStore";
+import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
+import { recordsForOwner, useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 
 /** 设备类型卡片（P1 步骤一） */
@@ -64,7 +64,12 @@ export default function Diagnose() {
   const elder = mode === "elder";
 
   const { devices, load } = useDeviceStore();
-  const repairRecords = useRepairStore((s) => s.records);
+  const allRepairRecords = useRepairStore((s) => s.records);
+  const repairOwner = useRepairStore((s) => s.ownerKey);
+  const repairRecords = useMemo(
+    () => recordsForOwner(allRepairRecords, repairOwner),
+    [allRepairRecords, repairOwner]
+  );
   const { draft, setDraft, appendMessage, saveDiagnosis, resetDraft } =
     useDiagnosisStore();
 
@@ -441,7 +446,10 @@ export default function Diagnose() {
             variant="secondary"
             size="lg"
             onClick={() => {
-              const last = useDiagnosisStore.getState().history[0];
+              const last = diagnosesForOwner(
+                useDiagnosisStore.getState().history,
+                useDiagnosisStore.getState().ownerKey
+              )[0];
               if (last) navigate(`/diagnosis/${last.id}/report`);
               else notify("暂无历史诊断报告", "info");
             }}
@@ -803,7 +811,10 @@ export default function Diagnose() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               onClick={() => {
-                const last = useDiagnosisStore.getState().history[0];
+                const last = diagnosesForOwner(
+                  useDiagnosisStore.getState().history,
+                  useDiagnosisStore.getState().ownerKey
+                )[0];
                 if (last) navigate(`/diagnosis/${last.id}/result`);
                 else restart();
               }}

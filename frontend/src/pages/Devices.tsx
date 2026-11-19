@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Info, Plus } from "lucide-react";
 
-import Button from "../components/Button";
+import Button, { buttonClass } from "../components/Button";
 import ConfirmDialog from "../components/ConfirmDialog";
 import DeviceCard from "../components/DeviceCard";
 import EmptyState from "../components/EmptyState";
@@ -15,6 +15,7 @@ import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { useToast } from "../components/Toast";
 import { CATEGORY_LABELS, type DeviceCategory } from "../services/api";
+import { loginHref } from "../utils/redirect";
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useRepairStore } from "../stores/repairStore";
@@ -40,8 +41,14 @@ export default function Devices() {
   const { mode } = usePrefs();
   const elder = mode === "elder";
 
-  const { devices, loading, error, load, add, update, remove } = useDeviceStore();
+  const { devices, loading, error, load, add, update, remove, demoMode } =
+    useDeviceStore();
   const records = useRepairStore((s) => s.records);
+  const ownerKey = useRepairStore((s) => s.ownerKey);
+  const visibleRecords = useMemo(
+    () => records.filter((r) => (r.ownerKey || "local") === ownerKey),
+    [records, ownerKey]
+  );
 
   const [keyword, setKeyword] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -58,8 +65,8 @@ export default function Devices() {
 
   /** 派生：维修次数 / 状态（与 P4/P8 同源 repairStore） */
   const devicesWithMeta = useMemo(
-    () => devices.map((d) => withMeta(d, records)),
-    [devices, records]
+    () => devices.map((d) => withMeta(d, visibleRecords)),
+    [devices, visibleRecords]
   );
 
   const stats = useMemo(() => {
@@ -142,11 +149,27 @@ export default function Devices() {
         title="我的设备"
         subtitle="管理家庭设备，随时查看状态与维修记录"
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" /> 添加设备
-          </Button>
+          demoMode ? (
+            <Link to={loginHref("/devices")} className={buttonClass("primary", "md")}>
+              登录后管理自己的设备
+            </Link>
+          ) : (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" /> 添加设备
+            </Button>
+          )
         }
       />
+
+      {demoMode && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <Info aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>
+            当前为<strong>游客演示</strong>，展示的是只读样例设备，不能修改真实账号或共享种子数据。
+            登录后可添加、编辑和删除自己的设备，数据会归当前账号所有。
+          </p>
+        </div>
+      )}
 
       {error && <ErrorBanner message={error} onRetry={refresh} />}
 
@@ -212,7 +235,7 @@ export default function Devices() {
               : "试试调整筛选条件或清空关键词。"
           }
           action={
-            devices.length === 0 ? (
+            devices.length === 0 && !demoMode ? (
               <Button onClick={openCreate}>添加设备</Button>
             ) : undefined
           }
@@ -227,19 +250,21 @@ export default function Devices() {
                 repairCount={d.repairCount}
                 onClick={() => navigate(`/devices/${d.id}`)}
               />
-              <div className="flex justify-end gap-2 px-1">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(d.id)}>
-                  编辑
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-risk-high hover:bg-risk-high-bg"
-                  onClick={() => setDeleting({ id: d.id, name: d.name })}
-                >
-                  删除
-                </Button>
-              </div>
+              {!demoMode && (
+                <div className="flex justify-end gap-2 px-1">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(d.id)}>
+                    编辑
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-risk-high hover:bg-risk-high-bg"
+                    onClick={() => setDeleting({ id: d.id, name: d.name })}
+                  >
+                    删除
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>

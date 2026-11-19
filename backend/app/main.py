@@ -3,20 +3,24 @@ import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import devices, diagnose, health
+from app.api import auth, demo, devices, diagnose, health
 from app.core.config import settings
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
+from app.services.auth import ensure_auth_ready
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 生产缺少会话密钥时快速失败，避免使用进程内默认密钥上线
+    ensure_auth_ready()
     init_db()
     db = SessionLocal()
     try:
@@ -25,9 +29,8 @@ async def lifespan(app: FastAPI):
         db.close()
 
     if settings.deployment_mode == "public":
-        logger.warning(
-            "公开服务模式：X-User-Id 演示身份仍启用，当前尚不具备多用户隔离能力"
-        )
+        if not settings.effective_cookie_secure:
+            logger.warning("公开服务模式建议启用 Secure Cookie（FIXITAI_SESSION_COOKIE_SECURE）")
         if any("localhost" in o or "127.0.0.1" in o for o in settings.cors_origins):
             logger.warning("公开服务模式仍包含本机 CORS 来源，请配置 FIXITAI_CORS_ORIGINS")
     yield
@@ -53,6 +56,19 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """把 Pydantic 的校验错误转换为前端可读的统一结构。"""
+    first = exc.errors()[0] if exc.errors() else {}
+    message = str(first.get("msg", "输入内容不符合要求")).removeprefix("Value error, ")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": {"code": "validation_error", "message": message}},
+    )
+
+
 @app.middleware("http")
 async def enforce_model_request_size(request: Request, call_next):
     """限制模型接口请求体大小，避免超长输入消耗调用额度。"""
@@ -76,6 +92,8 @@ async def enforce_model_request_size(request: Request, call_next):
 
 
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(demo.router)
 app.include_router(devices.router)
 app.include_router(diagnose.router)
 

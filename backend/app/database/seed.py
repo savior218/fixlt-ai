@@ -41,7 +41,13 @@ DEMO_DEVICES = [
 
 def seed_demo_data(db: Session) -> None:
     if db.scalar(select(func.count()).select_from(User)) == 0:
-        user = User(username="demo", password_hash="", email="demo@fixitai.local")
+        # 历史演示用户：空密码不可登录，仅作为旧种子设备归属，不构成公开授权机制
+        user = User(
+            username="demo",
+            nickname="历史演示数据",
+            password_hash="",
+            email="demo@fixitai.local",
+        )
         user.preferences = UserPreference()
         db.add(user)
         db.flush()

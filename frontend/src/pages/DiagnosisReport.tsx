@@ -8,7 +8,7 @@ import RiskAlert from "../components/RiskAlert";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDateTime } from "../utils/format";
 import { contentFor, hasElderCopy, normalizeDiagnosis } from "../utils/diagnosis";
@@ -29,10 +29,11 @@ export default function DiagnosisReport() {
   const elder = mode === "elder";
 
   const history = useDiagnosisStore((s) => s.history);
+  const ownerKey = useDiagnosisStore((s) => s.ownerKey);
   const diagnosis = useMemo(() => {
-    const found = history.find((d) => d.id === id);
+    const found = diagnosesForOwner(history, ownerKey).find((d) => d.id === id);
     return found ? normalizeDiagnosis(found) : undefined;
-  }, [history, id]);
+  }, [history, ownerKey, id]);
 
   if (!diagnosis) {
     return (

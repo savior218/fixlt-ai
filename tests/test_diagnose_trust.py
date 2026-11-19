@@ -216,7 +216,7 @@ def test_request_too_large_is_rejected():
 
 
 def test_rate_limit(monkeypatch):
-    monkeypatch.setattr(settings, "ai_rate_limit_per_minute", 1)
+    monkeypatch.setattr(settings, "guest_ai_rate_limit_per_minute", 1)
     monkeypatch.setattr(glm_client, "is_configured", lambda: True)
 
     async def _ok(*args, **kwargs):

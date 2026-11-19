@@ -28,6 +28,18 @@ class SlidingWindowLimiter:
         self._inflight = 0
         self._lock = asyncio.Lock()
 
+    async def hit(self, key: str, limit: int) -> None:
+        """只计数不占用并发额度（用于登录 / 注册等短请求限流）。"""
+        async with self._lock:
+            now = time.monotonic()
+            window_start = now - 60
+            hits = [t for t in self._hits[key] if t >= window_start]
+            self._hits[key] = hits
+            if len(hits) >= limit:
+                retry_after = max(1, int(60 - (now - hits[0])) if hits else 60)
+                raise RateLimitExceeded(retry_after)
+            hits.append(now)
+
     async def acquire(self, key: str, limit: int, max_inflight: int) -> None:
         async with self._lock:
             now = time.monotonic()
@@ -52,11 +64,20 @@ class SlidingWindowLimiter:
 
 
 _limiter = SlidingWindowLimiter()
+_auth_limiter = SlidingWindowLimiter()
 
 
 def get_limiter() -> SlidingWindowLimiter:
     return _limiter
 
 
+def get_auth_limiter() -> SlidingWindowLimiter:
+    return _auth_limiter
+
+
 def reset_limiter() -> None:
     _limiter.reset()
+
+
+def reset_auth_limiter() -> None:
+    _auth_limiter.reset()

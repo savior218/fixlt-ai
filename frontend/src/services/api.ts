@@ -1,11 +1,19 @@
 /** 后端 API 客户端。开发期通过 Vite 代理访问 127.0.0.1:8000。
- *  用户体系（USER-001）接入前以 X-User-Id 标识演示用户。 */
+ *  登录态由服务端 HttpOnly Cookie 决定；CSRF 令牌只保存在内存中。 */
 
 const BASE = "/api";
-const HEADERS = {
-  "Content-Type": "application/json",
-  "X-User-Id": "1",
-};
+
+let csrfToken = "";
+/** 由 authStore 注册：会话失效时更新前端状态，不在此处跳转页面 */
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setCsrfToken(token: string): void {
+  csrfToken = token;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
 
 export class ApiError extends Error {
   code: string;
@@ -36,10 +44,19 @@ async function request<T>(
   const onExternalAbort = () => controller.abort();
   external?.addEventListener("abort", onExternalAbort);
 
+  const method = (init?.method ?? "GET").toUpperCase();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (method !== "GET" && method !== "HEAD" && csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   let resp: Response;
   try {
     resp = await fetch(BASE + path, {
-      headers: HEADERS,
+      headers,
+      credentials: "include",
       ...init,
       signal: controller.signal,
     });
@@ -73,6 +90,9 @@ async function request<T>(
     } catch {
       /* 保留默认错误信息 */
     }
+    if (resp.status === 401 && !path.startsWith("/auth/")) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(message, code, resp.status, detail);
   }
   if (resp.status === 204) return undefined as T;
@@ -102,6 +122,8 @@ export interface Device {
   image_url: string | null;
   note: string | null;
   created_at: string;
+  /** 游客只读样例（不属于任何可登录账号） */
+  demo?: boolean;
 }
 
 export type DeviceInput = Omit<Device, "id" | "created_at">;
@@ -123,6 +145,58 @@ export const updateDevice = (id: number, d: Partial<DeviceInput>) =>
   });
 export const deleteDevice = (id: number) =>
   request<void>(`/devices/${id}`, { method: "DELETE" });
+/** 游客演示：固定只读样例，没有写接口 */
+export const listDemoDevices = () => request<Device[]>("/demo/devices");
+
+/* ---------- 账号：注册 / 登录 / 当前用户 / 资料 / 密码 ---------- */
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  nickname: string;
+  created_at: string;
+}
+
+export interface AuthSessionPayload {
+  user: AuthUser;
+  csrf_token: string;
+}
+
+export const getCurrentAccount = () => request<AuthSessionPayload>("/auth/me");
+
+export const registerAccount = (p: {
+  username: string;
+  password: string;
+  nickname?: string;
+}) =>
+  request<AuthSessionPayload>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+
+export const loginAccount = (p: { username: string; password: string }) =>
+  request<AuthSessionPayload>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+
+export const logoutAccount = () =>
+  request<void>("/auth/logout", { method: "POST" });
+
+export const updateAccountProfile = (nickname: string) =>
+  request<AuthSessionPayload>("/auth/profile", {
+    method: "PATCH",
+    body: JSON.stringify({ nickname }),
+  });
+
+export const changeAccountPassword = (p: {
+  current_password: string;
+  new_password: string;
+}) =>
+  request<{ message: string; relogin_required: boolean }>("/auth/password", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
 
 /* ---------- AI 诊断（阶段十：完整问答上下文 + 双文案 + 服务端安全下限） ---------- */
 

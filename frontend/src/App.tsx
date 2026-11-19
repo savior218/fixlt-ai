@@ -7,6 +7,7 @@ import Diagnose from "./pages/Diagnose";
 import DiagnosisReport from "./pages/DiagnosisReport";
 import DiagnosisResult from "./pages/DiagnosisResult";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Records from "./pages/Records";
 import RepairAssistant from "./pages/RepairAssistant";
@@ -32,7 +33,9 @@ export default function App() {
         {/* P5 智能报修（?diagnosisId= 带入） / P4 维修档案 */}
         <Route path="repair" element={<RepairAssistant />} />
         <Route path="records" element={<Records />} />
-        {/* P9 个人设置 */}
+        {/* 登录 / 注册（保留游客入口） */}
+        <Route path="login" element={<Login />} />
+        {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
         <Route path="ui-kit" element={<UiKit />} />
         <Route path="*" element={<NotFound />} />

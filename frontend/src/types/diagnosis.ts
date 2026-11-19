@@ -108,6 +108,8 @@ export interface Diagnosis {
   symptom: string;
   description: string;
   createdAt: string;
+  /** 本地数据归属：user:<id> 或 local（旧记录 / 游客本机历史） */
+  ownerKey?: string;
   /** 内容来源（旧记录为 unknown） */
   source: DiagnosisSource;
   /** 真实 AI 的模型名；模板 / 旧记录为空 */
