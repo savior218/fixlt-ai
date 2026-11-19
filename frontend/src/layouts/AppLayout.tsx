@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 
 import Loading from "../components/Loading";
 import MobileNavDrawer, { DESKTOP_NAV_QUERY } from "../components/MobileNavDrawer";
+import NotificationPopup from "../components/NotificationPopup";
 import SafetyBanner from "../components/SafetyBanner";
 import SidebarNav from "../components/SidebarNav";
 import TopBar from "../components/TopBar";
@@ -121,6 +122,9 @@ export default function AppLayout() {
           </main>
           <SafetyBanner />
         </div>
+
+        {/* 新消息弹窗提醒（右下角；免打扰开启时不弹） */}
+        <NotificationPopup />
       </div>
     </ToastProvider>
   );

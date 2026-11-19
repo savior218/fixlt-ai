@@ -57,3 +57,24 @@ export function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * 头像压缩：中心方形裁剪 + 缩放到 128×128，JPEG 质量 0.75。
+ * 产物约 3~8KB，适合存 localStorage（按账号隔离展示）。
+ */
+export async function compressAvatar(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const sx = (bitmap.width - side) / 2;
+  const sy = (bitmap.height - side) / 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("画布不可用");
+  ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, 128, 128);
+  bitmap.close();
+
+  return canvas.toDataURL("image/jpeg", 0.75);
+}

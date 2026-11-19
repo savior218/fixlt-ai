@@ -198,6 +198,7 @@ export default function RepairAssistant() {
       `故障现象：${form.symptom}`,
       form.description.trim() ? `故障描述：${form.description.trim()}` : "",
       form.foundAt ? `发现时间：${form.foundAt}` : "",
+      photoId != null ? `故障照片：已附 1 张（上传编号 #${photoId}）` : "",
       checks.length > 0 ? `已完成的检查：${checks.join("；")}` : "",
       diagnosis && linkedContent
         ? `关联诊断结论：${linkedContent.conclusion}`

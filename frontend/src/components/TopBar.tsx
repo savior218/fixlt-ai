@@ -5,6 +5,7 @@ import { LogOut, Menu, Settings, User } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import { useToast } from "./Toast";
 import { useAuthStore } from "../stores/authStore";
+import { useAvatarStore } from "../stores/avatarStore";
 import { usePrefs } from "../stores/prefs";
 import { loginHref } from "../utils/redirect";
 
@@ -72,15 +73,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-stone-900">
-            {status === "authenticated" && user
-              ? `你好，${user.nickname}`
-              : "欢迎使用修必达"}
-          </p>
+          <p className="truncate text-sm font-semibold text-stone-900">修必达</p>
           <p className="hidden truncate text-xs text-stone-500 sm:block">
-            {status === "authenticated"
-              ? `已登录 · 账号 ${user?.username}`
-              : "家电故障分诊与维修决策助手"}
+            FixIt AI
           </p>
         </div>
       </div>
@@ -106,14 +101,6 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           </span>
         </button>
 
-        {/* 真实登录状态标识：游客演示明确标注 */}
-        {status === "guest" && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-            <span className="sm:hidden">游客</span>
-            <span className="hidden sm:inline">游客演示</span>
-          </span>
-        )}
-
         {/* 通知中心（模块⑤：本地通知 + 未读徽标） */}
         <NotificationBell />
 
@@ -126,9 +113,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 hover:bg-brand-200"
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700 hover:bg-brand-200"
             >
-              {user.nickname.slice(0, 1)}
+              <TopBarAvatar userId={user.id} fallback={user.nickname.slice(0, 1)} />
             </button>
 
             {menuOpen && (
@@ -191,4 +178,13 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       </div>
     </header>
   );
+}
+
+/** 头像：有自定义照片显示照片，否则显示首字母 */
+function TopBarAvatar({ userId, fallback }: { userId: number; fallback: string }) {
+  const avatarUrl = useAvatarStore((s) => s.avatars[userId] ?? null);
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" className="h-8 w-8 object-cover" />;
+  }
+  return <span aria-hidden>{fallback}</span>;
 }

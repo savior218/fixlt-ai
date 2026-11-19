@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { LogIn, ShieldCheck, Volume2 } from "lucide-react";
+import { Camera, LogIn, ShieldCheck, Volume2 } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
@@ -25,6 +25,7 @@ import {
   ZOOM_MIN,
 } from "../stores/prefs";
 import { useAuthStore } from "../stores/authStore";
+import { useAvatarStore } from "../stores/avatarStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useRepairStore } from "../stores/repairStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
@@ -35,6 +36,7 @@ import {
   stopSpeech,
   useSpeech,
 } from "../services/speech";
+import { compressAvatar, validatePhoto } from "../utils/image";
 import { loginHref } from "../utils/redirect";
 
 type SaveState = "idle" | "saving" | "saved";
@@ -49,6 +51,28 @@ export default function Settings() {
   const user = useAuthStore((s) => s.user);
   const updateNickname = useAuthStore((s) => s.updateNickname);
   const changePassword = useAuthStore((s) => s.changePassword);
+  const setAvatar = useAvatarStore((s) => s.setAvatar);
+  const avatarUrl = useAvatarStore((s) =>
+    user ? (s.avatars[user.id] ?? null) : null,
+  );
+
+  /** 选择头像图片 → 校验 → 方形压缩 128px → 按账号保存（本地） */
+  async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 允许再次选择同一文件
+    if (!file || !user) return;
+    const err = validatePhoto(file);
+    if (err) {
+      notify(err, "error");
+      return;
+    }
+    try {
+      setAvatar(user.id, await compressAvatar(file));
+      notify("头像已更新", "success");
+    } catch {
+      notify("头像处理失败，请换一张试试", "error");
+    }
+  }
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const timerRef = useRef<number | null>(null);
@@ -266,9 +290,32 @@ export default function Settings() {
         {authStatus === "authenticated" && user ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                {user.nickname.slice(0, 1)}
-              </span>
+              {/* 可点击更换的头像（方形压缩后按账号本地存储） */}
+              <label
+                className="group relative block h-12 w-12 cursor-pointer"
+                title="点击更换头像"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="用户头像"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+                    {user.nickname.slice(0, 1)}
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <Camera aria-hidden className="h-4 w-4" />
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </label>
               <div>
                 <p className="text-sm font-semibold text-stone-900">
                   {user.nickname}
@@ -325,6 +372,16 @@ export default function Settings() {
             </Link>
           </div>
         )}
+      </SectionCard>
+
+      {/* B2. 消息通知：免打扰开关 */}
+      <SectionCard title="消息通知">
+        <SwitchControl
+          label="消息免打扰"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          checked={prefs.doNotDisturb}
+          onChange={prefs.setDoNotDisturb}
+        />
       </SectionCard>
 
       {/* B. 使用模式 */}

@@ -42,6 +42,7 @@ import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useDiagnosisStore, diagnosesForOwner } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useRepairStore, recordsForOwner } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import {
@@ -121,6 +122,29 @@ export default function Diagnose() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addNotification = useNotificationStore((s) => s.add);
+
+  /* ---------- 语音听写输入：再点一次停止，最终文字并入输入框 ---------- */
+  const voice = useSpeechRecognition();
+  const voiceConsumedRef = useRef("");
+  useEffect(() => {
+    if (voice.finalText && voice.finalText !== voiceConsumedRef.current) {
+      voiceConsumedRef.current = voice.finalText;
+      setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
+      voice.clear();
+    }
+  }, [voice.finalText, voice.clear]);
+  useEffect(() => {
+    if (voice.error) notify(voice.error, "error");
+  }, [voice.error, notify]);
+  function toggleVoice() {
+    if (voice.listening) {
+      voice.stop();
+    } else if (!voice.supported) {
+      notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
+    } else if (!voice.start()) {
+      notify("语音识别启动失败，请稍后再试", "error");
+    }
+  }
 
   /** 校验 → 压缩 → 本地预览 → 优先后端入库；后端不可用时仅本地预览（Mock 模式） */
   async function handlePhotoFile(file: File) {
@@ -794,7 +818,14 @@ export default function Diagnose() {
                 <button
                   key={s.title}
                   type="button"
-                  onClick={() => pickSymptom(s.title)}
+                  onClick={() => {
+                    // 空调“不制冷/制冷效果变差”进入动态追问；其他设备与现象保持原流程
+                    if (draft.category === "ac" && s.title.includes("制冷")) {
+                      navigate("/interview/ac");
+                    } else {
+                      pickSymptom(s.title);
+                    }
+                  }}
                   className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
                   <span className="min-w-0">
@@ -802,6 +833,11 @@ export default function Diagnose() {
                       {s.title}
                     </span>
                     <span className="ml-2 text-sm text-stone-400">({s.note})</span>
+                    {draft.category === "ac" && s.title.includes("制冷") && (
+                      <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-700">
+                        动态追问
+                      </span>
+                    )}
                   </span>
                   <span aria-hidden className="text-stone-300">›</span>
                 </button>
@@ -924,12 +960,14 @@ export default function Diagnose() {
                 className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
               />
               <Button
-                variant="secondary"
-                onClick={() => notify("语音输入开发中", "info")}
-                aria-label="语音输入（开发中）"
+                variant={voice.listening ? "danger" : "secondary"}
+                onClick={toggleVoice}
+                aria-label={voice.listening ? "停止语音输入" : "开始语音输入"}
+                aria-pressed={voice.listening}
                 disabled={generating}
               >
                 <Mic className="h-4 w-4" />
+                {voice.listening ? "停止" : ""}
               </Button>
               <Button onClick={() => sendAnswer(input)} disabled={generating || !input.trim()}>
                 发送

@@ -5,6 +5,7 @@ import DataManagement from "./pages/DataManagement";
 import DeviceDetail from "./pages/DeviceDetail";
 import Devices from "./pages/Devices";
 import Diagnose from "./pages/Diagnose";
+import DynamicInterview from "./pages/DynamicInterview";
 import DiagnosisReport from "./pages/DiagnosisReport";
 import DiagnosisResult from "./pages/DiagnosisResult";
 import Home from "./pages/Home";
@@ -25,6 +26,7 @@ export default function App() {
         <Route index element={<Home />} />
         {/* P1 AI 诊断（?deviceId= / ?category= 预选） */}
         <Route path="diagnose" element={<Diagnose />} />
+        <Route path="interview/ac" element={<DynamicInterview />} />
         {/* P2 诊断结果 / P3 诊断报告 */}
         <Route path="diagnosis/:id/result" element={<DiagnosisResult />} />
         <Route path="diagnosis/:id/report" element={<DiagnosisReport />} />

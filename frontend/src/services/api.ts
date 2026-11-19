@@ -546,6 +546,99 @@ export const linkTicketRepairRecord = (id: number, repairRecordId: number | null
     body: JSON.stringify({ repair_record_id: repairRecordId }),
   });
 
+/* ---------- 动态追问（空调不制冷首版） ---------- */
+
+export interface InterviewOption {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface InterviewQuestion {
+  id: string;
+  text: string;
+  purpose: string;
+  options: InterviewOption[];
+}
+
+export interface InterviewFact {
+  key: string;
+  value: string;
+  label?: string;
+  evidence: string;
+  source: string;
+}
+
+export interface InterviewQAPoint {
+  question_id: string;
+  question_text: string;
+  answer: string;
+  option_id?: string | null;
+  unknown: boolean;
+  input_source: "text" | "voice" | "option";
+  selection_source?: "rule" | "model" | "rule_fallback" | null;
+  asked_at: string;
+}
+
+export interface InterviewState {
+  session_id: string;
+  status: "active" | "completed" | "intercepted";
+  version: number;
+  round: number;
+  max_rounds: number;
+  current_question: InterviewQuestion | null;
+  qa: InterviewQAPoint[];
+  facts: InterviewFact[];
+  unknown_information: string[];
+  conflicts: Array<{ key: string; values: string[]; evidence: string[] }>;
+  end_reason: string | null;
+  selection_source: "rule" | "model" | "rule_fallback" | null;
+  selection_note: string | null;
+  selection_latency_ms: number | null;
+  kb_version: string;
+  safety_rules_version: string;
+  can_finish: boolean;
+}
+
+export const startInterview = (p: {
+  category: "ac";
+  symptom: "not_cooling";
+  description: string;
+  photo_id?: number | null;
+}) =>
+  request<InterviewState>("/interview", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+
+export const getInterview = (id: string) =>
+  request<InterviewState>(`/interview/${id}`);
+
+export const answerInterview = (
+  id: string,
+  p: {
+    question_id: string;
+    answer: string;
+    option_id?: string | null;
+    input_source: "text" | "voice" | "option";
+    request_id: string;
+    session_version: number;
+  }
+) =>
+  request<InterviewState>(`/interview/${id}/answer`, {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
+
+export const finishInterview = (
+  id: string,
+  sessionVersion: number
+) =>
+  request<InterviewState>(`/interview/${id}/finish`, {
+    method: "POST",
+    body: JSON.stringify({ session_version: sessionVersion }),
+  });
+
 /* ---------- 个人数据管理 ---------- */
 
 export type DataItemType = "device" | "diagnosis" | "repair" | "ticket" | "photo";

@@ -6,6 +6,7 @@ from app.models.device import Device
 from app.models.diagnosis import Diagnosis
 from app.models.message import DiagnosisMessage
 from app.models.repair import RepairRecord, RepairTicket
+from app.models.interview import InterviewSession
 from app.models.photo import DiagnosisPhoto, RepairTicketPhoto
 from app.models.knowledge import KnowledgeDocument
 
@@ -18,6 +19,7 @@ __all__ = [
     "DiagnosisMessage",
     "RepairRecord",
     "RepairTicket",
+    "InterviewSession",
     "DiagnosisPhoto",
     "RepairTicketPhoto",
     "KnowledgeDocument",
