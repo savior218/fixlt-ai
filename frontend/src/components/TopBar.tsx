@@ -1,10 +1,13 @@
-﻿﻿import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Menu, Settings, User, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu, Settings, User } from "lucide-react";
 
 import NotificationBell from "./NotificationBell";
+import { useToast } from "./Toast";
 import { useAuthStore } from "../stores/authStore";
+import { useAvatarStore } from "../stores/avatarStore";
 import { usePrefs } from "../stores/prefs";
+import { loginHref } from "../utils/redirect";
 
 interface TopBarProps {
   /** 移动端（<1024px）汉堡按钮点击：打开导航抽屉 */
@@ -13,35 +16,48 @@ interface TopBarProps {
 
 export default function TopBar({ onMenuClick }: TopBarProps) {
   const { mode, setMode } = usePrefs();
-  const user = useAuthStore((s) => s.user);
-  const avatarUrl = useAuthStore((s) =>
-    s.user ? (s.avatars[s.user.id] ?? null) : null,
-  );
-  const signOut = useAuthStore((s) => s.signOut);
+  const { notify } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
-  /* 用户菜单（头像点击展开） */
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
-    function onClickOutside(e: MouseEvent) {
+    const onPointerDown = (e: MouseEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [menuOpen]);
 
-  function goSettings() {
-    setMenuOpen(false);
-    navigate("/settings");
-  }
+  const latestPath = `${location.pathname}${location.search}`;
 
-  function handleLogout() {
-    setMenuOpen(false);
-    signOut();
-    navigate("/login", { replace: true });
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      setMenuOpen(false);
+      notify("已退出登录，当前为游客演示", "success");
+      navigate("/");
+    } catch (e) {
+      notify((e as Error).message, "error");
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -88,67 +104,87 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         {/* 通知中心（模块⑤：本地通知 + 未读徽标） */}
         <NotificationBell />
 
-        {/* 用户头像：点击展开菜单（个人中心 / 退出登录） */}
-        <div className="relative" ref={menuRef}>
+        {/* 账号入口：游客直接去登录，登录用户打开真实账户菜单 */}
+        {status === "authenticated" && user ? (
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="用户菜单"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700 hover:bg-brand-200"
+            >
+              <TopBarAvatar userId={user.id} fallback={user.nickname.slice(0, 1)} />
+            </button>
+
+            {menuOpen && (
+              <div
+                role="menu"
+                aria-label="账户菜单"
+                className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-xl border border-stone-200 bg-surface shadow-card"
+              >
+                <div className="border-b border-stone-100 px-4 py-3">
+                  <p className="truncate text-sm font-semibold text-stone-900">
+                    {user.nickname}
+                  </p>
+                  <p className="truncate text-xs text-stone-500">账号：{user.username}</p>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate("/settings?edit=profile");
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-50"
+                >
+                  <User className="h-4 w-4" /> 编辑资料
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate("/settings?edit=password");
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-50"
+                >
+                  <Settings className="h-4 w-4" /> 修改密码
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={loggingOut}
+                  onClick={() => void handleLogout()}
+                  className="flex w-full items-center gap-2 border-t border-stone-100 px-4 py-2.5 text-left text-sm text-risk-high hover:bg-risk-high-bg disabled:opacity-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {loggingOut ? "退出中…" : "退出登录"}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-label="用户菜单"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-700 transition-colors hover:bg-brand-200"
+            onClick={() => navigate(loginHref(latestPath))}
+            className="flex h-8 items-center gap-1.5 rounded-full bg-brand-100 px-3 text-xs font-medium text-brand-700 hover:bg-brand-200"
           >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                className="h-8 w-8 rounded-full object-cover"
-              />
-            ) : user ? (
-              <span aria-hidden className="text-xs font-bold">
-                {user.username.slice(0, 1).toUpperCase()}
-              </span>
-            ) : (
-              <User className="h-4 w-4" />
-            )}
+            <User className="h-4 w-4" />
+            登录 / 注册
           </button>
-
-          {menuOpen && (
-            <div
-              role="menu"
-              aria-label="用户菜单"
-              className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-xl border border-stone-200 bg-surface p-1.5 shadow-lg"
-            >
-              <div className="px-3 py-2">
-                <p className="flex items-center gap-1.5 truncate text-sm font-medium text-stone-800">
-                  <UserRound aria-hidden className="h-3.5 w-3.5 text-stone-400" />
-                  {user?.username ?? "未登录"}
-                </p>
-                {user && <p className="mt-0.5 text-xs text-stone-400">账号 #{user.id}</p>}
-              </div>
-              <div aria-hidden className="my-1 border-t border-stone-100" />
-              <button
-                role="menuitem"
-                type="button"
-                onClick={goSettings}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-50"
-              >
-                <Settings aria-hidden className="h-4 w-4 text-stone-400" />
-                个人中心
-              </button>
-              <button
-                role="menuitem"
-                type="button"
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
-              >
-                <LogOut aria-hidden className="h-4 w-4" />
-                退出登录
-              </button>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </header>
   );
+}
+
+/** 头像：有自定义照片显示照片，否则显示首字母 */
+function TopBarAvatar({ userId, fallback }: { userId: number; fallback: string }) {
+  const avatarUrl = useAvatarStore((s) => s.avatars[userId] ?? null);
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" className="h-8 w-8 object-cover" />;
+  }
+  return <span aria-hidden>{fallback}</span>;
 }

@@ -4,7 +4,6 @@ from datetime import date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
 from app.models.device import Device
 from app.models.preference import UserPreference
 from app.models.user import User
@@ -41,11 +40,12 @@ DEMO_DEVICES = [
 
 
 def seed_demo_data(db: Session) -> None:
-    demo = db.scalar(select(User).where(User.username == "demo"))
-    if demo is None and db.scalar(select(func.count()).select_from(User)) == 0:
+    if db.scalar(select(func.count()).select_from(User)) == 0:
+        # 历史演示用户：空密码不可登录，仅作为旧种子设备归属，不构成公开授权机制
         user = User(
             username="demo",
-            password_hash=hash_password("123456"),
+            nickname="历史演示数据",
+            password_hash="",
             email="demo@fixitai.local",
         )
         user.preferences = UserPreference()
@@ -53,8 +53,4 @@ def seed_demo_data(db: Session) -> None:
         db.flush()
         for item in DEMO_DEVICES:
             db.add(Device(user_id=user.id, **item))
-        db.commit()
-    elif demo is not None and not demo.password_hash:
-        # 旧库升级：早期 demo 账号无密码，补上默认密码 123456
-        demo.password_hash = hash_password("123456")
         db.commit()

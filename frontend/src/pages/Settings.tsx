@@ -1,10 +1,11 @@
-﻿import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { Camera, LogOut, ShieldCheck, Square, Volume2 } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Camera, LogIn, ShieldCheck, Volume2 } from "lucide-react";
 
-import Button from "../components/Button";
+import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
 import ConfirmDialog from "../components/ConfirmDialog";
+import InputField from "../components/InputField";
 import ModalDialog from "../components/ModalDialog";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
@@ -24,52 +25,53 @@ import {
   ZOOM_MIN,
 } from "../stores/prefs";
 import { useAuthStore } from "../stores/authStore";
-import { isSpeechSupported, speak, stopSpeech, listChineseVoices } from "../utils/speech";
-import { DEMO_USER } from "../types/user";
-import { maskPhone } from "../utils/format";
+import { useAvatarStore } from "../stores/avatarStore";
+import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { useRepairStore } from "../stores/repairStore";
+import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
+import {
+  initSpeech,
+  selectSpeechVoice,
+  speak,
+  stopSpeech,
+  useSpeech,
+} from "../services/speech";
 import { compressAvatar, validatePhoto } from "../utils/image";
+import { loginHref } from "../utils/redirect";
 
 type SaveState = "idle" | "saving" | "saved";
-
-/** 测试朗读的固定文案 */
-const VOICE_TEST_TEXT =
-  "您好，我是修必达。用温柔的声音，把家电的问题慢慢讲给您听。这一段是试听，合适就好。";
 
 /** P9 个人设置（对照「智修AI长辈关怀设置界面.png」） */
 export default function Settings() {
   const prefs = usePrefs();
   const { notify } = useToast();
   const navigate = useNavigate();
-  const authUser = useAuthStore((s) => s.user);
-  const signOut = useAuthStore((s) => s.signOut);
-  const setAvatar = useAuthStore((s) => s.setAvatar);
-  const avatarUrl = useAuthStore((s) =>
-    s.user ? (s.avatars[s.user.id] ?? null) : null,
+  const [params, setParams] = useSearchParams();
+  const authStatus = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+  const updateNickname = useAuthStore((s) => s.updateNickname);
+  const changePassword = useAuthStore((s) => s.changePassword);
+  const setAvatar = useAvatarStore((s) => s.setAvatar);
+  const avatarUrl = useAvatarStore((s) =>
+    user ? (s.avatars[user.id] ?? null) : null,
   );
 
   /** 选择头像图片 → 校验 → 方形压缩 128px → 按账号保存（本地） */
   async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // 允许再次选择同一文件
-    if (!file || !authUser) return;
+    if (!file || !user) return;
     const err = validatePhoto(file);
     if (err) {
       notify(err, "error");
       return;
     }
     try {
-      const dataUrl = await compressAvatar(file);
-      setAvatar(authUser.id, dataUrl);
+      setAvatar(user.id, await compressAvatar(file));
       notify("头像已更新", "success");
     } catch {
       notify("头像处理失败，请换一张试试", "error");
     }
-  }
-
-  /** 退出登录：清除会话并回到登录页 */
-  function handleLogout() {
-    signOut();
-    navigate("/login", { replace: true });
   }
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -79,49 +81,177 @@ export default function Settings() {
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
 
-  /* ---------- 语音测试：点击播放 / 再点停止；拖动语速实时重读 ---------- */
-  const [testing, setTesting] = useState(false);
-  const [chineseVoices, setChineseVoices] = useState<SpeechSynthesisVoice[]>([]);
+  // 本机历史（未归属账号的旧记录），可主动导入当前账号
+  const diagnosisHistory = useDiagnosisStore((s) => s.history);
+  const repairRecords = useRepairStore((s) => s.records);
+  const localCounts = countLocalHistory(diagnosisHistory, repairRecords);
 
-  /** 中文嗓音列表（voiceschanged 兜底：Chrome 异步加载） */
+  // 浏览器语音合成状态（异步加载音色，不在设置里假装已开启）
+  const speechSupported = useSpeech((s) => s.supported);
+  const speechReady = useSpeech((s) => s.ready);
+  const speechStatus = useSpeech((s) => s.status);
+  const speechActiveKey = useSpeech((s) => s.activeKey);
+  const speechError = useSpeech((s) => s.error);
+  const speechVoiceLabel = useSpeech((s) => s.voiceLabel);
+  const speechVoices = useSpeech((s) => s.voices);
+  const speechNoZh = useSpeech((s) => s.noZhVoice);
+  const audioSupported =
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window &&
+    typeof window.SpeechSynthesisUtterance !== "undefined";
+  const testKey = "settings:test";
+  const testActive = speechStatus === "speaking" && speechActiveKey === testKey;
+
   useEffect(() => {
-    if (!isSpeechSupported()) return;
-    const load = () => setChineseVoices(listChineseVoices());
-    load();
-    window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+    initSpeech();
   }, []);
 
-  /** 开始播放测试语音 */
-  function startTestVoice() {
-    const ok = speak(VOICE_TEST_TEXT, {
-      rate: prefs.speechRate,
-      voiceURI: prefs.voiceURI,
-      onEnd: () => setTesting(false),
-    });
-    if (ok) setTesting(true);
-    else notify("语音播放未启动", "error");
-  }
+  const testText = `您好，这是修必达的语音朗读测试。当前语速为 ${prefs.speechRate.toFixed(1)} 倍。`;
 
-  function toggleTestVoice() {
-    if (testing) {
+  function handleVoiceToggle(next: boolean) {
+    prefs.setVoiceEnabled(next);
+    if (!next) {
+      // 关闭语音时同步关闭自动朗读并立即停止当前朗读
+      prefs.setAutoRead(false);
       stopSpeech();
-      setTesting(false);
     } else {
-      startTestVoice();
+      initSpeech();
     }
   }
 
-  /** 拖动语速：保存偏好；正在试听时以新语速从头重读 */
-  function handleRateChange(v: number) {
-    prefs.setSpeechRate(v);
-    if (testing) {
-      speak(VOICE_TEST_TEXT, {
-        rate: v,
-        voiceURI: prefs.voiceURI,
-        onEnd: () => setTesting(false),
+  function handleAutoToggle(next: boolean) {
+    if (next && !prefs.voiceEnabled) prefs.setVoiceEnabled(true);
+    prefs.setAutoRead(next);
+  }
+
+  function playTestVoice() {
+    if (!audioSupported) {
+      notify("当前浏览器不支持语音合成，文字内容仍可正常使用", "error");
+      return;
+    }
+    if (!prefs.voiceEnabled) prefs.setVoiceEnabled(true);
+    if (testActive) {
+      stopSpeech();
+      return;
+    }
+    const started = speak({ key: testKey, text: testText });
+    if (!started) {
+      window.setTimeout(() => {
+        const state = useSpeech.getState();
+        if (state.error) notify(state.error, "error");
+      }, 100);
+    }
+  }
+
+  // 账户资料 / 密码弹窗
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountBusy, setAccountBusy] = useState(false);
+
+  // 顶栏菜单跳转打开对应弹窗
+  useEffect(() => {
+    const edit = params.get("edit");
+    if (edit === "profile" && authStatus === "authenticated") {
+      setNickname(user?.nickname ?? "");
+      setAccountError(null);
+      setProfileOpen(true);
+    } else if (edit === "password" && authStatus === "authenticated") {
+      setCurrentPwd("");
+      setNewPwd("");
+      setConfirmPwd("");
+      setAccountError(null);
+      setPasswordOpen(true);
+    }
+  }, [params, authStatus, user?.nickname]);
+
+  function closeEdit() {
+    setProfileOpen(false);
+    setPasswordOpen(false);
+    setAccountError(null);
+    if (params.get("edit")) {
+      params.delete("edit");
+      setParams(params, { replace: true });
+    }
+  }
+
+  async function saveNickname() {
+    const value = nickname.trim();
+    if (!value) {
+      setAccountError("昵称不能为空");
+      return;
+    }
+    if (value.length > 32) {
+      setAccountError("昵称最多 32 个字符");
+      return;
+    }
+    setAccountBusy(true);
+    setAccountError(null);
+    try {
+      await updateNickname(value);
+      closeEdit();
+      notify("昵称已更新", "success");
+    } catch (e) {
+      setAccountError((e as Error).message);
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function savePassword() {
+    if (currentPwd.length === 0) {
+      setAccountError("请输入旧密码");
+      return;
+    }
+    if (newPwd.length < 8) {
+      setAccountError("新密码至少 8 位");
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      setAccountError("两次输入的新密码不一致");
+      return;
+    }
+    setAccountBusy(true);
+    setAccountError(null);
+    try {
+      const message = await changePassword(currentPwd, newPwd);
+      setPasswordOpen(false);
+      notify(message, "success");
+      navigate("/login?reason=password_changed&returnTo=%2Fsettings", {
+        replace: true,
       });
+    } catch (e) {
+      setAccountError((e as Error).message);
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function runImport() {
+    if (importBusy) return;
+    setImportBusy(true);
+    try {
+      const result = await importLocalHistory();
+      setImportOpen(false);
+      notify(
+        `已导入 ${result.diagnoses} 份诊断报告、${result.repairs} 条维修记录`,
+        "success"
+      );
+    } catch (e) {
+      setImportOpen(false);
+      notify(
+        `导入失败：${(e as Error).message || "请稍后重试"}；本机数据未删除，可再次导入`,
+        "error"
+      );
+    } finally {
+      setImportBusy(false);
     }
   }
 
@@ -155,54 +285,103 @@ export default function Settings() {
         }
       />
 
-      {/* A. 用户资料（登录账号 + 演示补充信息） */}
+      {/* A. 用户资料（来自服务端会话；游客明确标注） */}
       <SectionCard title="用户资料">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* 可点击更换的头像（压缩后按账号本地存储） */}
-            <label
-              className="group relative block h-12 w-12 cursor-pointer"
-              title="点击更换头像"
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="用户头像"
-                  className="h-12 w-12 rounded-full object-cover"
+        {authStatus === "authenticated" && user ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* 可点击更换的头像（方形压缩后按账号本地存储） */}
+              <label
+                className="group relative block h-12 w-12 cursor-pointer"
+                title="点击更换头像"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="用户头像"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+                    {user.nickname.slice(0, 1)}
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <Camera aria-hidden className="h-4 w-4" />
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handleAvatarChange}
                 />
-              ) : (
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                  {authUser?.username.slice(0, 1).toUpperCase() ?? DEMO_USER.nickname.slice(0, 1)}
-                </span>
-              )}
-              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                <Camera aria-hidden className="h-4 w-4" />
-              </span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
-            </label>
-            <div>
-              <p className="text-sm font-semibold text-stone-900">
-                {authUser?.username ?? DEMO_USER.nickname}
-                <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-normal text-stone-500">
-                  账号 #{authUser?.id ?? "-"}
-                </span>
-              </p>
-              <p className="mt-0.5 text-sm text-stone-500">{authUser?.email ?? maskPhone(DEMO_USER.phone)}</p>
-              <p className="mt-0.5 text-xs text-stone-400">
-                当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
-              </p>
+              </label>
+              <div>
+                <p className="text-sm font-semibold text-stone-900">
+                  {user.nickname}
+                  <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-normal text-brand-700">
+                    已登录
+                  </span>
+                </p>
+                <p className="mt-0.5 text-sm text-stone-500">账号标识：{user.username}</p>
+                <p className="mt-0.5 text-xs text-stone-400">
+                  当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setNickname(user.nickname);
+                  setAccountError(null);
+                  setProfileOpen(true);
+                }}
+              >
+                编辑昵称
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCurrentPwd("");
+                  setNewPwd("");
+                  setConfirmPwd("");
+                  setAccountError(null);
+                  setPasswordOpen(true);
+                }}
+              >
+                修改密码
+              </Button>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut aria-hidden className="h-4 w-4" />
-            退出登录
-          </Button>
-        </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-stone-900">
+                游客演示
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-normal text-amber-800">
+                  未登录
+                </span>
+              </p>
+              <p className="mt-1 text-sm text-stone-600">
+                当前可体验诊断和只读演示设备。登录后可保存自己的设备、昵称和账号数据。
+              </p>
+            </div>
+            <Link to={loginHref("/settings")} className={buttonClass("primary", "md")}>
+              <LogIn className="h-4 w-4" /> 登录 / 注册
+            </Link>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* B2. 消息通知：免打扰开关 */}
+      <SectionCard title="消息通知">
+        <SwitchControl
+          label="消息免打扰"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          checked={prefs.doNotDisturb}
+          onChange={prefs.setDoNotDisturb}
+        />
       </SectionCard>
 
       {/* B. 使用模式 */}
@@ -229,16 +408,6 @@ export default function Settings() {
         </div>
       </SectionCard>
 
-      {/* B2. 消息通知：免打扰开关 */}
-      <SectionCard title="消息通知">
-        <SwitchControl
-          label="消息免打扰"
-          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
-          checked={prefs.doNotDisturb}
-          onChange={prefs.setDoNotDisturb}
-        />
-      </SectionCard>
-
       {/* C. 显示设置 */}
       <SectionCard title="显示设置">
         <SettingsRow label="字体大小" description="标准 / 大号 / 超大">
@@ -254,7 +423,7 @@ export default function Settings() {
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
-            <div className="flex w-full items-center justify-between gap-2 sm:w-56 sm:justify-end">
+            <div className="flex w-56 items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>
@@ -286,79 +455,124 @@ export default function Settings() {
         <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
-            description="将 AI 回复转为语音播报"
+            description="允许使用浏览器语音合成朗读页面文字（不调用模型、不产生模型费用）"
             checked={prefs.voiceEnabled}
-            onChange={prefs.setVoiceEnabled}
+            onChange={handleVoiceToggle}
           />
           <SwitchControl
             label="自动朗读"
-            description="新消息到达时自动播放"
+            description="新问题到达时自动朗读一次；公共场所可能被他人听到"
             checked={prefs.autoRead}
-            onChange={prefs.setAutoRead}
+            onChange={handleAutoToggle}
           />
         </div>
-        {isSpeechSupported() ? (
-          <div className="pt-3">
-            <SettingsRow
-              label="播报声音"
-              description="默认自动挑选温柔的中文女声，也可以手动选择"
-            >
+        <div className="pt-3">
+          {speechReady && speechVoices.length > 1 && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="speech-voice" className="text-sm text-stone-700">
+                朗读音色
+              </label>
               <select
-                value={prefs.voiceURI ?? ""}
-                onChange={(e) => prefs.setVoiceURI(e.target.value || null)}
-                aria-label="播报声音"
-                className="w-full max-w-64 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                id="speech-voice"
+                value={prefs.speechVoiceURI ?? ""}
+                onChange={(e) => selectSpeechVoice(e.target.value || null)}
+                className="max-w-[70%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
               >
-                <option value="">自动推荐（温柔女声）</option>
-                {chineseVoices.map((v) => (
-                  <option key={v.voiceURI} value={v.voiceURI}>
+                <option value="">自动（优先自然音色）</option>
+                {speechVoices.map((v) => (
+                  <option key={v.id} value={v.id}>
                     {v.name}
                   </option>
                 ))}
               </select>
-            </SettingsRow>
-            <SliderControl
-              label="语速"
-              min={0.5}
-              max={2}
-              step={0.1}
-              value={prefs.speechRate}
-              onChange={handleRateChange}
-              minLabel="慢"
-              maxLabel="快"
-              formatValue={(v) => `${v.toFixed(1)}x`}
-            />
-            <div className="mt-1 flex items-center gap-3">
-              <Button
-                variant={testing ? "danger" : "secondary"}
-                size="sm"
-                onClick={toggleTestVoice}
-                aria-pressed={testing}
-              >
-                {testing ? (
-                  <>
-                    <Square className="h-4 w-4" /> 停止播放
-                  </>
-                ) : (
-                  <>
-                    <Volume2 className="h-4 w-4" /> 播放测试语音
-                  </>
-                )}
-              </Button>
-              <p aria-live="polite" className="text-xs text-stone-400">
-                {testing ? "正在播放，再次点击按钮即可停止" : "点击试听，拖动语速会实时重读"}
-              </p>
             </div>
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">
-            <Volume2 className="h-4 w-4 text-stone-400" />
-            当前浏览器不支持语音播报（Web Speech API），朗读功能不可用。
+          )}
+          <SliderControl
+            label="语速"
+            min={0.5}
+            max={2}
+            step={0.1}
+            value={prefs.speechRate}
+            onChange={prefs.setSpeechRate}
+            minLabel="慢"
+            maxLabel="快"
+            formatValue={(v) => `${v.toFixed(1)}x`}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={playTestVoice}
+            disabled={!audioSupported}
+          >
+            <Volume2 className="h-4 w-4" />
+            {testActive ? "停止测试语音" : "播放测试语音"}
+          </Button>
+          {audioSupported && speechStatus === "speaking" && (
+            <span aria-live="polite" className="ml-2 text-xs text-stone-500">
+              正在播放…
+            </span>
+          )}
+        </div>
+
+        {/* 明确支持情况，避免“开关看似开启却完全无反馈” */}
+        <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
+          {!audioSupported || !speechSupported ? (
+            <p role="status">
+              当前浏览器不支持语音合成。可改用最新版 Chrome / Edge / Safari；文字阅读、诊断与安全提示均不受影响。
+            </p>
+          ) : !speechReady ? (
+            <p role="status">正在加载系统语音列表…</p>
+          ) : speechNoZh ? (
+            <p role="status">
+              未检测到中文音色，将尝试浏览器默认音色朗读；若无声或发音不准，请更换浏览器或在系统中安装中文语音。
+            </p>
+          ) : (
+            <p role="status">
+              语音合成可用
+              {speechVoiceLabel ? `，当前音色：${speechVoiceLabel}` : "，使用浏览器默认音色"}。
+              具体音色与是否离线由设备和浏览器决定，本项目不承诺所有设备都能离线朗读。
+            </p>
+          )}
+          {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
+          <p>
+            音色由设备与浏览器提供。系统旧版音色偏机械时，可在上方切换其他中文音色；
+            设备安装自然/神经网络音色后会自动优先使用。
           </p>
-        )}
+          <p>自动朗读默认关闭；只有你主动开启后才会在新问题到达时播放一次。</p>
+        </div>
       </SectionCard>
 
-      {/* E. 隐私与数据 */}
+      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示） */}
+      {authStatus === "authenticated" &&
+        localCounts.diagnoses + localCounts.repairs > 0 && (
+          <SectionCard title="本机历史">
+            <p className="text-sm leading-relaxed text-stone-600">
+              检测到本机还有 <strong>{localCounts.diagnoses}</strong> 份诊断报告、{" "}
+              <strong>{localCounts.repairs}</strong> 条维修记录未归属任何账号。
+              导入后会归属当前账号（<strong>{user?.username}</strong>）并保存到云端，
+              其他设备登录同一账号可查看；本机原记录仍会保留。
+            </p>
+            <p className="mt-2 text-xs text-stone-400">
+              旧设备无法可靠对应时只保留设备名称，不会强行绑定到现有设备；重复导入不会产生重复记录。
+            </p>
+            <div className="mt-3">
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                导入本机历史
+              </Button>
+            </div>
+            <ConfirmDialog
+              open={importOpen}
+              title="确认导入本机历史？"
+              message={`将把 ${localCounts.diagnoses} 份诊断报告、${localCounts.repairs} 条维修记录导入账号 ${user?.username ?? ""} 并保存到云端。导入不会删除本机原数据，重复导入不会产生重复记录。`}
+              confirmLabel={importBusy ? "导入中…" : "确认导入"}
+              danger={false}
+              onConfirm={() => void runImport()}
+              onCancel={() => setImportOpen(false)}
+            />
+          </SectionCard>
+        )}
+
+      {/* F. 隐私与数据 */}
       <SectionCard title="隐私与数据">
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setPrivacyOpen(true)}>
@@ -375,15 +589,17 @@ export default function Settings() {
           </Button>
         </div>
         <p className="mt-2 text-xs text-stone-400">
-          当前登录 {authUser?.username ?? "未登录"}。注销操作会清除本机数据并退出登录。
+          账号注销功能暂未开放；本机历史与维修记录不会因登录或注册自动归属到新账号。
         </p>
         <ConfirmDialog
           open={clearOpen}
           title="确认清除本机数据？"
-          message="将清除本机的偏好设置、诊断草稿与维修记录（演示数据），不影响后端已保存的设备信息。"
+          message="将清除本机的偏好设置、所有本机诊断草稿与维修记录。已保存到服务端的设备不会受影响。"
           confirmLabel="确认清除"
           onConfirm={() => {
             prefs.reset();
+            useDiagnosisStore.getState().clearAll();
+            useRepairStore.getState().clearAll();
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
             localStorage.removeItem("fixitai-notifications");
@@ -395,13 +611,10 @@ export default function Settings() {
         />
         <ConfirmDialog
           open={deleteOpen}
-          title="确认注销账号？"
-          message="注销后无法恢复。当前为演示账号，此操作仅作流程演示。"
-          confirmLabel="确认注销"
-          onConfirm={() => {
-            setDeleteOpen(false);
-            notify("演示账号，注销流程暂未开放", "info");
-          }}
+          title="账号注销暂未开放"
+          message="当前版本不提供账号注销服务，也不会删除你的设备或历史记录。如需停用账号，请退出登录。"
+          confirmLabel="知道了"
+          onConfirm={() => setDeleteOpen(false)}
           onCancel={() => setDeleteOpen(false)}
         />
         {/* 隐私说明弹窗（比赛合规：涉及用户数据须提供基本隐私说明） */}
@@ -423,7 +636,7 @@ export default function Settings() {
             </p>
             <p>
               <strong>2. 数据的存储。</strong>
-              界面偏好、诊断草稿与维修记录保存在你的浏览器本地（localStorage）；设备与维修档案保存在本产品服务端数据库中，仅用于业务功能展示，不做商业用途。
+              界面偏好与诊断草稿保存在你的浏览器本地，并按登录账号隔离；设备、你主动保存的诊断报告与维修记录保存在服务端数据库中，只归当前登录账号所有，其他账号无法读取。未归属的旧本机记录会独立保留为本机历史，不会自动归属新注册账号，需你在本页主动导入。
             </p>
             <p>
               <strong>3. AI 诊断说明。</strong>
@@ -431,11 +644,11 @@ export default function Settings() {
             </p>
             <p>
               <strong>4. 数据安全。</strong>
-              AI 服务密钥仅保存在服务端环境变量中，不随前端代码分发；产品不包含广告跟踪或第三方统计脚本。
+              密码由服务端使用成熟哈希算法保存；登录令牌存放在 HttpOnly Cookie 中，不写入 localStorage。AI 服务密钥与会话密钥仅保存在服务端环境变量中，不随前端代码分发；产品不包含广告跟踪或第三方统计脚本。
             </p>
             <p>
               <strong>5. 你的控制权。</strong>
-              你可以在本页「清除本机数据」随时删除本地保存的偏好、草稿与维修记录；当前版本为演示账号运行，未接入真实用户体系，不会收集手机号等真实身份信息。
+              你可以在本页「清除本机数据」随时删除本地保存的偏好、草稿与维修记录，也可以退出登录使当前会话失效。账号注销功能暂未开放。本版本不使用邮箱验证或手机号验证，也不会把未验证的信息标注为已验证。
             </p>
             <p className="text-xs text-stone-400">
               本说明与产品当前实际功能一致。功能更新导致数据处理方式变化时，我们将同步更新本说明。
@@ -473,6 +686,90 @@ export default function Settings() {
           注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
         </p>
       </SectionCard>
+
+      {/* 编辑昵称 */}
+      <ModalDialog
+        open={profileOpen}
+        title="编辑昵称"
+        description="昵称仅用于展示，账号标识仍为用户名。"
+        onClose={closeEdit}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeEdit} disabled={accountBusy}>
+              取消
+            </Button>
+            <Button onClick={() => void saveNickname()} disabled={accountBusy}>
+              {accountBusy ? "保存中…" : "保存昵称"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <InputField
+            label="昵称"
+            required
+            maxLength={32}
+            value={nickname}
+            onChange={setNickname}
+            error={accountError ?? undefined}
+            description="修改成功后刷新页面仍会保留。"
+          />
+          {user && (
+            <p className="text-xs text-stone-500">账号标识：{user.username}</p>
+          )}
+        </div>
+      </ModalDialog>
+
+      {/* 修改密码 */}
+      <ModalDialog
+        open={passwordOpen}
+        title="修改密码"
+        description="修改成功后，旧密码和全部旧登录会话都会失效。"
+        onClose={closeEdit}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeEdit} disabled={accountBusy}>
+              取消
+            </Button>
+            <Button onClick={() => void savePassword()} disabled={accountBusy}>
+              {accountBusy ? "提交中…" : "确认修改"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <InputField
+            label="旧密码"
+            required
+            type="password"
+            maxLength={128}
+            value={currentPwd}
+            onChange={setCurrentPwd}
+          />
+          <InputField
+            label="新密码"
+            required
+            type="password"
+            maxLength={128}
+            description="至少 8 位"
+            value={newPwd}
+            onChange={setNewPwd}
+          />
+          <InputField
+            label="确认新密码"
+            required
+            type="password"
+            maxLength={128}
+            value={confirmPwd}
+            onChange={setConfirmPwd}
+          />
+          {accountError && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {accountError}
+            </p>
+          )}
+        </div>
+      </ModalDialog>
     </div>
   );
 }

@@ -14,7 +14,7 @@ import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
 
@@ -47,8 +47,10 @@ export default function Home() {
   const { mode } = usePrefs();
   const elder = mode === "elder";
   const history = useDiagnosisStore((s) => s.history);
+  const ownerKey = useDiagnosisStore((s) => s.ownerKey);
 
-  const recent = history.slice(0, 3);
+  // 只展示当前账号的诊断记录，其他账号 / 本机历史不混入
+  const recent = diagnosesForOwner(history, ownerKey).slice(0, 3);
 
   return (
     <div className="space-y-6">

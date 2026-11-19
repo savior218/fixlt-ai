@@ -18,8 +18,6 @@ import UiKit from "./pages/UiKit";
 export default function App() {
   return (
     <Routes>
-      {/* 登录 / 注册（独立页，无侧栏） */}
-      <Route path="login" element={<Login />} />
       <Route element={<AppLayout />}>
         {/* 首页 */}
         <Route index element={<Home />} />
@@ -35,7 +33,9 @@ export default function App() {
         {/* P5 智能报修（?diagnosisId= 带入） / P4 维修档案 */}
         <Route path="repair" element={<RepairAssistant />} />
         <Route path="records" element={<Records />} />
-        {/* P9 个人设置 */}
+        {/* 登录 / 注册（保留游客入口） */}
+        <Route path="login" element={<Login />} />
+        {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
         <Route path="ui-kit" element={<UiKit />} />
         <Route path="*" element={<NotFound />} />

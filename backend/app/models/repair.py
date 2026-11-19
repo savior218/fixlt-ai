@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.session import Base
@@ -35,15 +35,25 @@ class RepairRecord(Base):
     diagnosis_id: Mapped[int | None] = mapped_column(
         ForeignKey("diagnoses.id"), nullable=True
     )
+    # 客户端记录 ID：同一用户下唯一，用于重复提交去重
+    client_ref: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    device_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    fault_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     repair_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    technician: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
     repair_cost: Mapped[str | None] = mapped_column(String(32), nullable=True)
     repair_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     verification_status: Mapped[str] = mapped_column(
         String(32), default="pending"
     )
     attachments: Mapped[str] = mapped_column(Text, default="[]")  # JSON 数组
+    imported: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
     )
 
 

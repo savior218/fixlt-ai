@@ -13,8 +13,8 @@ import StatusBadge from "../components/StatusBadge";
 import { CATEGORY_LABELS } from "../services/api";
 import { deviceUsageYears, withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
-import { recordsOfDevice, useRepairStore } from "../stores/repairStore";
+import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
+import { recordsForOwner, recordsOfDevice, useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDate, relativeTime } from "../utils/format";
 import { REPAIR_STATUS_LABELS, VERIFICATION_LABELS } from "../types/repair";
@@ -45,8 +45,18 @@ export default function DeviceDetail() {
   const elder = mode === "elder";
 
   const { devices, error, load } = useDeviceStore();
-  const diagnoses = useDiagnosisStore((s) => s.history);
-  const records = useRepairStore((s) => s.records);
+  const allDiagnoses = useDiagnosisStore((s) => s.history);
+  const diagnosisOwner = useDiagnosisStore((s) => s.ownerKey);
+  const allRecords = useRepairStore((s) => s.records);
+  const recordOwner = useRepairStore((s) => s.ownerKey);
+  const diagnoses = useMemo(
+    () => diagnosesForOwner(allDiagnoses, diagnosisOwner),
+    [allDiagnoses, diagnosisOwner]
+  );
+  const records = useMemo(
+    () => recordsForOwner(allRecords, recordOwner),
+    [allRecords, recordOwner]
+  );
   const [tab, setTab] = useState<Tab>("overview");
   /** elder 分步：先看状态，点「查看设备详情」再展开全部；standard 恒为全部 */
   const [elderExpanded, setElderExpanded] = useState(false);

@@ -12,10 +12,14 @@ export type VerificationStatus =
 /** 维修记录（P4 维修档案 / P7 设备详情 / P8 维修历史共用） */
 export interface RepairRecord {
   id: string;
+  /** 本地数据归属：user:<id> 或 local（旧记录 / 游客本机历史） */
+  ownerKey?: string;
   deviceId: number;
   deviceName: string;
   /** 关联诊断 ID（手动添加时可为空） */
   diagnosisId: string | null;
+  /** 关联诊断的内容来源（模板记录保存后仍保留来源标识；旧记录为空） */
+  diagnosisSource?: "ai" | "template" | "unknown" | "none" | null;
   /** 创建时间 ISO */
   createdAt: string;
   /** 实际维修时间 */
@@ -27,6 +31,12 @@ export interface RepairRecord {
   status: RepairStatus;
   images: string[];
   verificationStatus: VerificationStatus;
+
+  /* ---- 云端同步（阶段十二） ---- */
+  serverId?: number;
+  cloud?: boolean;
+  imported?: boolean;
+  saveStatus?: "local" | "saving" | "saved" | "failed";
 }
 
 /** 维修档案统计（P4 顶部卡片，从 repairStore 计算） */

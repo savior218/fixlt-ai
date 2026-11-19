@@ -1,55 +1,97 @@
-"""AI 诊断请求/响应模型（阶段九：真实 LLM 接入）。
+"""AI 诊断请求 / 模型输出 / 响应模型（阶段十：可信性与安全）。
 
-安全边界：风险等级判断由前端本地规则引擎（utils/risk.ts）完成，
-LLM 只产出诊断内容，不参与风险判定。
+安全边界：
+- 风险等级不接受客户端提交；服务端独立扫描输入并计算风险下限
+- 已确认事实由服务端根据用户输入生成，不直接采用模型自述的“事实”
+- 模型只负责诊断内容；输出还需通过危险建议检查
 """
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Category = Literal["ac", "fridge", "washer", "other"]
+RiskLevel = Literal["low", "medium", "high"]
+
+
+class QAItem(BaseModel):
+    """单轮问诊：问题 ID、实际展示的问题文本、用户回答、是否未知。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question_id: str = Field(min_length=1, max_length=40)
+    question_text: str = Field(min_length=1, max_length=160)
+    answer: str = Field(min_length=1, max_length=300)
+    unknown: bool = False
 
 
 class DiagnoseRequest(BaseModel):
-    """问诊上下文（P1 四步流程收集的全部信息）。"""
+    """问诊上下文（严格约束字段长度、类别与问答数量）。"""
 
-    category: str = Field(..., description="ac / fridge / washer / other")
-    symptom: str | None = Field(None, description="故障现象卡片标题，自定义描述时为 null")
-    description: str = Field("", description="用户自定义故障描述")
-    answers: list[str] = Field(default_factory=list, description="AI 问诊逐题回答")
-    device_name: str | None = Field(None, description="关联设备名称")
-    device_brand: str | None = None
-    device_model: str | None = None
-    photo_id: int | None = Field(None, description="故障照片 ID（/api/diagnose/photo 上传后返回）")
+    model_config = ConfigDict(extra="forbid")
+
+    category: Category
+    symptom: str | None = Field(default=None, max_length=80)
+    description: str = Field(default="", max_length=500)
+    qa: list[QAItem] = Field(default_factory=list, max_length=4)
+    device_name: str | None = Field(default=None, max_length=64)
+    device_brand: str | None = Field(default=None, max_length=64)
+    device_model: str | None = Field(default=None, max_length=64)
+    photo_id: int | None = Field(
+        default=None, description="故障照片 ID（/api/diagnose/photo 上传后返回）"
+    )
 
 
 class PossibleCause(BaseModel):
-    title: str
-    description: str
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = Field(min_length=1, max_length=80)
+    description: str = Field(min_length=1, max_length=400)
 
 
 class RepairSuggestion(BaseModel):
-    title: str
-    description: str
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = Field(min_length=1, max_length=80)
+    description: str = Field(min_length=1, max_length=400)
 
 
-class DiagnoseContent(BaseModel):
-    """LLM 输出内容：standard / elder 双文案，一次调用同时产出。"""
+class ModelDiagnosisContent(BaseModel):
+    """模型输出内容：standard / elder 双文案，一次调用同时产出。
 
-    conclusion: str
-    conclusion_elder: str
+    不包含 evidence 与风险等级：前者由服务端生成，后者由安全规则引擎判定。
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    conclusion: str = Field(min_length=5, max_length=600)
+    conclusion_elder: str = Field(min_length=5, max_length=600)
     possible_causes: list[PossibleCause] = Field(min_length=1, max_length=4)
     # 看图诊断时模型可能给不出照片证据，允许为空数组
-    evidence: list[str] = Field(min_length=0, max_length=6)
+    evidence: list[str] = Field(default_factory=list, max_length=6)
     suggestions: list[RepairSuggestion] = Field(min_length=1, max_length=4)
     suggestions_elder: list[RepairSuggestion] = Field(min_length=1, max_length=4)
-    # 提示类字段允许模型省略：空值时前端回退本地文案
-    tips: str = ""
-    tips_elder: str = ""
-    risk_note: str = ""
-    risk_note_elder: str = ""
+    tips: str = Field(default="", max_length=240)
+    tips_elder: str = Field(default="", max_length=240)
+    risk_note: str = Field(default="", max_length=240)
+    risk_note_elder: str = Field(default="", max_length=240)
+
+
+class DiagnoseContent(ModelDiagnosisContent):
+    """返回给前端的完整内容：双文案 + 服务端生成的事实/未知信息。"""
+
+    evidence: list[str] = Field(min_length=1, max_length=8)
+    unknown_information: list[str] = Field(default_factory=list, max_length=6)
 
 
 class DiagnoseResponse(BaseModel):
-    source: str = "ai"
+    source: Literal["ai"] = "ai"
     model: str
     content: DiagnoseContent
+    risk_floor: RiskLevel
+    risk_matched: list[str] = Field(default_factory=list)
+    safety_rules_version: str
+    # 登录用户的保存回执：保存报告时服务端据此确认“真实 AI 来源”
+    receipt: str | None = None
 
 
 class PhotoOut(BaseModel):

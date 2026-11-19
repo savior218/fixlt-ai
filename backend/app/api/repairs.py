@@ -1,11 +1,10 @@
 """报修工单 API（模块②：报修工单闭环）。
 
-- POST /api/repairs            创建工单（状态 pending，记录初始流转历史）
-- GET  /api/repairs            当前用户工单列表（倒序）
-- POST /api/repairs/{id}/status 工单状态流转（仅允许正向，不可回退）
+- POST /api/repair-tickets            创建工单（状态 pending，记录初始流转历史）
+- GET  /api/repair-tickets            当前用户工单列表（倒序）
+- POST /api/repair-tickets/{id}/status 工单状态流转（仅允许正向，不可回退）
 
-客观上不存在可对接的真实第三方售后平台开放 API，本模块以
-「报修工单闭环」作为诚实替代方案：状态流转接口用于演示/运维侧推进。
+与 /api/repairs（云端维修记录，阶段十二）分开挂载，互不覆盖。
 """
 
 import json
@@ -25,7 +24,7 @@ from app.schemas.repair import (
     TicketStatusUpdate,
 )
 
-router = APIRouter(prefix="/api/repairs", tags=["repairs"])
+router = APIRouter(prefix="/api/repair-tickets", tags=["repair-tickets"])
 
 
 def _now_iso() -> str:

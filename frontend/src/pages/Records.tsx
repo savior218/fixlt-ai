@@ -1,6 +1,6 @@
-﻿﻿﻿﻿import { useEffect, useMemo, useState } from "react";
+﻿﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, PenLine, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, FastForward, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -8,19 +8,28 @@ import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import TicketTracker from "../components/TicketTracker";
-import { TICKET_STATUS_LABELS, TICKET_STATUS_ORDER, type TicketStatus } from "../services/api";
+import SourceBadge from "../components/SourceBadge";
+import { TICKET_STATUS_LABELS } from "../services/api";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
 import { useNotificationStore } from "../stores/notifications";
-import { useRepairStore } from "../stores/repairStore";
+import {
+  localRepairCount,
+  recordsForOwner,
+  useRepairStore,
+} from "../stores/repairStore";
 import { useTicketStore } from "../stores/ticketStore";
+import {
+  diagnosesForOwner,
+  useDiagnosisStore,
+} from "../stores/diagnosisStore";
+import { formatDateTime, relativeTime } from "../utils/format";
 import {
   REPAIR_STATUS_LABELS,
   VERIFICATION_LABELS,
   type RepairRecord,
   type VerificationStatus,
 } from "../types/repair";
-import { formatDateTime, relativeTime } from "../utils/format";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "全部状态" },
@@ -47,8 +56,27 @@ const VERIFY_OPTIONS: { value: VerificationStatus; label: string }[] = [
 export default function Records() {
   const { notify } = useToast();
 
-  const records = useRepairStore((s) => s.records);
+  const allRecords = useRepairStore((s) => s.records);
+  const ownerKey = useRepairStore((s) => s.ownerKey);
   const updateVerification = useRepairStore((s) => s.updateVerification);
+  /** 只展示当前账号的记录；旧本机历史保留但不混入 */
+  const records = useMemo(
+    () => recordsForOwner(allRecords, ownerKey),
+    [allRecords, ownerKey]
+  );
+  const localCount = localRepairCount(allRecords, ownerKey);
+  const retryCloud = useRepairStore((s) => s.retryCloud);
+
+  const allDiagnoses = useDiagnosisStore((s) => s.history);
+  const diagnosisOwner = useDiagnosisStore((s) => s.ownerKey);
+  /** 诊断历史：云端已保存 + 本账号本地记录（跨浏览器登录后可从服务端恢复） */
+  const reports = useMemo(
+    () =>
+      diagnosesForOwner(allDiagnoses, diagnosisOwner)
+        .filter((d) => d.status === "completed")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [allDiagnoses, diagnosisOwner]
+  );
 
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -75,9 +103,25 @@ export default function Records() {
     });
   }, [records, keyword, statusFilter, timeFilter]);
 
-  function verify(r: RepairRecord, v: VerificationStatus) {
-    updateVerification(r.id, v);
-    notify(`已更新验证结果：${VERIFICATION_LABELS[v]}`, "success");
+  async function verify(r: RepairRecord, v: VerificationStatus) {
+    try {
+      await updateVerification(r.id, v);
+      notify(`已更新验证结果：${VERIFICATION_LABELS[v]}`, "success");
+    } catch (e) {
+      notify(
+        `更新失败，已还原原状态：${(e as Error).message || "请稍后重试"}`,
+        "error"
+      );
+    }
+  }
+
+  async function retry(r: RepairRecord) {
+    try {
+      await retryCloud(r.id);
+      notify("已重新保存到云端", "success");
+    } catch (e) {
+      notify((e as Error).message || "重试失败，内容仍保留在本机", "error");
+    }
   }
 
   return (
@@ -94,6 +138,46 @@ export default function Records() {
 
       {/* 报修工单跟踪（模块②） */}
       <TicketsSection />
+
+      {localCount > 0 && (
+        <p role="note" className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          另有 <strong>{localCount}</strong> 条本机历史维修记录未归属任何账号，仍保留在本机，
+          切换到游客演示可查看；不会自动归入当前账号。
+        </p>
+      )}
+
+      {/* 诊断历史：已保存报告可在另一浏览器登录同一账号后查看 */}
+      {reports.length > 0 && (
+        <SectionCard title={`诊断报告（${reports.length}）`} padding="sm">
+          <ul className="divide-y divide-stone-100">
+            {reports.slice(0, 10).map((d) => (
+              <li key={d.id}>
+                <Link
+                  to={`/diagnosis/${d.id}/report`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 transition-colors hover:bg-stone-50"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-stone-800">
+                      {d.deviceName ?? "未关联设备"} · {d.symptom || "自定义描述"}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-stone-400">
+                      {formatDateTime(d.createdAt)}
+                      {d.imported ? " · 本机导入（未经服务端校验）" : ""}
+                      {d.saveStatus === "failed" ? " · 未同步到云端" : ""}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <SourceBadge source={d.source} model={d.model} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {reports.length > 10 && (
+            <p className="mt-2 text-xs text-stone-400">仅显示最近 10 份报告。</p>
+          )}
+        </SectionCard>
+      )}
 
       {/* 顶部安全提示条 */}
       <div
@@ -153,6 +237,13 @@ export default function Records() {
         <ul className="space-y-3">
           {filtered.map((r) => {
             const open = expandedId === r.id;
+            const sourceLabel = !r.diagnosisId
+              ? "手动记录"
+              : r.diagnosisSource === "ai"
+                ? "真实 AI 生成"
+                : r.diagnosisSource === "template"
+                  ? "模板演示（非 AI）"
+                  : "来源未记录";
             return (
               <li key={r.id} className="card-base overflow-hidden">
                 <button
@@ -168,6 +259,9 @@ export default function Records() {
                     <p className="mt-0.5 text-xs text-stone-400">
                       {relativeTime(r.createdAt)} · {REPAIR_STATUS_LABELS[r.status]} · 验证：
                       {VERIFICATION_LABELS[r.verificationStatus]}
+                      {r.cloud ? " · 云端" : ""}
+                      {r.imported ? " · 本机导入" : ""}
+                      {r.saveStatus === "failed" ? " · 未同步" : ""}
                     </p>
                   </div>
                   <span aria-hidden className="text-stone-300">
@@ -182,6 +276,7 @@ export default function Records() {
                       <Field label="维修时间" value={r.repairTime ? formatDateTime(r.repairTime) : "—"} />
                       <Field label="维修人员" value={r.technician ?? "—"} />
                       <Field label="费用" value={r.cost != null ? `¥${r.cost}` : "—"} />
+                      <Field label="诊断来源" value={sourceLabel} />
                     </div>
                     <div>
                       <p className="text-xs font-medium text-stone-400">处理方式</p>
@@ -219,9 +314,21 @@ export default function Records() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-stone-400">
-                        如问题再次出现，可点击「再次诊断」或联系客服。
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {r.saveStatus === "failed" && (
+                          <>
+                            <span className="text-xs text-risk-high-deep">
+                              保存失败，内容仍保留在本机
+                            </span>
+                            <Button variant="secondary" size="sm" onClick={() => void retry(r)}>
+                              重试保存
+                            </Button>
+                          </>
+                        )}
+                        <span className="text-xs text-stone-400">
+                          如问题再次出现，可点击「再次诊断」或联系客服。
+                        </span>
+                      </div>
                       <Link to="/diagnose" className={buttonClass("secondary", "sm")}>
                         <RotateCcw className="h-3.5 w-3.5" /> 再次诊断
                       </Link>
@@ -255,22 +362,13 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 工单下一个状态（用于自助更新进度） */
-function nextOf(status: TicketStatus): TicketStatus | null {
-  const idx = TICKET_STATUS_ORDER.indexOf(status);
-  if (idx < 0 || idx >= TICKET_STATUS_ORDER.length - 1) return null;
-  return TICKET_STATUS_ORDER[idx + 1];
-}
-
-/** 报修工单跟踪区（模块②）：状态跟踪条 + 自助更新进度 + 状态变化通知 */
+/** 报修工单跟踪区（模块②）：状态跟踪条 + 演示推进 + 状态变化通知 */
 function TicketsSection() {
   const { notify } = useToast();
   const tickets = useTicketStore((s) => s.tickets);
   const syncFromBackend = useTicketStore((s) => s.syncFromBackend);
   const advance = useTicketStore((s) => s.advance);
   const addNotification = useNotificationStore((s) => s.add);
-  /** 正在更新进度的工单 ID */
-  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     void syncFromBackend();
@@ -279,29 +377,26 @@ function TicketsSection() {
   async function handleAdvance(id: number) {
     const ticket = tickets.find((t) => t.id === id);
     if (!ticket) return;
-    const target = nextOf(ticket.status);
     const ok = await advance(id);
     if (ok) {
-      const next = useTicketStore.getState().tickets.find((t) => t.id === id);
+      const next = useTicketStore
+        .getState()
+        .tickets.find((t) => t.id === id);
       addNotification({
         type: "ticket",
         title: "工单状态更新",
-        body: `「${ticket.symptom}」工单已更新为「${
-          next ? TICKET_STATUS_LABELS[next.status] : target ? TICKET_STATUS_LABELS[target] : "下一阶段"
+        body: `「${ticket.symptom}」工单已流转到「${
+          next ? TICKET_STATUS_LABELS[next.status] : "下一阶段"
         }」。`,
       });
-      notify("工单进度已更新", "success");
-      setEditingId(null);
+      notify("工单状态已更新", "success");
     } else {
-      notify("工单进度更新失败，请稍后重试", "error");
+      notify("工单状态推进失败，请稍后重试", "error");
     }
   }
 
   return (
     <SectionCard title={`报修工单（${tickets.length}）`}>
-      <p className="-mt-1 mb-3 text-xs text-stone-400">
-        联系维修师傅后，进展到哪一步就在这里更新到哪一步，档案跟着真实情况走。
-      </p>
       {tickets.length === 0 ? (
         <p className="text-sm text-stone-500">
           暂无报修工单。在
@@ -312,53 +407,36 @@ function TicketsSection() {
         </p>
       ) : (
         <ul className="space-y-3">
-          {tickets.map((t) => {
-            const next = t.status === "completed" ? null : nextOf(t.status);
-            const editing = editingId === t.id;
-            return (
-              <li key={t.id} className="rounded-xl border border-stone-200 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-stone-900">
-                    {t.symptom}
-                    <span className="ml-2 text-xs font-normal text-stone-400">
-                      #{t.id} · {relativeTime(t.created_at)}
-                    </span>
-                  </p>
-                  {next && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingId(editing ? null : t.id)}
-                      aria-expanded={editing}
-                    >
-                      <PenLine className="h-3.5 w-3.5" /> 更新进度
-                    </Button>
-                  )}
-                </div>
-                {t.brand || t.model ? (
-                  <p className="mt-1 text-xs text-stone-500">
-                    {[t.brand, t.model].filter(Boolean).join(" ")}
-                  </p>
-                ) : null}
-                {editing && next && (
-                  <div className="mt-2.5 rounded-lg bg-stone-50 p-2.5">
-                    <p className="text-xs text-stone-500">维修现在到哪一步了？</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Button size="sm" onClick={() => handleAdvance(t.id)}>
-                        标记为「{TICKET_STATUS_LABELS[next]}」
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
-                        取消
-                      </Button>
-                    </div>
-                  </div>
+          {tickets.map((t) => (
+            <li key={t.id} className="rounded-xl border border-stone-200 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-stone-900">
+                  {t.symptom}
+                  <span className="ml-2 text-xs font-normal text-stone-400">
+                    #{t.id} · {relativeTime(t.created_at)}
+                  </span>
+                </p>
+                {t.status !== "completed" && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleAdvance(t.id)}
+                    aria-label="演示推进工单状态"
+                  >
+                    <FastForward className="h-3.5 w-3.5" /> 推进状态（演示）
+                  </Button>
                 )}
-                <div className="mt-3">
-                  <TicketTracker status={t.status} />
-                </div>
-              </li>
-            );
-          })}
+              </div>
+              {t.brand || t.model ? (
+                <p className="mt-1 text-xs text-stone-500">
+                  {[t.brand, t.model].filter(Boolean).join(" ")}
+                </p>
+              ) : null}
+              <div className="mt-3">
+                <TicketTracker status={t.status} />
+              </div>
+            </li>
+          ))}
         </ul>
       )}
     </SectionCard>

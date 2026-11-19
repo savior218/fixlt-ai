@@ -20,8 +20,8 @@ COPY backend/ .
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 ENV FIXITAI_FRONTEND_DIST_DIR=/app/backend/frontend/dist
-# SQLite 数据文件落在容器可写目录
-ENV FIXITAI_DATABASE_URL=sqlite:////app/backend/fixitai.db
+# 线上持久化：必须通过 FIXITAI_DATABASE_URL 配置托管 PostgreSQL。
+# 未配置时回退到容器内 SQLite，重新部署会丢失账号与设备数据，不能视为已验收。
 
 EXPOSE 10000
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

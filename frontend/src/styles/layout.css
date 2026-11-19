@@ -1,11 +1,14 @@
 /* ============================================================
-   智修AI FixItAI · 布局样式（提示词 02 准备 / 提示词 03 启用）
-   桌面双栏：左侧 SidebarNav（240px）+ 顶部 TopBar（72px）
+   智修AI FixItAI · 布局样式（三端适配版）
+   桌面（≥1024px）：左侧 SidebarNav（240px）+ 顶栏
+   平板/手机（<1024px）：顶栏菜单按钮 + 抽屉导航
+   断点与 Tailwind lg（1024px）一致
    ============================================================ */
 
 /* ---- 应用外壳 ---- */
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--color-background);
 }
 
@@ -15,14 +18,24 @@
   flex-shrink: 0;
 }
 
-/* ---- 顶部栏 ---- */
+/* ---- 顶部栏 ----
+   不固定单行高度：长辈模式放大字号时允许顶栏增高 */
 .app-topbar {
-  height: var(--topbar-height);
+  min-height: var(--topbar-height);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* ---- 中央内容容器 ---- */
 .app-content {
   padding: var(--content-padding);
+}
+
+/* ---- 主内容最大宽度：超宽屏居中，不拉伸表单 ---- */
+.app-content-inner {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1440px;
 }
 
 /* ---- 跳转链接：平时隐藏，键盘聚焦时可见 ---- */
@@ -37,36 +50,92 @@
   top: 0.5rem;
 }
 
-/* ---- 底部安全横幅 ---- */
+/* ---- 底部安全横幅：留在布局流中，避免遮挡操作；适配全面屏手势区 ---- */
 .app-safety-banner {
   flex-shrink: 0;
+  padding-bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* ---- 响应式（三端适配：1024px 统一断点）----
-   <1024px（手机 / 平板竖屏）：隐藏侧栏，TopBar 显示汉堡按钮，
-   导航由 MobileNavDrawer 承载，业务入口一个不少；
-   ≥1024px（平板横屏 / PC）：保持桌面双栏布局 */
+/* ---- 安全区：避免刘海/圆角遮挡 ---- */
+.app-content {
+  padding-left: calc(var(--content-padding) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--content-padding) + env(safe-area-inset-right, 0px));
+}
+
+/* ============================================================
+   响应式断点（CSS px，与 Tailwind sm/md/lg 一致）
+   ============================================================ */
+
+/* 手机（<768px）：紧凑单列，16px 边距 */
+@media (max-width: 767px) {
+  .app-content {
+    --content-padding: 16px;
+  }
+}
+
+/* 平板（768–1023px）：20px 边距 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-content {
+    --content-padding: 20px;
+  }
+}
+
+/* 手机 / 平板（<1024px）：隐藏桌面侧栏（由抽屉导航替代），
+   显示顶栏菜单按钮；隐藏欢迎语（抽屉内已有品牌） */
 @media (max-width: 1023px) {
   .app-sidebar {
     display: none;
   }
-  /* 顶栏收紧高度，内容间距收紧，适配小屏 */
-  .app-topbar {
-    height: 64px;
+  .app-nav-trigger {
+    display: inline-flex;
   }
-  .app-content {
-    padding: 16px;
-    /* 兼容 iPhone 底部安全区（配合 viewport-fit=cover） */
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  .app-topbar-welcome {
+    display: none;
   }
 }
 
-/* ---- 安全区工具类：固定底部的抽屉、聊天输入条等使用 ---- */
+/* 桌面（≥1024px）：侧栏 + 菜单按钮隐藏 */
+@media (min-width: 1024px) {
+  .app-nav-trigger {
+    display: none;
+  }
+}
+
+/* ============================================================
+   问诊消息区：高度上限（dvh 优先，vh 回退；软键盘收起视口时自动适配）
+   ============================================================ */
+.chat-scroll {
+  max-height: 52vh;
+  max-height: 52dvh;
+}
+@media (min-width: 768px) {
+  .chat-scroll {
+    max-height: 60vh;
+    max-height: 60dvh;
+  }
+}
+
+/* ============================================================
+   移动端抽屉导航（<1024px 模态层，位于顶栏之上）
+   ============================================================ */
+.mobile-nav-drawer {
+  transform: translateX(-100%);
+  transition: transform 0.25s ease-out;
+  /* 避免刘海/手势区遮挡 */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.mobile-nav-drawer-open {
+  transform: translateX(0);
+}
+/* 减少动画模式（html.rm）下由 global.css 的 transition:none!important 接管 */
+
+/* ---- 兼容保留：底部弹层/抽屉的安全区工具类（ModalDialog 等使用） ---- */
 .safe-pad-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ---- 移动抽屉入场动画（reduceMotion 时由 global.css 关闭）---- */
+/* ---- 兼容保留：抽屉入场动画（旧组件类名，避免样式缺失） ---- */
 @keyframes mobile-nav-in {
   from {
     transform: translateX(-100%);

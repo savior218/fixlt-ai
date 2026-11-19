@@ -15,8 +15,9 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: "px-3 py-1.5 text-xs",
-  md: "px-4 py-2 text-sm",
-  lg: "px-5 py-3 text-base",
+  // md/lg 保证触屏主要操作高度 ≥44 CSS px（三端适配）
+  md: "px-4 py-2 text-sm min-h-11",
+  lg: "px-5 py-3 text-base min-h-11",
 };
 
 /** 生成按钮样式类（也可用于 <Link className={buttonClass(...)}>） */

@@ -8,12 +8,14 @@ import InputField from "../components/InputField";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import TicketTracker from "../components/TicketTracker";
+import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { useDeviceStore } from "../stores/deviceStore";
 import { getDiagnosisById } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useTicketStore } from "../stores/ticketStore";
 import { formatDate } from "../utils/format";
+import { contentFor } from "../utils/diagnosis";
 import { usePrefs } from "../stores/prefs";
 import { uploadDiagnosisPhoto } from "../services/api";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
@@ -75,6 +77,9 @@ export default function RepairAssistant() {
     () => (diagnosisId ? getDiagnosisById(diagnosisId) : undefined),
     [diagnosisId]
   );
+  const linkedContent = diagnosis
+    ? contentFor(diagnosis, elder ? "elder" : "standard").content
+    : null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [generated, setGenerated] = useState<string | null>(null);
@@ -195,6 +200,18 @@ export default function RepairAssistant() {
       form.foundAt ? `发现时间：${form.foundAt}` : "",
       photo ? `故障照片：已附 1 张${photo.id != null ? `（上传编号 #${photo.id}）` : "（本地保存）"}` : "",
       checks.length > 0 ? `已完成的检查：${checks.join("；")}` : "",
+      diagnosis && linkedContent
+        ? `关联诊断结论：${linkedContent.conclusion}`
+        : "",
+      diagnosis
+        ? `诊断内容来源：${
+            diagnosis.source === "ai"
+              ? `真实 AI${diagnosis.model ? `（${diagnosis.model}）` : ""}`
+              : diagnosis.source === "template"
+                ? "本地模板演示（非 AI）"
+                : "来源未记录"
+          }`
+        : "",
       "",
       `专业建议：${PRO_ADVICE}`,
       `注意事项：${CAUTIONS.join("；")}。`,
@@ -474,8 +491,17 @@ export default function RepairAssistant() {
       </div>
 
       {diagnosis && (
-        <div className="rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800">
-          已带入诊断结果（{diagnosis.symptom}），可在表单中继续补充。
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800">
+          <span>
+            已带入诊断结果（{diagnosis.symptom}），可在表单中继续补充。
+          </span>
+          <SourceBadge source={diagnosis.source} model={diagnosis.model} />
+          {diagnosis.source === "template" && (
+            <span className="text-xs text-amber-800">模板演示内容不是真实 AI 诊断。</span>
+          )}
+          {diagnosis.source === "unknown" && (
+            <span className="text-xs text-slate-600">旧记录来源未记录，不作推断。</span>
+          )}
         </div>
       )}
 

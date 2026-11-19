@@ -1,23 +1,16 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  AirVent,
+  AlertTriangle,
   Camera,
-  CheckCircle2,
-  ClipboardList,
-  FileText,
+  FlaskConical,
   Lightbulb,
   Loader2,
   Mic,
   PhoneCall,
-  Refrigerator,
-  RotateCcw,
+  RefreshCw,
   ShieldAlert,
-  Square,
   Undo2,
-  Wrench,
-  WashingMachine,
-  ArrowLeft,
   X,
 } from "lucide-react";
 
@@ -26,26 +19,32 @@ import DeviceCard from "../components/DeviceCard";
 import DiagnosisStepper from "../components/DiagnosisStepper";
 import InputField from "../components/InputField";
 import AIMessageBubble from "../components/AIMessageBubble";
-import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
+import SourceBadge from "../components/SourceBadge";
+import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
+import { normalizeSpeechText, shouldAutoRead, speak, stopSpeech, useSpeech } from "../services/speech";
 import { CATEGORY_LABELS } from "../services/api";
 import { uploadDiagnosisPhoto } from "../services/api";
 import type { DiagnoseCategory } from "../services/diagnosisService";
 import {
   SYMPTOM_OPTIONS,
+  buildLocalRisk,
+  buildTemplateDiagnosis,
+  generateAIDiagnosis,
   nextTurn,
-  generateDiagnosis,
+  type AskContext,
 } from "../services/diagnosisService";
-import type { Diagnosis } from "../types/diagnosis";
+import { questionsFor } from "../services/questionScript";
+import type { Diagnosis, QAPair } from "../types/diagnosis";
+import { isUnknownAnswer } from "../utils/risk";
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { useDiagnosisStore, diagnosesForOwner } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
-import { useRepairStore } from "../stores/repairStore";
-import { usePrefs } from "../stores/prefs";
-import { speak } from "../utils/speech";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useRepairStore, recordsForOwner } from "../stores/repairStore";
+import { usePrefs } from "../stores/prefs";
 import {
   compressImage,
   fileToDataUrl,
@@ -53,11 +52,11 @@ import {
 } from "../utils/image";
 
 /** 设备类型卡片（P1 步骤一） */
-const CATEGORY_CARDS: { key: DiagnoseCategory; icon: typeof AirVent; title: string; hint: string }[] = [
-  { key: "ac", icon: AirVent, title: "空调", hint: "制冷 / 制热异常、漏水" },
-  { key: "fridge", icon: Refrigerator, title: "冰箱", hint: "不制冷、噪音大" },
-  { key: "washer", icon: WashingMachine, title: "洗衣机", hint: "无法启动、漏水" },
-  { key: "other", icon: Wrench, title: "其他家电", hint: "手动选择并描述" },
+const CATEGORY_CARDS: { key: DiagnoseCategory; emoji: string; title: string; hint: string }[] = [
+  { key: "ac", emoji: "❄️", title: "空调", hint: "制冷 / 制热异常、漏水" },
+  { key: "fridge", emoji: "🧊", title: "冰箱", hint: "不制冷、噪音大" },
+  { key: "washer", emoji: "🫧", title: "洗衣机", hint: "无法启动、漏水" },
+  { key: "other", emoji: "📺", title: "其他家电", hint: "手动选择并描述" },
 ];
 
 /** elder 模式分步引导文案 */
@@ -73,55 +72,79 @@ export default function Diagnose() {
   const navigate = useNavigate();
   const { notify } = useToast();
   const [params] = useSearchParams();
-  const { mode } = usePrefs();
+  const { mode, autoRead, voiceEnabled } = usePrefs();
+  const speechError = useSpeech((s) => s.error);
   const elder = mode === "elder";
 
   const { devices, load } = useDeviceStore();
-  const repairRecords = useRepairStore((s) => s.records);
+  const allRepairRecords = useRepairStore((s) => s.records);
+  const repairOwner = useRepairStore((s) => s.ownerKey);
+  const repairRecords = useMemo(
+    () => recordsForOwner(allRepairRecords, repairOwner),
+    [allRepairRecords, repairOwner]
+  );
   const { draft, setDraft, appendMessage, saveDiagnosis, resetDraft } =
     useDiagnosisStore();
 
   const [customSymptom, setCustomSymptom] = useState(false);
   const [input, setInput] = useState("");
+  /** 问诊问题之间的短暂等待（不用于最终 AI 生成） */
   const [thinking, setThinking] = useState(false);
+  /** 最终诊断生成中（真实状态，不显示虚构进度） */
+  const [generating, setGenerating] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  /** 用户是否在消息区向上翻阅（此时不强制拉回底部） */
+  const userScrolledUp = useRef(false);
 
-  /* ---------- 语音输入（Web Speech Recognition） ---------- */
-  const voiceRec = useSpeechRecognition("zh-CN");
-  const heardText = voiceRec.finalText + voiceRec.interimText;
+  /** 防止重复生成 / 重复保存 */
+  const busyRef = useRef(false);
+  /** 异步会话令牌：返回、重开、切设备后旧响应不得覆盖新会话 */
+  const generationRef = useRef(0);
+  const mountedRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  /** 当前问诊所属设备 / 类别（用于检测会话变化） */
+  const sessionKeyRef = useRef("");
 
-  /** 识别出最终文字：追加进输入框 */
   useEffect(() => {
-    if (voiceRec.finalText) {
-      setInput((prev) => (prev ? `${prev}${voiceRec.finalText}` : voiceRec.finalText));
-      voiceRec.clear();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceRec.finalText]);
-
-  /** 识别出错提示 */
-  useEffect(() => {
-    if (voiceRec.error) notify(voiceRec.error, "error");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceRec.error]);
-
-  function toggleVoiceInput() {
-    if (!voiceRec.supported) {
-      notify("当前浏览器不支持语音输入，请使用 Chrome 或 Edge 浏览器", "error");
-      return;
-    }
-    if (voiceRec.listening) {
-      voiceRec.stop();
-    } else {
-      voiceRec.start();
-    }
-  }
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      generationRef.current += 1;
+      abortRef.current?.abort();
+      busyRef.current = false;
+    };
+  }, []);
 
   /* ---------- 模块③：故障照片上传 ---------- */
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addNotification = useNotificationStore((s) => s.add);
+
+  /* ---------- 语音听写输入：再点一次停止，最终文字并入输入框 ---------- */
+  const voice = useSpeechRecognition();
+  const voiceConsumedRef = useRef("");
+  useEffect(() => {
+    if (voice.finalText && voice.finalText !== voiceConsumedRef.current) {
+      voiceConsumedRef.current = voice.finalText;
+      setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
+      voice.clear();
+    }
+  }, [voice.finalText, voice.clear]);
+  useEffect(() => {
+    if (voice.error) notify(voice.error, "error");
+  }, [voice.error, notify]);
+  function toggleVoice() {
+    if (voice.listening) {
+      voice.stop();
+    } else if (!voice.supported) {
+      notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
+    } else if (!voice.start()) {
+      notify("语音识别启动失败，请稍后再试", "error");
+    }
+  }
 
   /** 校验 → 压缩 → 本地预览 → 优先后端入库；后端不可用时仅本地预览（Mock 模式） */
   async function handlePhotoFile(file: File) {
@@ -169,11 +192,22 @@ export default function Diagnose() {
             deviceName: d.name,
             category: d.category,
             step: 1,
+            qa: [],
+            chat: [],
+            aiError: null,
+            riskInterception: null,
           });
         }
       });
     } else if (category) {
-      setDraft({ category: category as DiagnoseCategory, step: 1 });
+      setDraft({
+        category: category as DiagnoseCategory,
+        step: 1,
+        qa: [],
+        chat: [],
+        aiError: null,
+        riskInterception: null,
+      });
     }
     // 仅在首次挂载消费 URL 参数
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,25 +220,51 @@ export default function Diagnose() {
 
   const interception = draft.riskInterception;
 
+  /** 会话标识：类别 + 关联设备。变化时取消未完成的生成 */
+  const sessionKey = `${draft.category ?? ""}|${draft.deviceId ?? ""}`;
+  useEffect(() => {
+    if (sessionKeyRef.current && sessionKeyRef.current !== sessionKey) {
+      cancelGeneration();
+    }
+    sessionKeyRef.current = sessionKey;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey]);
+
+  function cancelGeneration() {
+    generationRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    busyRef.current = false;
+    setGenerating(false);
+    setThinking(false);
+  }
+
   /* ---------- 步骤流转 ---------- */
 
   function pickCategory(key: DiagnoseCategory) {
-    setDraft({ category: key, step: 1 });
+    cancelGeneration();
+    setDraft({ category: key, step: 1, qa: [], chat: [], aiError: null, riskInterception: null });
   }
 
   function pickExistingDevice(id: number) {
     const d = devices.find((x) => x.id === id);
     if (!d) return;
+    cancelGeneration();
     setDraft({
       deviceId: d.id,
       deviceName: d.name,
       category: d.category,
       step: 1,
+      qa: [],
+      chat: [],
+      aiError: null,
+      riskInterception: null,
     });
   }
 
   function pickSymptom(symptom: string) {
-    setDraft({ symptom, step: 2 });
+    cancelGeneration();
+    setDraft({ symptom, step: 2, qa: [], chat: [], aiError: null, riskInterception: null });
     startConsult(symptom);
   }
 
@@ -213,13 +273,26 @@ export default function Diagnose() {
       notify("请再描述详细一点（至少 5 个字）", "error");
       return;
     }
-    setDraft({ symptom: null, step: 2 });
+    cancelGeneration();
+    setDraft({ symptom: null, step: 2, qa: [], chat: [], aiError: null, riskInterception: null });
     startConsult(null);
   }
 
-  /** 进入问诊：发送首个 AI 问题 */
+  function makeCtx(symptomOverride?: string | null, qaOverride?: QAPair[]): AskContext {
+    return {
+      category: draft.category,
+      symptom:
+        symptomOverride !== undefined ? symptomOverride : draft.symptom,
+      description: draft.description,
+      qa: qaOverride ?? draft.qa,
+      device: selectedDevice,
+      photoId: draft.photoId,
+    };
+  }
+
+  /** 进入问诊：发送首个 AI 问题（新会话从空问答开始） */
   function startConsult(symptom: string | null) {
-    const ctx = makeCtx(symptom);
+    const ctx = makeCtx(symptom, []);
     const tone = elder ? "elder" : "standard";
     const turn = nextTurn(ctx, tone);
 
@@ -231,7 +304,7 @@ export default function Diagnose() {
     });
 
     if (turn.kind === "question") {
-      appendMessage({ role: "ai", content: turn.text, suggestions: turn.suggestions });
+      appendMessage({ role: "ai", content: turn.question.text, suggestions: turn.question.suggestions });
     } else if (turn.kind === "interception") {
       setDraft({ riskInterception: turn.interception });
       // 通知中心（模块⑤）：高风险告警
@@ -241,64 +314,51 @@ export default function Diagnose() {
         body: turn.interception.description,
       });
     } else {
-      // 问诊信息已齐（防御分支）：异步生成真实 AI 结果
-      void generateDiagnosis(ctx, tone).then((diagnosis) => {
-        finishDiagnosis(diagnosis);
-      });
+      // 问诊信息已齐（例如旧草稿迁移后）：直接生成
+      void generateResult(ctx);
     }
   }
 
-  function makeCtx(symptomOverride?: string | null) {
-    return {
-      category: draft.category,
-      symptom:
-        symptomOverride !== undefined
-          ? symptomOverride
-          : draft.symptom,
-      description: draft.description,
-      answers: draft.answers,
-      device: selectedDevice,
-      photoId: draft.photoId,
-    };
-  }
-
-  /** 用户回答（点选建议 / 自由输入）；返回是否实际发送（用于决定是否清空输入框） */
-  function sendAnswer(text: string): boolean {
-    if (thinking || !text.trim()) return false;
+  /** 用户回答（点选建议 / 自由输入） */
+  function sendAnswer(text: string) {
+    if (thinking || generating || busyRef.current || !text.trim()) return;
     const answer = text.trim();
-    const newAnswers = [...draft.answers, answer];
+    const questions = questionsFor(draft.category);
+    const question = questions[draft.qa.length];
+    if (!question) {
+      notify("本轮问诊已完成，正在生成诊断结果", "info");
+      return;
+    }
+
+    const pair: QAPair = {
+      questionId: question.id,
+      questionText: question.text,
+      answer,
+      unknown: isUnknownAnswer(answer),
+    };
+    const newQa = [...draft.qa, pair];
 
     appendMessage({ role: "user", content: answer });
-    setThinking(true);
+    setInput("");
 
-    const ctx = {
-      category: draft.category,
-      symptom: draft.symptom,
-      description: draft.description,
-      answers: newAnswers,
-      device: selectedDevice,
-      photoId: draft.photoId,
-    };
+    const ctx = makeCtx(undefined, newQa);
     const tone = elder ? "elder" : "standard";
     const turn = nextTurn(ctx, tone);
 
-    // 问诊完成：异步生成真实 AI 结果（后端不可用时自动回退 Mock）
     if (turn.kind === "result") {
-      setDraft({ answers: newAnswers });
-      void generateDiagnosis(ctx, tone).then((diagnosis) => {
-        setThinking(false);
-        finishDiagnosis(diagnosis);
-      });
-      return true;
+      setDraft({ qa: newQa });
+      void generateResult(ctx);
+      return;
     }
 
-    // 问下一题 / 高风险拦截：保留短暂思考延迟
+    setThinking(true);
     window.setTimeout(() => {
+      if (!mountedRef.current) return;
       if (turn.kind === "question") {
-        setDraft({ answers: newAnswers });
-        appendMessage({ role: "ai", content: turn.text, suggestions: turn.suggestions });
-      } else if (turn.kind === "interception") {
-        setDraft({ answers: newAnswers, riskInterception: turn.interception });
+        setDraft({ qa: newQa });
+        appendMessage({ role: "ai", content: turn.question.text, suggestions: turn.question.suggestions });
+      } else {
+        setDraft({ qa: newQa, riskInterception: turn.interception });
         // 通知中心（模块⑤）：高风险告警
         addNotification({
           type: "risk",
@@ -308,16 +368,63 @@ export default function Diagnose() {
       }
       setThinking(false);
     }, 500);
-    return true;
+  }
+
+  /**
+   * 生成诊断结果。
+   * mode=ai：调用真实 AI，失败保留输入并提示重试（不静默回退模板）
+   * mode=template：用户主动选择的模板演示，来源恒为 template
+   */
+  async function generateResult(ctx: AskContext, mode: "ai" | "template" = "ai") {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const token = ++generationRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setDraft({ aiError: null });
+
+    if (mode === "template") {
+      const diagnosis = buildTemplateDiagnosis(ctx);
+      if (token === generationRef.current && mountedRef.current) {
+        finishDiagnosis(diagnosis);
+      }
+      busyRef.current = false;
+      abortRef.current = null;
+      return;
+    }
+
+    setGenerating(true);
+    const tone = elder ? "elder" : "standard";
+    const result = await generateAIDiagnosis(ctx, tone, controller.signal);
+
+    // 旧响应：返回 / 重开 / 切设备后不得覆盖当前会话
+    if (token !== generationRef.current || !mountedRef.current) return;
+
+    busyRef.current = false;
+    abortRef.current = null;
+    setGenerating(false);
+
+    if (result.ok) {
+      finishDiagnosis(result.diagnosis);
+      return;
+    }
+    if (result.kind === "interception") {
+      setDraft({ riskInterception: result.interception });
+      return;
+    }
+    if (result.error.code === "aborted") return;
+    setDraft({ aiError: result.error });
   }
 
   /** 问诊完成：保存并跳转 P2 */
   function finishDiagnosis(diagnosis: Diagnosis) {
     appendMessage({
       role: "ai",
-      content: elder
-        ? "问好了！我已经整理好诊断结果，这就带您去看。"
-        : "诊断完成，已为您生成详细的维修建议。",
+      content:
+        diagnosis.source === "ai"
+          ? "真实 AI 已生成诊断结果，正在为您打开结果页。"
+          : "已生成模板演示结果（非 AI 生成），仅供演示参考。",
     });
     // 通知中心（模块⑤）：诊断完成
     addNotification({
@@ -326,47 +433,96 @@ export default function Diagnose() {
       body: `${diagnosis.symptom || "自定义故障"}：${diagnosis.conclusion.slice(0, 50)}`,
     });
     saveDiagnosis(diagnosis);
-    setDraft({ step: 3 });
+    setDraft({ step: 3, aiError: null });
     navigate(`/diagnosis/${diagnosis.id}/result`);
   }
 
   /** 关闭拦截，返回第一步安全重述（清空描述，避免旧文本再次触发拦截） */
   function dismissInterception() {
+    cancelGeneration();
     setDraft({
       riskInterception: null,
-      answers: [],
+      qa: [],
       description: "",
       step: 1,
     });
     notify("已返回描述步骤，请调整描述后重新开始", "info");
   }
 
-  // 对话区自动滚动
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [draft.chat.length, thinking]);
+  /** 重新开始 / 返回修改：取消未完成请求，但保留历史记录 */
+  function restart() {
+    cancelGeneration();
+    resetDraft();
+  }
 
-  /* ---------- 模块④：自动朗读新 AI 消息（需开启语音朗读 + 自动朗读） ---------- */
-  const autoRead = usePrefs((s) => s.autoRead);
-  const voiceEnabled = usePrefs((s) => s.voiceEnabled);
-  const speechRate = usePrefs((s) => s.speechRate);
-  const voiceURI = usePrefs((s) => s.voiceURI);
-  /** 最近一次诊断（第 4 步闭环卡展示用） */
-  const lastDiagnosis = useDiagnosisStore((s) => s.history[0]);
-  const lastChatMsgId = draft.chat[draft.chat.length - 1]?.id;
-  const lastChatAiContent = useMemo(() => {
-    const last = draft.chat[draft.chat.length - 1];
-    return last && last.role === "ai" ? last.content : null;
-  }, [draft.chat]);
+  function backToDescribe() {
+    cancelGeneration();
+    setDraft({ step: 1, aiError: null });
+  }
+
+  // 对话区滚动：用户上翻阅读时不强制拉回底部，仅在贴近底部时跟随新消息
   useEffect(() => {
-    if (autoRead && voiceEnabled && lastChatAiContent) {
-      speak(lastChatAiContent, { rate: speechRate, voiceURI });
-    }
-    // 仅在最后一条消息变化时触发
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastChatMsgId]);
+    if (userScrolledUp.current) return;
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [draft.chat.length, thinking, generating]);
+
+  /** 用户主动向上翻阅后标记；重新贴近底部（<80px）时恢复自动跟随 */
+  function handleChatScroll() {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    userScrolledUp.current = !nearBottom;
+  }
+
+  /* ---------- 模块④：自动朗读逻辑见下方“最新 AI 问题”与高风险提示 ---------- */
 
   const symptoms = draft.category ? SYMPTOM_OPTIONS[draft.category] : [];
+  const questions = questionsFor(draft.category);
+  const allAnswered = draft.qa.length >= questions.length;
+  const riskPreview = buildLocalRisk(makeCtx());
+
+  /** 仅最新一条 AI 消息展示可点选建议与朗读：防止历史选项误答新一轮问题 */
+  const lastAi = useMemo(
+    () => [...draft.chat].reverse().find((m) => m.role === "ai") ?? null,
+    [draft.chat]
+  );
+  const lastAiId = lastAi?.id;
+
+  /** 自动朗读：只读最新的助手问题（带建议选项），不读用户输入与开场白 */
+  /** 进入页面时已存在的问题只作基线，不当作“新问题”自动朗读（刷新/返回不重复播报） */
+  const autoBaselineRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (autoBaselineRef.current === undefined) {
+      autoBaselineRef.current = lastAiId ?? null;
+      return;
+    }
+    if (!autoRead || !voiceEnabled || thinking || generating || interception) return;
+    if (!lastAi?.content || !lastAi.suggestions?.length) return;
+    if (lastAi.id === autoBaselineRef.current) return;
+    const key = `auto:diag:${lastAi.id}:${mode}`;
+    if (!shouldAutoRead(key)) return;
+    speak({ key, text: lastAi.content });
+  }, [lastAi, lastAiId, autoRead, voiceEnabled, thinking, generating, interception, mode]);
+
+  /** 高风险拦截优先：停止普通内容，自动播报一次安全提示 */
+  const interceptionSpeechText = interception
+    ? normalizeSpeechText([
+        `高风险。${interception.title}`,
+        interception.description,
+        ...interception.immediateActions.map((a) => `${a.title}。${a.description}`),
+        ...interception.forbiddenActions.map((f) => `禁止：${f}`),
+      ])
+    : "";
+
+  useEffect(() => {
+    if (!interception || !autoRead || !voiceEnabled) return;
+    const key = `auto:risk:${interception.title}:${mode}`;
+    if (!shouldAutoRead(key)) return;
+    speak({ key, text: interceptionSpeechText });
+  }, [interception, interceptionSpeechText, autoRead, voiceEnabled, mode]);
+
+  // 离开问诊页或组件卸载时停止朗读
+  useEffect(() => () => stopSpeech(), []);
 
   /* ================= 高风险安全拦截（4.4 结构，等级不随模式变化） ================= */
   if (interception) {
@@ -377,7 +533,7 @@ export default function Diagnose() {
           className="rounded-2xl border-2 border-risk-high bg-risk-high-bg p-6"
         >
           <div className="flex items-center gap-3">
-            <ShieldAlert aria-hidden className="h-8 w-8 text-risk-high" />
+            <ShieldAlert aria-hidden className="h-8 w-8 shrink-0 text-risk-high" />
             <h1 className="text-xl font-bold text-risk-high-deep">
               △ 高风险 · {interception.title}
             </h1>
@@ -390,6 +546,16 @@ export default function Diagnose() {
               触发关键词：{interception.matched.join("、")}
             </p>
           )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SpeakButton
+              text={interceptionSpeechText}
+              speechKey={`risk-interception:${mode}`}
+              label="朗读安全提示"
+              variant="secondary"
+              size="md"
+              elder={elder}
+            />
+          </div>
         </div>
 
         <SectionCard title="立即采取的行动">
@@ -422,7 +588,10 @@ export default function Diagnose() {
             variant="secondary"
             size="lg"
             onClick={() => {
-              const last = useDiagnosisStore.getState().history[0];
+              const last = diagnosesForOwner(
+                useDiagnosisStore.getState().history,
+                useDiagnosisStore.getState().ownerKey
+              )[0];
               if (last) navigate(`/diagnosis/${last.id}/report`);
               else notify("暂无历史诊断报告", "info");
             }}
@@ -455,25 +624,18 @@ export default function Diagnose() {
         <>
           <SectionCard title={elder ? "您要检查哪台设备？点下面的卡片" : "选择设备类型"}>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {CATEGORY_CARDS.map((c) => {
-                const Icon = c.icon;
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={() => pickCategory(c.key)}
-                    className="flex items-start gap-3 rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50/50"
-                  >
-                    <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span>
-                      <span className={`block font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</span>
-                      <span className="mt-0.5 block text-xs text-stone-500">{c.hint}</span>
-                    </span>
-                  </button>
-                );
-              })}
+              {CATEGORY_CARDS.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => pickCategory(c.key)}
+                  className="rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                >
+                  <span aria-hidden className="text-3xl">{c.emoji}</span>
+                  <p className={`mt-2 font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-500">{c.hint}</p>
+                </button>
+              ))}
             </div>
           </SectionCard>
 
@@ -481,7 +643,7 @@ export default function Diagnose() {
             title="已有设备"
             action={
               draft.chat.length > 0 || draft.step > 0 ? (
-                <button type="button" onClick={resetDraft} className="text-xs text-brand-700 hover:underline">
+                <button type="button" onClick={restart} className="text-xs text-brand-700 hover:underline">
                   重新开始
                 </button>
               ) : undefined
@@ -518,15 +680,12 @@ export default function Diagnose() {
           {/* 已选设备信息卡 */}
           {(selectedDevice || draft.category) && (
             <div className="card-base flex flex-wrap items-center justify-between gap-3 p-4">
-              <div className="flex items-center gap-3">
-                <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                  {(() => {
-                    const Icon = CATEGORY_CARDS.find((c) => c.key === draft.category)?.icon ?? Wrench;
-                    return <Icon className="h-5 w-5" />;
-                  })()}
+              <div className="flex min-w-0 items-center gap-3">
+                <span aria-hidden className="text-2xl">
+                  {draft.category === "ac" ? "❄️" : draft.category === "fridge" ? "🧊" : draft.category === "washer" ? "🫧" : "📺"}
                 </span>
-                <div>
-                  <p className="flex items-center gap-2 font-semibold text-stone-900">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
                     {selectedDevice ? selectedDevice.name : CATEGORY_CARDS.find((c) => c.key === draft.category)?.title}
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                       已识别
@@ -660,9 +819,9 @@ export default function Diagnose() {
                   key={s.title}
                   type="button"
                   onClick={() => pickSymptom(s.title)}
-                  className="flex items-center justify-between rounded-xl border border-stone-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
-                  <span>
+                  <span className="min-w-0">
                     <span className={`font-medium text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
                       {s.title}
                     </span>
@@ -674,7 +833,7 @@ export default function Diagnose() {
               <button
                 type="button"
                 onClick={() => setCustomSymptom(true)}
-                className="flex items-center justify-between rounded-xl border border-dashed border-stone-300 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-stone-300 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
               >
                 <span className={`font-medium text-stone-600 ${elder ? "text-lg" : "text-base"}`}>
                   其他问题，直接描述
@@ -706,6 +865,11 @@ export default function Diagnose() {
                     {draft.photoPreview && draft.photoId == null && "（仅本地预览）"}
                   </p>
                 </div>
+                {riskPreview.level === "high" && (
+                  <p role="alert" className="rounded-lg border border-risk-high-border bg-risk-high-bg px-3 py-2 text-sm font-medium text-risk-high-deep">
+                    △ 描述中包含高风险信息，开始问诊后将立即拦截并给出安全指引。
+                  </p>
+                )}
                 <Button size="lg" className="w-full" onClick={submitCustomSymptom}>
                   {elder ? "写好了，开始问诊" : "开始 AI 问诊"}
                 </Button>
@@ -719,19 +883,48 @@ export default function Diagnose() {
       {draft.step === 2 && (
         <>
           <SectionCard padding="none">
-            <div className="max-h-[52vh] space-y-4 overflow-y-auto p-4">
+            <div
+              ref={chatScrollRef}
+              onScroll={handleChatScroll}
+              className="chat-scroll space-y-4 overflow-y-auto p-4"
+            >
               {draft.chat.map((m) => (
                 <AIMessageBubble
                   key={m.id}
                   role={m.role}
                   content={m.content}
                   time={m.time}
-                  suggestions={m.role === "ai" ? m.suggestions : undefined}
+                  suggestions={
+                    m.role === "ai" && m.id === lastAiId
+                      ? m.suggestions
+                      : undefined
+                  }
                   onSuggestion={sendAnswer}
                   tone={elder ? "elder" : "standard"}
+                  speakKey={
+                    m.role === "ai" && m.id === lastAiId
+                      ? `chat:${m.id}:${mode}`
+                      : undefined
+                  }
                 />
               ))}
               {thinking && <AIMessageBubble role="ai" loading tone={elder ? "elder" : "standard"} />}
+
+              {/* 真实等待状态：不显示虚构进度 */}
+              {generating && (
+                <div role="status" aria-live="polite" className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900">
+                  <p className="flex items-center gap-2 font-semibold">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600" aria-hidden />
+                    正在调用真实 AI 生成诊断…
+                  </p>
+                  <p className="mt-1 text-brand-800">
+                    通常需要 10–60 秒，实际耗时取决于模型服务；这里不显示虚构进度。
+                  </p>
+                  <Button variant="secondary" size="sm" className="mt-2" onClick={cancelGeneration}>
+                    取消本次等待
+                  </Button>
+                </div>
+              )}
               <div ref={chatEndRef} />
             </div>
 
@@ -739,67 +932,118 @@ export default function Diagnose() {
             <div className="flex items-center gap-2 border-t border-stone-100 p-3">
               <input
                 type="text"
-                value={voiceRec.listening ? heardText || "正在听写，请说话…" : input}
-                onChange={(e) => {
-                  if (!voiceRec.listening) setInput(e.target.value);
-                }}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (voiceRec.listening) return;
-                  // 中文输入法组合中（选字 / 候选词）不触发发送；
-                  // keyCode 229 兼容部分浏览器组合态上报
-                  const composing =
-                    e.nativeEvent.isComposing || e.keyCode === 229;
-                  if (e.key === "Enter" && !composing) {
-                    // 仅在实际发送时清空输入，避免丢失未发出的内容
-                    if (sendAnswer(input)) setInput("");
+                  // 输入法组合状态（如中文选字）下 Enter 不发送；keyCode 229 兼容部分安卓输入法
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                    e.preventDefault();
+                    sendAnswer(input);
                   }
                 }}
-                placeholder={elder ? "也可以打字或点麦克风说话…" : "请输入您的问题，比如：空调不制冷了…"}
-                className={[
-                  "min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none",
-                  voiceRec.listening
-                    ? "border-risk-high bg-risk-high-bg/40 focus:border-risk-high"
-                    : "border-stone-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
-                ].join(" ")}
+                enterKeyHint="send"
+                autoComplete="off"
+                disabled={generating}
+                placeholder={elder ? "也可以打字告诉我…" : "请输入您的问题，比如：空调不制冷了…"}
+                className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
               />
-              <button
-                type="button"
-                onClick={toggleVoiceInput}
-                aria-label={voiceRec.listening ? "停止语音输入" : "语音输入"}
-                title={voiceRec.listening ? "点击结束听写" : "点我说话，说完再点一下结束"}
-                className={[
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
-                  voiceRec.listening
-                    ? "border-risk-high bg-risk-high text-white animate-pulse"
-                    : "border-stone-300 bg-surface text-stone-600 hover:border-brand-400 hover:text-brand-700",
-                ].join(" ")}
-              >
-                {voiceRec.listening ? (
-                  <Square aria-hidden className="h-4 w-4" />
-                ) : (
-                  <Mic aria-hidden className="h-4 w-4" />
-                )}
-              </button>
               <Button
-                onClick={() => {
-                  if (voiceRec.listening) voiceRec.stop();
-                  if (sendAnswer(input)) setInput("");
-                }}
+                variant={voice.listening ? "danger" : "secondary"}
+                onClick={toggleVoice}
+                aria-label={voice.listening ? "停止语音输入" : "开始语音输入"}
+                aria-pressed={voice.listening}
+                disabled={generating}
               >
+                <Mic className="h-4 w-4" />
+                {voice.listening ? "停止" : ""}
+              </Button>
+              <Button onClick={() => sendAnswer(input)} disabled={generating || !input.trim()}>
                 发送
               </Button>
             </div>
           </SectionCard>
 
-          {/* 底部操作条：返回 / 重开 */}
-          <div className="flex items-center justify-between gap-3 border-t border-stone-200 pt-4">
-            <Button variant="outline" onClick={() => setDraft({ step: 1 })}>
-              <ArrowLeft aria-hidden className="h-4 w-4" />
-              返回重新描述
+          {/* 自动朗读失败：明确提示，不假装已播放；文字问答不受影响 */}
+          {speechError && autoRead && (
+            <p
+              role="status"
+              className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              自动朗读未播放：{speechError} 可点击问题下方的「朗读」手动播放。
+            </p>
+          )}
+
+          {/* AI 失败：保留输入，明确来源，允许重试或主动选择模板 */}
+          {draft.aiError && (
+            <section
+              role="alert"
+              className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-amber-900">诊断未生成，未使用模板冒充 AI</h2>
+                  <p className="mt-1 text-sm text-amber-900">{draft.aiError.message}</p>
+                  <p className="mt-1 text-xs text-amber-800">
+                    您的设备、描述和全部问答已保留。可以重试真实 AI，或主动选择模板演示。
+                  </p>
+                  {draft.aiError.code === "ai_not_configured" && (
+                    <p className="mt-1 text-xs text-amber-800">
+                      管理员需在后端 <code>backend/.env</code> 配置 FIXITAI_AI_API_KEY；本轮不展示密钥。
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => void generateResult(makeCtx(), "ai")}
+                      disabled={generating || busyRef.current}
+                    >
+                      <RefreshCw className="h-4 w-4" /> 重试真实 AI
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void generateResult(makeCtx(), "template")}
+                      disabled={generating || busyRef.current}
+                      title="模板演示由本地固定模板生成，不是真实 AI"
+                    >
+                      <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
+                    </Button>
+                    <Button variant="ghost" onClick={backToDescribe}>
+                      返回修改描述
+                    </Button>
+                  </div>
+                  <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-800">
+                    模板演示来源标识：
+                    <SourceBadge source="template" />
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* 问诊已答完但尚未生成（刷新 / 异常恢复） */}
+          {!draft.aiError && !generating && allAnswered && draft.chat.length > 0 && (
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-800">问诊信息已齐全，但尚未生成诊断结果。</p>
+              <p className="mt-1 text-xs text-slate-500">
+                可重试真实 AI，或主动选择模板演示（非 AI）。
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button onClick={() => void generateResult(makeCtx(), "ai")}>
+                  <RefreshCw className="h-4 w-4" /> 生成真实 AI 诊断
+                </Button>
+                <Button variant="secondary" onClick={() => void generateResult(makeCtx(), "template")}>
+                  <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
+                </Button>
+              </div>
+            </section>
+          )}
+
+          <div className="flex flex-wrap justify-between gap-2">
+            <Button variant="ghost" onClick={backToDescribe}>
+              ← 返回重新描述
             </Button>
-            {(draft.answers.length > 0 || draft.chat.length > 0) && (
-              <Button variant="outline" onClick={resetDraft}>
-                <RotateCcw aria-hidden className="h-4 w-4" />
+            {(draft.qa.length > 0 || draft.chat.length > 0) && (
+              <Button variant="ghost" onClick={restart}>
                 重新开始
               </Button>
             )}
@@ -807,61 +1051,27 @@ export default function Diagnose() {
         </>
       )}
 
-      {/* 第 4 步：诊断完成后的流程闭环（避免回到本页时一片空白卡死） */}
+      {/* ---------- 步骤 3：已完成（返回诊断页时给出入口） ---------- */}
       {draft.step === 3 && (
-        <SectionCard title="诊断完成">
-          {lastDiagnosis ? (
-            <>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 aria-hidden className="mt-0.5 h-8 w-8 shrink-0 text-brand-600" />
-                <div className="min-w-0">
-                  <p className={`font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
-                    {lastDiagnosis.deviceName ? `${lastDiagnosis.deviceName} · ` : ""}
-                    {lastDiagnosis.symptom}
-                  </p>
-                  <p className={`mt-1 leading-relaxed text-stone-600 ${elder ? "text-base" : "text-sm"}`}>
-                    {lastDiagnosis.conclusion}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <RiskBadge level={lastDiagnosis.riskLevel} />
-                    <span className="text-xs text-stone-400">
-                      已自动保存到维修档案
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 流程闭环：看报告 → 报修 / 回档案 / 再来一次 */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button onClick={() => navigate(`/diagnosis/${lastDiagnosis.id}/report`)}>
-                  <FileText aria-hidden className="h-4 w-4" />
-                  查看完整报告
-                </Button>
-                <Button variant="outline" onClick={() => navigate(`/repair?diagnosisId=${lastDiagnosis.id}`)}>
-                  <Wrench aria-hidden className="h-4 w-4" />
-                  生成报修说明
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/records")}>
-                  <ClipboardList aria-hidden className="h-4 w-4" />
-                  去维修档案
-                </Button>
-                <Button variant="outline" onClick={resetDraft}>
-                  <RotateCcw aria-hidden className="h-4 w-4" />
-                  再诊断一次
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-stone-500">暂未找到本次诊断结果。</p>
-              <div className="mt-3">
-                <Button onClick={resetDraft}>
-                  <RotateCcw aria-hidden className="h-4 w-4" />
-                  开始新的诊断
-                </Button>
-              </div>
-            </>
-          )}
+        <SectionCard title="诊断已完成">
+          <p className="text-sm text-slate-600">本次问诊结果已保存，可前往结果页或重新开始新的诊断。</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                const last = diagnosesForOwner(
+                  useDiagnosisStore.getState().history,
+                  useDiagnosisStore.getState().ownerKey
+                )[0];
+                if (last) navigate(`/diagnosis/${last.id}/result`);
+                else restart();
+              }}
+            >
+              查看最近结果
+            </Button>
+            <Button variant="secondary" onClick={restart}>
+              重新开始诊断
+            </Button>
+          </div>
         </SectionCard>
       )}
     </div>
