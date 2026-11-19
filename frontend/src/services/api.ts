@@ -586,6 +586,7 @@ export interface InterviewState {
   version: number;
   round: number;
   max_rounds: number;
+  photo_id?: number | null;
   current_question: InterviewQuestion | null;
   qa: InterviewQAPoint[];
   facts: InterviewFact[];

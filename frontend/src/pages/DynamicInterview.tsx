@@ -17,9 +17,11 @@ import {
   finishInterview,
   getInterview,
   startInterview,
+  uploadDiagnosisPhoto,
   type InterviewOption,
   type InterviewState,
 } from "../services/api";
+import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 import { generateAIDiagnosis } from "../services/diagnosisService";
 import { speak, stopSpeech } from "../services/speech";
 import type { QAPair } from "../types/diagnosis";
@@ -64,6 +66,10 @@ export default function DynamicInterview() {
 
   const [phase, setPhase] = useState<Phase>("describe");
   const [description, setDescription] = useState("");
+  const [photoId, setPhotoId] = useState<number | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [session, setSession] = useState<InterviewState | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [optionId, setOptionId] = useState<string | null>(null);
@@ -96,6 +102,7 @@ export default function DynamicInterview() {
       try {
         const s = await getInterview(draft.sessionId!);
         setSession(s);
+        if (s.photo_id != null) setPhotoId(s.photo_id);
         setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
       } catch (err) {
         // 会话过期或不属于当前账号：保留描述草稿，重新开始新会话
@@ -160,6 +167,40 @@ export default function DynamicInterview() {
     if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
   }
 
+  /** 故障照片：沿用现有上传与看图能力；仅描述阶段可换图 */
+  async function handlePhoto(file: File | undefined) {
+    if (!file) return;
+    const invalid = validatePhoto(file);
+    if (invalid) {
+      setPhotoError(invalid);
+      return;
+    }
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const compressed = await compressImage(file);
+      const preview = await fileToDataUrl(compressed);
+      setPhotoPreview(preview);
+      try {
+        const res = await uploadDiagnosisPhoto(compressed);
+        setPhotoId(res.id);
+      } catch {
+        setPhotoId(null);
+        setPhotoError("照片上传失败：仅本地预览，不参与最终看图诊断");
+      }
+    } catch {
+      setPhotoError("图片处理失败，请换一张试试");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function removePhoto() {
+    setPhotoId(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+  }
+
   function handleApiError(err: unknown) {
     if (err instanceof ApiError) {
       const detail = err.detail as
@@ -198,6 +239,7 @@ export default function DynamicInterview() {
         category: "ac",
         symptom: "not_cooling",
         description: description.trim(),
+        photo_id: photoId,
       });
       setSession(s);
       setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
@@ -291,7 +333,7 @@ export default function DynamicInterview() {
           description,
           qa: buildQa(session),
           device: null,
-          photoId: null,
+          photoId: session.photo_id ?? photoId,
         },
         elder ? "elder" : "standard"
       );
@@ -328,6 +370,7 @@ export default function DynamicInterview() {
     setError(null);
     setRiskText(null);
     setDescription("");
+    removePhoto();
   }
 
   if (authStatus !== "authenticated") {
@@ -374,6 +417,51 @@ export default function DynamicInterview() {
           className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
           placeholder="用一两句话描述空调的情况，也可以点麦克风说"
         />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            id="dynamic-photo-input"
+            type="file"
+            accept="image/jpeg,image/png"
+            className="hidden"
+            disabled={photoBusy || phase !== "describe"}
+            onChange={(e) => {
+              void handlePhoto(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          {phase === "describe" && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={photoBusy}
+                onClick={() => document.getElementById("dynamic-photo-input")?.click()}
+              >
+                {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {photoBusy ? "正在上传…" : "上传故障照片（可选）"}
+              </Button>
+              {(photoId != null || photoPreview) && (
+                <Button variant="ghost" size="sm" onClick={removePhoto}>
+                  移除照片
+                </Button>
+              )}
+            </>
+          )}
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="故障照片预览"
+              className="h-16 w-16 rounded-lg border border-stone-200 object-cover"
+            />
+          )}
+          {photoId != null && (
+            <span className="text-xs text-risk-low">照片已上传，将随最终诊断用于看图分析</span>
+          )}
+          {!photoPreview && photoId != null && (
+            <span className="text-xs text-stone-500">已关联照片 #{photoId}</span>
+          )}
+          {photoError && <span className="text-xs text-risk-high">{photoError}</span>}
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {phase === "describe" && (
             <>

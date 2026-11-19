@@ -56,6 +56,7 @@ class InterviewSessionOut(BaseModel):
     version: int
     round: int
     max_rounds: int
+    photo_id: int | None = None
     current_question: InterviewQuestion | None
     qa: list[InterviewQAPoint]
     facts: list[InterviewFact]

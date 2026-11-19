@@ -43,6 +43,44 @@ def answer(client, csrf, sid, version, qid, option_id=None, text=None, source="t
     return r
 
 
+def test_interview_keeps_owned_photo_reference():
+    """动态会话保留已上传照片供最终看图使用，且不能盗用他人照片。"""
+    with TestClient(app) as c:
+        _, csrf = register(c)
+        up = c.post(
+            "/api/diagnose/photo",
+            files={"file": ("fault.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+            headers=H(csrf),
+        )
+        assert up.status_code == 201, up.text
+        photo_id = up.json()["id"]
+        r = c.post(
+            "/api/interview",
+            json={
+                "category": "ac",
+                "symptom": "not_cooling",
+                "description": "开的是制冷模式，风量正常",
+                "photo_id": photo_id,
+            },
+            headers=H(csrf),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["photo_id"] == photo_id
+
+        _, other_csrf = register(c)
+        stolen = c.post(
+            "/api/interview",
+            json={
+                "category": "ac",
+                "symptom": "not_cooling",
+                "description": "别人的照片",
+                "photo_id": photo_id,
+            },
+            headers=H(other_csrf),
+        )
+        assert stolen.status_code == 404
+
+
 def test_dirty_filter_is_not_misread_as_cleaned():
     """“很久没洗了”不能被“洗了”误判成已清洗，否则会凭空产生矛盾。"""
     with TestClient(app) as c:

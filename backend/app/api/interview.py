@@ -73,6 +73,7 @@ def _state(session: InterviewSession) -> InterviewSessionOut:
         version=session.version,
         round=session.round,
         max_rounds=session.max_rounds,
+        photo_id=session.photo_id,
         current_question=logic.question_public(session.current_question_id)
         if session.status == "active"
         else None,

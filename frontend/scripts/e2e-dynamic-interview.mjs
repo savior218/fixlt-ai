@@ -191,6 +191,15 @@ try {
   const p1 = await c1.newPage();
   await openDynamic(p1);
   record("空调制冷现象进入动态追问页", p1.url().endsWith("/interview/ac"), p1.url());
+  await p1.setInputFiles("#dynamic-photo-input", {
+    name: "fault.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQ0kAAAAASUVORK5CYII=",
+      "base64"
+    ),
+  });
+  await p1.getByText(/照片已上传/).waitFor({ timeout: 15_000 });
   await startSession(p1, "开的是制冷模式，温度调到22度，过滤网刚洗过，风量正常，但就是不凉");
   const q1 = await currentQuestion(p1);
   record("已说清的模式与滤网不再重复问", q1 === QUESTION_TEXTS.outdoor, q1);
@@ -214,6 +223,11 @@ try {
       s1.body.qa[0].selection_source === "rule" &&
       s1.body.unknown_information.length > 0,
     `qa=${s1.body?.qa?.length} source=${s1.body?.qa?.[0]?.selection_source}`
+  );
+  record(
+    "故障照片随会话保留",
+    typeof s1.body.photo_id === "number",
+    `photo_id=${s1.body.photo_id}`
   );
   await p1.reload({ waitUntil: "domcontentloaded" });
   await p1.waitForTimeout(1200);
