@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Loader2, Lock, UserRound, Wrench } from "lucide-react";
 
 import { loginRequest, registerRequest } from "../services/api";
@@ -133,29 +133,24 @@ export default function Login() {
           </form>
 
           {/* 演示账号提示 */}
-          <div className="mt-5 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-            演示账号：<span className="font-semibold text-stone-700">demo</span>，密码：
-            <span className="font-semibold text-stone-700">123456</span>。
-            也可以注册自己的账号，设备和档案相互独立。
+          <div className="mt-5 rounded-xl bg-stone-50 p-3 text-center text-xs text-stone-500">
+            演示账号：<span className="font-semibold text-stone-700">demo</span> /{" "}
+            <span className="font-semibold text-stone-700">123456</span>
           </div>
+        </div>
 
-          {/* 离线体验模式：部署站无后端 / 后端临时不可用时仍可完整浏览 */}
+        {/* 低调兜底入口：部署站无后端 / 后端临时不可用时仍可体验演示 */}
+        <p className="mt-4 text-center text-xs text-stone-400">
           <button
             type="button"
             onClick={() => {
               signIn({ id: 900, username: "演示访客", email: null });
               navigate("/", { replace: true });
             }}
-            className="mt-3 w-full rounded-xl border border-stone-300 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50"
+            className="transition-colors hover:text-brand-700"
           >
-            后端不可用？进入离线体验模式 →
+            先不登录，直接体验演示 →
           </button>
-        </div>
-
-        <p className="mt-4 text-center text-xs text-stone-400">
-          <Link to="/diagnose" className="hover:text-brand-700">
-            先不登录，随便看看 →
-          </Link>
         </p>
       </div>
     </div>
