@@ -1,0 +1,168 @@
+{
+  "state": {
+    "draft": {
+      "step": 3,
+      "deviceId": 1,
+      "deviceName": "客厅空调",
+      "category": "ac",
+      "symptom": "制冷效果变差",
+      "description": "空调开了半小时还是不凉",
+      "qa": [
+        {
+          "questionId": "ac_filter_clean",
+          "questionText": "最近有清洗过空调过滤网吗？",
+          "answer": "上个月洗过",
+          "unknown": false
+        },
+        {
+          "questionId": "ac_cold_wind",
+          "questionText": "开机运行时，出风口有冷风吹出吗？",
+          "answer": "不知道",
+          "unknown": true
+        }
+      ],
+      "chat": [],
+      "riskInterception": null,
+      "aiError": null
+    },
+    "history": [
+      {
+        "id": "diag-demo-0001",
+        "deviceId": 1,
+        "deviceName": "客厅空调",
+        "category": "ac",
+        "symptom": "制冷效果变差",
+        "description": "空调开了半小时还是不凉",
+        "createdAt": "2026-11-18T10:30:00.000Z",
+        "source": "template",
+        "model": null,
+        "qa": [
+          {
+            "questionId": "ac_filter_clean",
+            "questionText": "最近有清洗过空调过滤网吗？",
+            "answer": "上个月洗过",
+            "unknown": false
+          },
+          {
+            "questionId": "ac_cold_wind",
+            "questionText": "开机运行时，出风口有冷风吹出吗？",
+            "answer": "不知道",
+            "unknown": true
+          }
+        ],
+        "content": {
+          "standard": {
+            "conclusion": "初步判断为空气流通受阻或制冷效率下降，多数情况与滤网积尘、制冷剂或室外机散热有关，可先从清洁滤网入手排查。",
+            "possibleCauses": [
+              {
+                "title": "空调滤网积灰过多，影响空气流通",
+                "description": "积尘会明显降低出风量与制冷效果，是最常见的原因"
+              },
+              {
+                "title": "制冷剂轻微不足（可能性较低）",
+                "description": "若清洁滤网后仍无改善，需专业人员检测压力确认"
+              },
+              {
+                "title": "室外机散热不良（如有遮挡）",
+                "description": "外机周围有杂物遮挡或阳光直射会降低换热效率"
+              }
+            ],
+            "evidence": [
+              "设备类型：空调",
+              "故障现象：制冷效果变差",
+              "用户描述：空调开了半小时还是不凉",
+              "「最近有清洗过空调过滤网吗？」用户回答：上个月洗过"
+            ],
+            "unknownInformation": [
+              "「开机运行时，出风口有冷风吹出吗？」用户回答：不知道（未知，未作为确认事实）"
+            ],
+            "suggestions": [
+              {
+                "title": "断电后取出滤网清水冲洗",
+                "description": "关闭电源并等待 10 分钟，打开面板取出滤网，用清水冲洗晾干后装回"
+              },
+              {
+                "title": "清理室外机周边遮挡物",
+                "description": "确认外机四周 50cm 内无杂物堆积，保持通风顺畅"
+              },
+              {
+                "title": "试运行 30 分钟观察效果",
+                "description": "若仍无明显改善，建议联系专业人员检测制冷剂压力"
+              }
+            ],
+            "tips": "定期清洁滤网（建议每 1-2 个月一次），可有效提升制冷效果，延长使用寿命。",
+            "riskNote": "请勿自行拆卸空调内部部件，避免触电或造成更大损坏。"
+          },
+          "elder": {
+            "conclusion": "多半是空调里面的过滤网太脏了，挡住了空气流动。可以先关掉空调，请家人帮忙或约维修人员清理一下过滤网，多半就能好转~",
+            "possibleCauses": [
+              {
+                "title": "空调滤网积灰过多，影响空气流通",
+                "description": "积尘会明显降低出风量与制冷效果，是最常见的原因"
+              },
+              {
+                "title": "制冷剂轻微不足（可能性较低）",
+                "description": "若清洁滤网后仍无改善，需专业人员检测压力确认"
+              },
+              {
+                "title": "室外机散热不良（如有遮挡）",
+                "description": "外机周围有杂物遮挡或阳光直射会降低换热效率"
+              }
+            ],
+            "evidence": [
+              "设备类型：空调",
+              "故障现象：制冷效果变差",
+              "用户描述：空调开了半小时还是不凉",
+              "「最近有清洗过空调过滤网吗？」用户回答：上个月洗过"
+            ],
+            "unknownInformation": [
+              "「开机运行时，出风口有冷风吹出吗？」用户回答：不知道（未知，未作为确认事实）"
+            ],
+            "suggestions": [
+              {
+                "title": "第一步：先拔电源，等 10 分钟",
+                "description": "空调完全停下来后，再请人帮忙拆下前面的过滤网"
+              },
+              {
+                "title": "第二步：把过滤网洗干净、晾干装回去",
+                "description": "用清水冲干净灰尘，等干透后再装上"
+              },
+              {
+                "title": "第三步：开机试半小时",
+                "description": "还是不凉的话，就打维修电话，让师傅上门检查"
+              }
+            ],
+            "tips": "过滤网要常洗，空调才凉快，也更省电。",
+            "riskNote": "不要自己拆空调里面，小心触电，拿不准就找师傅。"
+          }
+        },
+        "riskLevel": "medium",
+        "conclusion": "初步判断为空气流通受阻或制冷效率下降，多数情况与滤网积尘、制冷剂或室外机散热有关，可先从清洁滤网入手排查。",
+        "possibleCauses": [
+          {
+            "title": "空调滤网积灰过多，影响空气流通",
+            "description": "积尘会明显降低出风量与制冷效果，是最常见的原因"
+          },
+          {
+            "title": "制冷剂轻微不足（可能性较低）",
+            "description": "若清洁滤网后仍无改善，需专业人员检测压力确认"
+          }
+        ],
+        "evidence": [
+          "设备类型：空调",
+          "故障现象：制冷效果变差"
+        ],
+        "suggestions": [
+          {
+            "title": "断电后取出滤网清水冲洗",
+            "description": "关闭电源并等待 10 分钟，打开面板取出滤网，用清水冲洗晾干后装回"
+          }
+        ],
+        "tips": "定期清洁滤网（建议每 1-2 个月一次），可有效提升制冷效果，延长使用寿命。",
+        "riskNote": "请勿自行拆卸空调内部部件，避免触电或造成更大损坏。",
+        "status": "completed"
+      }
+    ]
+  },
+  "version": 2
+}

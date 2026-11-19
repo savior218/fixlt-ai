@@ -1,9 +1,7 @@
-﻿﻿import { Bot, Pause, Volume2 } from "lucide-react";
+﻿﻿import { Bot } from "lucide-react";
 
 import Chip from "./Chip";
-import { usePrefs } from "../stores/prefs";
-import { isSpeechSupported, speak, stopSpeech } from "../utils/speech";
-import { useState } from "react";
+import SpeakButton from "./SpeakButton";
 
 /** AI 问诊对话气泡（TASK-11）：AI 消息 / 用户消息 / 加载中 / 建议选项 */
 export default function AIMessageBubble({
@@ -14,6 +12,7 @@ export default function AIMessageBubble({
   suggestions = [],
   onSuggestion,
   tone = "standard",
+  speakKey,
 }: {
   role: "ai" | "user";
   content?: string;
@@ -26,27 +25,16 @@ export default function AIMessageBubble({
   onSuggestion?: (text: string) => void;
   /** standard 标准 / elder 长辈关怀（更大字号与行距） */
   tone?: "standard" | "elder";
+  /** 仅当前助手问题显示朗读入口；用户消息与历史消息不显示 */
+  speakKey?: string;
 }) {
   const elder = tone === "elder";
-  const speechRate = usePrefs((s) => s.speechRate);
-  const [speaking, setSpeaking] = useState(false);
-  const canSpeak = isSpeechSupported();
-
-  /** 朗读/停止本条消息（模块④） */
-  function toggleSpeak() {
-    if (speaking) {
-      stopSpeech();
-      setSpeaking(false);
-      return;
-    }
-    if (content && speak(content, speechRate)) setSpeaking(true);
-  }
 
   if (role === "user") {
     return (
       <div className="flex flex-col items-end gap-1">
         <div
-          className={`max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
+          className={`max-w-[85%] break-words rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
           {content}
         </div>
@@ -67,7 +55,7 @@ export default function AIMessageBubble({
         </span>
 
         <div
-          className={`max-w-[85%] rounded-2xl rounded-tl-md bg-surface text-stone-800 shadow-sm ring-1 ring-stone-200 ${elder ? "px-4 py-3 text-lg leading-loose" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
+          className={`min-w-0 max-w-[85%] break-words rounded-2xl rounded-tl-md bg-surface text-stone-800 shadow-sm ring-1 ring-stone-200 ${elder ? "px-4 py-3 text-lg leading-loose" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
           {loading ? (
             <span className="flex items-center gap-1 py-1" role="status" aria-label="AI 正在输入">
@@ -89,28 +77,21 @@ export default function AIMessageBubble({
               ))}
             </div>
           )}
-
-          {/* 朗读按钮（模块④：浏览器不支持时隐藏） */}
-          {!loading && content && canSpeak && (
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={toggleSpeak}
-                aria-label={speaking ? "停止朗读" : "朗读这条消息"}
-                className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs text-stone-400 transition-colors hover:bg-stone-100 hover:text-brand-700"
-              >
-                {speaking ? (
-                  <Pause className="h-3.5 w-3.5" />
-                ) : (
-                  <Volume2 className="h-3.5 w-3.5" />
-                )}
-                {speaking ? "停止" : "朗读"}
-              </button>
-            </div>
-          )}
         </div>
       </div>
-      {time && <span className="pl-10 text-xs text-stone-400">{time}</span>}
+      <div className="flex items-center gap-2 pl-10">
+        {time && <span className="text-xs text-stone-400">{time}</span>}
+        {speakKey && content && (
+          <SpeakButton
+            text={content}
+            speechKey={speakKey}
+            label={elder ? "朗读这个问题" : "朗读"}
+            size="sm"
+            variant="ghost"
+            elder={elder}
+          />
+        )}
+      </div>
     </div>
   );
 }

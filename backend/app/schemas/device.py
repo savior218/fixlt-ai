@@ -35,5 +35,14 @@ class DeviceUpdate(BaseModel):
 class DeviceOut(DeviceBase):
     id: int
     created_at: datetime
+    demo: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DemoDeviceOut(DeviceBase):
+    """游客只读样例：不归属任何可登录账号，也没有写接口。"""
+
+    id: int
+    created_at: datetime
+    demo: bool = True

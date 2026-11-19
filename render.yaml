@@ -10,9 +10,22 @@ services:
     dockerContext: .
     healthCheckPath: /api/health
     envVars:
+      - key: FIXITAI_DEPLOYMENT_MODE
+        value: public
       # 真实 AI 能力：填入智谱 API Key（https://open.bigmodel.cn 获取）
-      # 留空 = 自动回退本地 Mock 诊断，功能流程仍可完整演示
+      # 未配置时接口明确返回“AI 未配置”，由用户主动选择模板演示，不静默回退。
       - key: FIXITAI_AI_API_KEY
         sync: false
       - key: FIXITAI_AI_TEXT_MODEL
         value: glm-4-flash
+      # 生产会话密钥：由 Render 随机生成，禁止在代码中硬编码
+      - key: FIXITAI_SESSION_SECRET
+        generateValue: true
+      - key: FIXITAI_SESSION_COOKIE_SECURE
+        value: "true"
+      # 线上账号与设备必须使用可持久化数据库。
+      # 在 Render 创建托管 PostgreSQL 并“Add from database”后，
+      # Render 通常会注入 DATABASE_URL；后端同时兼容 DATABASE_URL 与 FIXITAI_DATABASE_URL。
+      # 未配置时容器内 SQLite 会随重新部署丢失，不能视为线上持久化验收通过。
+      - key: FIXITAI_DATABASE_URL
+        sync: false

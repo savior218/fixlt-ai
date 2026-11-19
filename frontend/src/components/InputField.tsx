@@ -9,6 +9,7 @@ export default function InputField({
   error,
   disabled,
   mode = "text",
+  type = "text",
   rows = 3,
   maxLength,
   placeholder,
@@ -25,6 +26,8 @@ export default function InputField({
   disabled?: boolean;
   /** text 单行 / textarea 多行 / search 搜索 */
   mode?: "text" | "textarea" | "search";
+  /** 单行输入类型（登录密码等） */
+  type?: "text" | "password";
   rows?: number;
   maxLength?: number;
   placeholder?: string;
@@ -80,7 +83,7 @@ export default function InputField({
       ) : (
         <input
           id={id}
-          type="text"
+          type={type}
           disabled={disabled}
           maxLength={maxLength}
           placeholder={placeholder}

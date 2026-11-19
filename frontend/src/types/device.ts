@@ -19,10 +19,12 @@ export interface Device {
   imageUrl: string | null;
   note: string | null;
   createdAt: string;
+  /** 游客只读样例（不属于任何可登录账号） */
+  demo?: boolean;
 }
 
 /** 设备编辑表单输入 */
-export type DeviceForm = Omit<Device, "id" | "createdAt">;
+export type DeviceForm = Omit<Device, "id" | "createdAt" | "demo">;
 
 /** 带派生信息的设备（status 由维修记录推导，repairCount 来自 repairStore） */
 export interface DeviceWithMeta extends Device {

@@ -1,10 +1,14 @@
-"""智谱 GLM 文本模型客户端（OpenAI 兼容协议，阶段九）。
+"""智谱 GLM 文本模型客户端（OpenAI 兼容协议）。
 
 - key 仅存于后端环境变量（FIXITAI_AI_API_KEY），绝不进入前端
-- 统一输出 JSON（response_format: json_object + 严格解析双保险）
+- 统一要求 JSON 输出，并对空输出 / 代码围栏 / 非对象 / 超长内容做严格解析
+- 错误按类别抛出，由 API 层转换为面向用户的简洁提示
 """
+from __future__ import annotations
+
 import json
 import logging
+import re
 
 import httpx
 
@@ -13,31 +17,54 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
+MAX_OUTPUT_CHARS = 20_000
+
+_FENCE_RE = re.compile(r"^```(?:json|JSON)?\s*(.*?)\s*```$", re.DOTALL)
 
 
 class GLMError(RuntimeError):
-    """GLM 调用失败（网络 / 鉴权 / 输出解析）。"""
+    """GLM 调用失败（网络 / 鉴权 / 限流 / 输出解析）。
+
+    code 用于前端分类与用户提示，message 仅用于服务端日志，不直接返回给用户。
+    """
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def is_configured() -> bool:
     return bool(settings.ai_api_key)
 
 
-def _parse_json(content: str) -> dict:
-    """解析模型输出为 JSON，容忍 markdown 代码围栏。"""
+def parse_json_object(content: str) -> dict:
+    """把模型输出解析为 JSON 对象，容忍标准 markdown 代码围栏。"""
+    if not content or not content.strip():
+        raise GLMError("empty_output", "模型返回空内容")
+
     text = content.strip()
-    if text.startswith("```"):
-        text = text.split("`", 2)[-1] if text.count("`") >= 2 else text
-        # 去掉 ```json / ``` 围栏行
-        if text.startswith("json"):
-            text = text[4:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
+    if len(text) > MAX_OUTPUT_CHARS:
+        raise GLMError("oversize_output", f"模型输出超过 {MAX_OUTPUT_CHARS} 字符")
+
+    fence = _FENCE_RE.match(text)
+    if fence:
+        text = fence.group(1).strip()
+
+    # 少数情况下模型会在 JSON 前后附加说明文字：截取首个 { 到最后一个 }
+    if not text.startswith("{"):
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            text = text[start : end + 1]
+
     try:
-        return json.loads(text)
+        obj = json.loads(text)
     except json.JSONDecodeError as e:
-        raise GLMError(f"GLM 输出 JSON 解析失败：{e}") from e
+        raise GLMError("bad_json", f"JSON 解析失败：{e}") from e
+
+    if not isinstance(obj, dict):
+        raise GLMError("invalid_shape", "模型输出不是 JSON 对象")
+    return obj
 
 
 async def chat_json(
@@ -53,7 +80,7 @@ async def chat_json(
     model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
     """
     if not is_configured():
-        raise GLMError("GLM API key 未配置（FIXITAI_AI_API_KEY）")
+        raise GLMError("not_configured", "GLM API key 未配置（FIXITAI_AI_API_KEY）")
 
     if image:
         user_message = {
@@ -78,25 +105,42 @@ async def chat_json(
             user_message,
         ],
         "temperature": 0.4,
+        "max_tokens": settings.ai_max_output_tokens,
         "response_format": {"type": "json_object"},
     }
     url = settings.ai_base_url.rstrip("/") + CHAT_COMPLETIONS_PATH
     headers = {"Authorization": f"Bearer {settings.ai_api_key}"}
 
+    timeout = httpx.Timeout(settings.ai_timeout_seconds, connect=10.0)
     try:
-        async with httpx.AsyncClient(timeout=settings.ai_timeout_seconds) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.post(url, json=payload, headers=headers)
+    except httpx.TimeoutException as e:
+        raise GLMError("timeout", f"GLM 请求超时：{e}") from e
     except (httpx.HTTPError, UnicodeError) as e:
-        raise GLMError(f"GLM 网络请求失败：{e}") from e
+        raise GLMError("network", f"GLM 网络请求失败：{e}") from e
 
+    if resp.status_code == 401 or resp.status_code == 403:
+        logger.warning("GLM 鉴权失败 HTTP %s", resp.status_code)
+        raise GLMError("auth", "GLM 鉴权失败")
+    if resp.status_code == 429:
+        logger.warning("GLM 限流 HTTP 429: %s", resp.text[:200])
+        raise GLMError("rate_limited", "GLM 接口限流")
+    if resp.status_code >= 500:
+        logger.warning("GLM 服务异常 HTTP %s: %s", resp.status_code, resp.text[:200])
+        raise GLMError("upstream", f"GLM 服务异常 HTTP {resp.status_code}")
     if resp.status_code != 200:
-        logger.warning("GLM 接口返回 %s: %s", resp.status_code, resp.text[:300])
-        raise GLMError(f"GLM 接口错误 HTTP {resp.status_code}")
+        logger.warning("GLM 接口返回 %s: %s", resp.status_code, resp.text[:200])
+        raise GLMError("http", f"GLM 接口错误 HTTP {resp.status_code}")
 
-    data = resp.json()
+    try:
+        data = resp.json()
+    except ValueError as e:
+        raise GLMError("bad_response", f"GLM 响应不是 JSON：{e}") from e
+
     try:
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
-        raise GLMError(f"GLM 响应结构异常：{e}") from e
+        raise GLMError("bad_response", f"GLM 响应结构异常：{e}") from e
 
-    return _parse_json(content)
+    return parse_json_object(content)

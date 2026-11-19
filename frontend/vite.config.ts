@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: true, // 监听局域网，手机/平板连同一 WiFi 可直接访问
-    port: 5173,
+    port: Number(process.env.VITE_PORT || 5173),
     proxy: {
-      "/api": "http://127.0.0.1:8000",
+      "/api": process.env.VITE_API_PROXY || "http://127.0.0.1:8000",
     },
   },
 });
