@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import MobileNavDrawer from "../components/MobileNavDrawer";
 import SafetyBanner from "../components/SafetyBanner";
@@ -7,10 +7,24 @@ import SidebarNav from "../components/SidebarNav";
 import TopBar from "../components/TopBar";
 import { ToastProvider } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
+import { useAuthStore } from "../stores/authStore";
+import { useDiagnosisStore } from "../stores/diagnosisStore";
 
 export default function AppLayout() {
   useApplyPrefs();
   const location = useLocation();
+  /** 登录守卫：未登录一律跳转登录页 */
+  const user = useAuthStore((s) => s.user);
+  /** 切换账号时重置诊断草稿，避免上一个账号的问诊串到新账号 */
+  const resetDraft = useDiagnosisStore((s) => s.resetDraft);
+  const lastUserIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (user && lastUserIdRef.current !== user.id) {
+      if (lastUserIdRef.current !== null) resetDraft();
+      lastUserIdRef.current = user.id;
+    }
+  }, [user, resetDraft]);
   /** 移动端导航抽屉（<1024px 由 TopBar 汉堡按钮触发） */
   const [navOpen, setNavOpen] = useState(false);
 
@@ -18,6 +32,10 @@ export default function AppLayout() {
   useEffect(() => {
     setNavOpen(false);
   }, [location.pathname]);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <ToastProvider>

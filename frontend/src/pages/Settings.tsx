@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { ShieldCheck, Volume2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogOut, ShieldCheck, Square, Volume2 } from "lucide-react";
 
 import Button from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
@@ -22,16 +23,30 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
 } from "../stores/prefs";
-import { isSpeechSupported, speak } from "../utils/speech";
+import { useAuthStore } from "../stores/authStore";
+import { isSpeechSupported, speak, stopSpeech, listChineseVoices } from "../utils/speech";
 import { DEMO_USER } from "../types/user";
 import { maskPhone } from "../utils/format";
 
 type SaveState = "idle" | "saving" | "saved";
 
+/** 测试朗读的固定文案 */
+const VOICE_TEST_TEXT =
+  "您好，我是修必达。用温柔的声音，把家电的问题慢慢讲给您听。这一段是试听，合适就好。";
+
 /** P9 个人设置（对照「智修AI长辈关怀设置界面.png」） */
 export default function Settings() {
   const prefs = usePrefs();
   const { notify } = useToast();
+  const navigate = useNavigate();
+  const authUser = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
+
+  /** 退出登录：清除会话并回到登录页 */
+  function handleLogout() {
+    signOut();
+    navigate("/login", { replace: true });
+  }
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const timerRef = useRef<number | null>(null);
@@ -40,6 +55,51 @@ export default function Settings() {
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+
+  /* ---------- 语音测试：点击播放 / 再点停止；拖动语速实时重读 ---------- */
+  const [testing, setTesting] = useState(false);
+  const [chineseVoices, setChineseVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  /** 中文嗓音列表（voiceschanged 兜底：Chrome 异步加载） */
+  useEffect(() => {
+    if (!isSpeechSupported()) return;
+    const load = () => setChineseVoices(listChineseVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+
+  /** 开始播放测试语音 */
+  function startTestVoice() {
+    const ok = speak(VOICE_TEST_TEXT, {
+      rate: prefs.speechRate,
+      voiceURI: prefs.voiceURI,
+      onEnd: () => setTesting(false),
+    });
+    if (ok) setTesting(true);
+    else notify("语音播放未启动", "error");
+  }
+
+  function toggleTestVoice() {
+    if (testing) {
+      stopSpeech();
+      setTesting(false);
+    } else {
+      startTestVoice();
+    }
+  }
+
+  /** 拖动语速：保存偏好；正在试听时以新语速从头重读 */
+  function handleRateChange(v: number) {
+    prefs.setSpeechRate(v);
+    if (testing) {
+      speak(VOICE_TEST_TEXT, {
+        rate: v,
+        voiceURI: prefs.voiceURI,
+        onEnd: () => setTesting(false),
+      });
+    }
+  }
 
   /** 自动保存指示：任意偏好变化 → 保存中 → 已自动保存 */
   useEffect(() => {
@@ -71,28 +131,29 @@ export default function Settings() {
         }
       />
 
-      {/* A. 用户资料（演示数据） */}
+      {/* A. 用户资料（登录账号 + 演示补充信息） */}
       <SectionCard title="用户资料">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-              {DEMO_USER.nickname.slice(0, 1)}
+              {authUser?.username.slice(0, 1).toUpperCase() ?? DEMO_USER.nickname.slice(0, 1)}
             </span>
             <div>
               <p className="text-sm font-semibold text-stone-900">
-                {DEMO_USER.nickname}
+                {authUser?.username ?? DEMO_USER.nickname}
                 <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-normal text-stone-500">
-                  演示账号
+                  账号 #{authUser?.id ?? "-"}
                 </span>
               </p>
-              <p className="mt-0.5 text-sm text-stone-500">{maskPhone(DEMO_USER.phone)}</p>
+              <p className="mt-0.5 text-sm text-stone-500">{authUser?.email ?? maskPhone(DEMO_USER.phone)}</p>
               <p className="mt-0.5 text-xs text-stone-400">
                 当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
               </p>
             </div>
           </div>
-          <Button variant="secondary" onClick={() => notify("演示账号，编辑资料暂未开放", "info")}>
-            编辑资料
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut aria-hidden className="h-4 w-4" />
+            退出登录
           </Button>
         </div>
       </SectionCard>
@@ -179,39 +240,65 @@ export default function Settings() {
             onChange={prefs.setAutoRead}
           />
         </div>
-        <div className="pt-3">
-          <SliderControl
-            label="语速"
-            min={0.5}
-            max={2}
-            step={0.1}
-            value={prefs.speechRate}
-            onChange={prefs.setSpeechRate}
-            minLabel="慢"
-            maxLabel="快"
-            formatValue={(v) => `${v.toFixed(1)}x`}
-          />
-          {isSpeechSupported() ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                const ok = speak(
-                  "您好，我是修必达AI助手。这是语音播报测试，如果您能听到这句话，说明语音功能正常。",
-                  prefs.speechRate
-                );
-                notify(ok ? "正在播放测试语音" : "语音播放未启动", ok ? "success" : "error");
-              }}
+        {isSpeechSupported() ? (
+          <div className="pt-3">
+            <SettingsRow
+              label="播报声音"
+              description="默认自动挑选温柔的中文女声，也可以手动选择"
             >
-              <Volume2 className="h-4 w-4" /> 播放测试语音
-            </Button>
-          ) : (
-            <p className="flex items-center gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">
-              <Volume2 className="h-4 w-4 text-stone-400" />
-              当前浏览器不支持语音播报（Web Speech API），朗读功能不可用。
-            </p>
-          )}
-        </div>
+              <select
+                value={prefs.voiceURI ?? ""}
+                onChange={(e) => prefs.setVoiceURI(e.target.value || null)}
+                aria-label="播报声音"
+                className="w-full max-w-64 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              >
+                <option value="">自动推荐（温柔女声）</option>
+                {chineseVoices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </SettingsRow>
+            <SliderControl
+              label="语速"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={prefs.speechRate}
+              onChange={handleRateChange}
+              minLabel="慢"
+              maxLabel="快"
+              formatValue={(v) => `${v.toFixed(1)}x`}
+            />
+            <div className="mt-1 flex items-center gap-3">
+              <Button
+                variant={testing ? "danger" : "secondary"}
+                size="sm"
+                onClick={toggleTestVoice}
+                aria-pressed={testing}
+              >
+                {testing ? (
+                  <>
+                    <Square className="h-4 w-4" /> 停止播放
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-4 w-4" /> 播放测试语音
+                  </>
+                )}
+              </Button>
+              <p aria-live="polite" className="text-xs text-stone-400">
+                {testing ? "正在播放，再次点击按钮即可停止" : "点击试听，拖动语速会实时重读"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="flex items-center gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-500">
+            <Volume2 className="h-4 w-4 text-stone-400" />
+            当前浏览器不支持语音播报（Web Speech API），朗读功能不可用。
+          </p>
+        )}
       </SectionCard>
 
       {/* E. 隐私与数据 */}
@@ -231,7 +318,7 @@ export default function Settings() {
           </Button>
         </div>
         <p className="mt-2 text-xs text-stone-400">
-          用户体系（USER-001）接入前以演示账号运行，注销操作不会删除任何真实数据。
+          当前登录 {authUser?.username ?? "未登录"}。注销操作会清除本机数据并退出登录。
         </p>
         <ConfirmDialog
           open={clearOpen}

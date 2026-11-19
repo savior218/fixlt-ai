@@ -1,4 +1,4 @@
-﻿﻿/** 开关控件：语音/高对比度/减少动画等偏好（PRD 第 8 章） */
+﻿﻿/** 开关控件：语音/自动朗读等偏好（PRD 第 8 章） */
 export default function Toggle({
   label,
   description,
@@ -11,18 +11,30 @@ export default function Toggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-4 py-3">
+    <div className="flex items-center justify-between gap-4 py-3">
       <span>
-        <span className="block text-sm font-medium">{label}</span>
+        <span className="block text-sm font-medium text-stone-800">{label}</span>
         <span className="block text-xs text-stone-500">{description}</span>
       </span>
-      <input
-        type="checkbox"
+      <button
+        type="button"
         role="switch"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full bg-stone-300 transition-colors before:block before:h-5 before:w-5 before:translate-x-0.5 before:translate-y-0.5 before:rounded-full before:bg-white before:transition-transform checked:bg-brand-600 checked:before:translate-x-[1.375rem]"
-      />
-    </label>
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={[
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+          checked ? "border-brand-600 bg-brand-600" : "border-stone-300 bg-stone-200",
+        ].join(" ")}
+      >
+        <span
+          aria-hidden
+          className={[
+            "inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+            checked ? "translate-x-[1.5rem]" : "translate-x-[0.25rem]",
+          ].join(" ")}
+        />
+      </button>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
-﻿﻿import { useEffect, useMemo, useState } from "react";
+﻿﻿﻿﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, FastForward, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, PenLine, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -8,7 +8,7 @@ import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import TicketTracker from "../components/TicketTracker";
-import { TICKET_STATUS_LABELS } from "../services/api";
+import { TICKET_STATUS_LABELS, TICKET_STATUS_ORDER, type TicketStatus } from "../services/api";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
 import { useNotificationStore } from "../stores/notifications";
@@ -255,13 +255,22 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 报修工单跟踪区（模块②）：状态跟踪条 + 演示推进 + 状态变化通知 */
+/** 工单下一个状态（用于自助更新进度） */
+function nextOf(status: TicketStatus): TicketStatus | null {
+  const idx = TICKET_STATUS_ORDER.indexOf(status);
+  if (idx < 0 || idx >= TICKET_STATUS_ORDER.length - 1) return null;
+  return TICKET_STATUS_ORDER[idx + 1];
+}
+
+/** 报修工单跟踪区（模块②）：状态跟踪条 + 自助更新进度 + 状态变化通知 */
 function TicketsSection() {
   const { notify } = useToast();
   const tickets = useTicketStore((s) => s.tickets);
   const syncFromBackend = useTicketStore((s) => s.syncFromBackend);
   const advance = useTicketStore((s) => s.advance);
   const addNotification = useNotificationStore((s) => s.add);
+  /** 正在更新进度的工单 ID */
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     void syncFromBackend();
@@ -270,26 +279,29 @@ function TicketsSection() {
   async function handleAdvance(id: number) {
     const ticket = tickets.find((t) => t.id === id);
     if (!ticket) return;
+    const target = nextOf(ticket.status);
     const ok = await advance(id);
     if (ok) {
-      const next = useTicketStore
-        .getState()
-        .tickets.find((t) => t.id === id);
+      const next = useTicketStore.getState().tickets.find((t) => t.id === id);
       addNotification({
         type: "ticket",
         title: "工单状态更新",
-        body: `「${ticket.symptom}」工单已流转到「${
-          next ? TICKET_STATUS_LABELS[next.status] : "下一阶段"
+        body: `「${ticket.symptom}」工单已更新为「${
+          next ? TICKET_STATUS_LABELS[next.status] : target ? TICKET_STATUS_LABELS[target] : "下一阶段"
         }」。`,
       });
-      notify("工单状态已更新", "success");
+      notify("工单进度已更新", "success");
+      setEditingId(null);
     } else {
-      notify("工单状态推进失败，请稍后重试", "error");
+      notify("工单进度更新失败，请稍后重试", "error");
     }
   }
 
   return (
     <SectionCard title={`报修工单（${tickets.length}）`}>
+      <p className="-mt-1 mb-3 text-xs text-stone-400">
+        联系维修师傅后，进展到哪一步就在这里更新到哪一步，档案跟着真实情况走。
+      </p>
       {tickets.length === 0 ? (
         <p className="text-sm text-stone-500">
           暂无报修工单。在
@@ -300,36 +312,53 @@ function TicketsSection() {
         </p>
       ) : (
         <ul className="space-y-3">
-          {tickets.map((t) => (
-            <li key={t.id} className="rounded-xl border border-stone-200 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-stone-900">
-                  {t.symptom}
-                  <span className="ml-2 text-xs font-normal text-stone-400">
-                    #{t.id} · {relativeTime(t.created_at)}
-                  </span>
-                </p>
-                {t.status !== "completed" && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleAdvance(t.id)}
-                    aria-label="演示推进工单状态"
-                  >
-                    <FastForward className="h-3.5 w-3.5" /> 推进状态（演示）
-                  </Button>
+          {tickets.map((t) => {
+            const next = t.status === "completed" ? null : nextOf(t.status);
+            const editing = editingId === t.id;
+            return (
+              <li key={t.id} className="rounded-xl border border-stone-200 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-stone-900">
+                    {t.symptom}
+                    <span className="ml-2 text-xs font-normal text-stone-400">
+                      #{t.id} · {relativeTime(t.created_at)}
+                    </span>
+                  </p>
+                  {next && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingId(editing ? null : t.id)}
+                      aria-expanded={editing}
+                    >
+                      <PenLine className="h-3.5 w-3.5" /> 更新进度
+                    </Button>
+                  )}
+                </div>
+                {t.brand || t.model ? (
+                  <p className="mt-1 text-xs text-stone-500">
+                    {[t.brand, t.model].filter(Boolean).join(" ")}
+                  </p>
+                ) : null}
+                {editing && next && (
+                  <div className="mt-2.5 rounded-lg bg-stone-50 p-2.5">
+                    <p className="text-xs text-stone-500">维修现在到哪一步了？</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Button size="sm" onClick={() => handleAdvance(t.id)}>
+                        标记为「{TICKET_STATUS_LABELS[next]}」
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
+                        取消
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              </div>
-              {t.brand || t.model ? (
-                <p className="mt-1 text-xs text-stone-500">
-                  {[t.brand, t.model].filter(Boolean).join(" ")}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <TicketTracker status={t.status} />
-              </div>
-            </li>
-          ))}
+                <div className="mt-3">
+                  <TicketTracker status={t.status} />
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </SectionCard>

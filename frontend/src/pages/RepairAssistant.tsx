@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, ClipboardCopy, Send, ShieldAlert } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, ImagePlus, Loader2, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -15,6 +15,8 @@ import { useNotificationStore } from "../stores/notifications";
 import { useTicketStore } from "../stores/ticketStore";
 import { formatDate } from "../utils/format";
 import { usePrefs } from "../stores/prefs";
+import { uploadDiagnosisPhoto } from "../services/api";
+import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 
 /** P5 设备类型（报修场景比设备库更宽：含电视/其他） */
 const REPAIR_CATEGORIES = [
@@ -81,6 +83,35 @@ export default function RepairAssistant() {
   const [wizardStep, setWizardStep] = useState(0);
   /** 本次会话已提交的工单 ID（null = 未提交 / 降级为复制说明） */
   const [submittedTicketId, setSubmittedTicketId] = useState<number | null>(null);
+
+  /* ---------- 故障照片上传（与诊断页同能力：压缩 → 预览 → 后端入库） ---------- */
+  const [photo, setPhoto] = useState<{ preview: string; id: number | null } | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoDragOver, setPhotoDragOver] = useState(false);
+
+  async function handlePhotoFile(file: File) {
+    const err = validatePhoto(file);
+    if (err) return notify(err, "error");
+    setPhotoUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const preview = await fileToDataUrl(compressed);
+      try {
+        const res = await uploadDiagnosisPhoto(compressed);
+        setPhoto({ preview, id: res.id });
+        notify("照片已上传，编号将写入报修说明", "success");
+      } catch {
+        // 后端不可用 / 未登录：仅本地预览
+        setPhoto({ preview, id: null });
+        notify("AI 服务不可用，照片仅本地预览", "info");
+      }
+    } catch {
+      notify("图片处理失败，请换一张试试", "error");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   const { tickets, syncFromBackend } = useTicketStore();
   const addNotification = useNotificationStore((s) => s.add);
@@ -162,6 +193,7 @@ export default function RepairAssistant() {
       `故障现象：${form.symptom}`,
       form.description.trim() ? `故障描述：${form.description.trim()}` : "",
       form.foundAt ? `发现时间：${form.foundAt}` : "",
+      photo ? `故障照片：已附 1 张${photo.id != null ? `（上传编号 #${photo.id}）` : "（本地保存）"}` : "",
       checks.length > 0 ? `已完成的检查：${checks.join("；")}` : "",
       "",
       `专业建议：${PRO_ADVICE}`,
@@ -342,10 +374,83 @@ export default function RepairAssistant() {
         </div>
       </fieldset>
 
-      <div className="rounded-xl border border-dashed border-stone-300 p-4 text-center">
-        <p className="text-sm text-stone-500">上传照片（可选）</p>
-        <p className="mt-1 text-xs text-stone-400">图片上传为演示状态，暂未接入后端</p>
-      </div>
+      {/* 上传照片：点击/拖拽上传 + 压缩预览 + 后端入库（失败降级本地） */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-medium text-stone-700">故障照片（可选）</legend>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="sr-only"
+          aria-label="选择故障照片"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handlePhotoFile(f);
+            e.target.value = ""; // 允许重复选择同一文件
+          }}
+        />
+        {photo ? (
+          <div className="flex items-center gap-3 rounded-xl border border-stone-200 p-3">
+            <img
+              src={photo.preview}
+              alt="故障照片预览"
+              className="h-20 w-20 rounded-lg border border-stone-200 object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-stone-700">
+                {photo.id != null ? "照片已上传 ✓" : "照片仅本地预览"}
+              </p>
+              <p className="mt-1 text-xs text-stone-400">
+                {photo.id != null ? "上传编号会写入报修说明，方便师傅查看" : "未连接服务器：照片不会随工单保存"}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={photoUploading}>
+                  重新选择
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setPhoto(null)}>
+                  <X className="h-3.5 w-3.5" /> 移除
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label="上传故障照片"
+            onClick={() => photoInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setPhotoDragOver(true);
+            }}
+            onDragLeave={() => setPhotoDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setPhotoDragOver(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) void handlePhotoFile(f);
+            }}
+            className={[
+              "flex w-full flex-col items-center rounded-xl border border-dashed p-4 text-center transition-colors",
+              photoDragOver ? "border-brand-500 bg-brand-50" : "border-stone-300 hover:border-brand-400",
+            ].join(" ")}
+          >
+            {photoUploading ? (
+              <>
+                <Loader2 aria-hidden className="h-6 w-6 animate-spin text-brand-600" />
+                <span className="mt-1.5 text-sm text-stone-600">照片处理中…</span>
+              </>
+            ) : (
+              <>
+                <ImagePlus aria-hidden className="h-6 w-6 text-stone-400" />
+                <span className="mt-1.5 text-sm text-stone-600">
+                  {elder ? "点这里，拍一张或选一张故障照片" : "点击上传或拖拽图片到此处"}
+                </span>
+                <span className="mt-0.5 text-xs text-stone-400">支持 JPG、PNG，不超过 10MB</span>
+              </>
+            )}
+          </button>
+        )}
+      </fieldset>
     </>
   );
 

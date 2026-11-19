@@ -1,14 +1,20 @@
 /** 后端 API 客户端。开发期通过 Vite 代理访问 127.0.0.1:8000。
- *  用户体系（USER-001）接入前以 X-User-Id 标识演示用户。 */
+ *  请求头 X-User-Id 来自登录会话（authStore）；未登录时降级为演示账号。 */
+
+import { useAuthStore } from "../stores/authStore";
 
 const BASE = "/api";
-const HEADERS = {
-  "Content-Type": "application/json",
-  "X-User-Id": "1",
-};
+
+function buildHeaders(): Record<string, string> {
+  const userId = useAuthStore.getState().user?.id;
+  return {
+    "Content-Type": "application/json",
+    "X-User-Id": String(userId ?? 1),
+  };
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(BASE + path, { headers: HEADERS, ...init });
+  const resp = await fetch(BASE + path, { headers: buildHeaders(), ...init });
   if (!resp.ok) {
     let detail = `请求失败（HTTP ${resp.status}）`;
     try {
@@ -21,6 +27,36 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (resp.status === 204) return undefined as T;
   return (await resp.json()) as T;
+}
+
+/* ================= 账号认证（登录 / 注册） ================= */
+
+export interface AuthUserOut {
+  id: number;
+  username: string;
+  email: string | null;
+}
+
+/** 登录；失败抛错（信息已含后端 detail） */
+export async function loginRequest(
+  username: string,
+  password: string,
+): Promise<AuthUserOut> {
+  return request<AuthUserOut>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+/** 注册新账号并直接返回用户信息 */
+export async function registerRequest(
+  username: string,
+  password: string,
+): Promise<AuthUserOut> {
+  return request<AuthUserOut>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
 }
 
 export interface HealthInfo {

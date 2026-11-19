@@ -1,13 +1,23 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  AirVent,
   Camera,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
   Lightbulb,
   Loader2,
   Mic,
   PhoneCall,
+  Refrigerator,
+  RotateCcw,
   ShieldAlert,
+  Square,
   Undo2,
+  Wrench,
+  WashingMachine,
+  ArrowLeft,
   X,
 } from "lucide-react";
 
@@ -16,6 +26,7 @@ import DeviceCard from "../components/DeviceCard";
 import DiagnosisStepper from "../components/DiagnosisStepper";
 import InputField from "../components/InputField";
 import AIMessageBubble from "../components/AIMessageBubble";
+import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
 import { useToast } from "../components/Toast";
 import { CATEGORY_LABELS } from "../services/api";
@@ -34,6 +45,7 @@ import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import { speak } from "../utils/speech";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import {
   compressImage,
   fileToDataUrl,
@@ -41,11 +53,11 @@ import {
 } from "../utils/image";
 
 /** 设备类型卡片（P1 步骤一） */
-const CATEGORY_CARDS: { key: DiagnoseCategory; emoji: string; title: string; hint: string }[] = [
-  { key: "ac", emoji: "❄️", title: "空调", hint: "制冷 / 制热异常、漏水" },
-  { key: "fridge", emoji: "🧊", title: "冰箱", hint: "不制冷、噪音大" },
-  { key: "washer", emoji: "🫧", title: "洗衣机", hint: "无法启动、漏水" },
-  { key: "other", emoji: "📺", title: "其他家电", hint: "手动选择并描述" },
+const CATEGORY_CARDS: { key: DiagnoseCategory; icon: typeof AirVent; title: string; hint: string }[] = [
+  { key: "ac", icon: AirVent, title: "空调", hint: "制冷 / 制热异常、漏水" },
+  { key: "fridge", icon: Refrigerator, title: "冰箱", hint: "不制冷、噪音大" },
+  { key: "washer", icon: WashingMachine, title: "洗衣机", hint: "无法启动、漏水" },
+  { key: "other", icon: Wrench, title: "其他家电", hint: "手动选择并描述" },
 ];
 
 /** elder 模式分步引导文案 */
@@ -73,6 +85,37 @@ export default function Diagnose() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  /* ---------- 语音输入（Web Speech Recognition） ---------- */
+  const voiceRec = useSpeechRecognition("zh-CN");
+  const heardText = voiceRec.finalText + voiceRec.interimText;
+
+  /** 识别出最终文字：追加进输入框 */
+  useEffect(() => {
+    if (voiceRec.finalText) {
+      setInput((prev) => (prev ? `${prev}${voiceRec.finalText}` : voiceRec.finalText));
+      voiceRec.clear();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceRec.finalText]);
+
+  /** 识别出错提示 */
+  useEffect(() => {
+    if (voiceRec.error) notify(voiceRec.error, "error");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceRec.error]);
+
+  function toggleVoiceInput() {
+    if (!voiceRec.supported) {
+      notify("当前浏览器不支持语音输入，请使用 Chrome 或 Edge 浏览器", "error");
+      return;
+    }
+    if (voiceRec.listening) {
+      voiceRec.stop();
+    } else {
+      voiceRec.start();
+    }
+  }
 
   /* ---------- 模块③：故障照片上传 ---------- */
   const [uploading, setUploading] = useState(false);
@@ -307,6 +350,9 @@ export default function Diagnose() {
   const autoRead = usePrefs((s) => s.autoRead);
   const voiceEnabled = usePrefs((s) => s.voiceEnabled);
   const speechRate = usePrefs((s) => s.speechRate);
+  const voiceURI = usePrefs((s) => s.voiceURI);
+  /** 最近一次诊断（第 4 步闭环卡展示用） */
+  const lastDiagnosis = useDiagnosisStore((s) => s.history[0]);
   const lastChatMsgId = draft.chat[draft.chat.length - 1]?.id;
   const lastChatAiContent = useMemo(() => {
     const last = draft.chat[draft.chat.length - 1];
@@ -314,7 +360,7 @@ export default function Diagnose() {
   }, [draft.chat]);
   useEffect(() => {
     if (autoRead && voiceEnabled && lastChatAiContent) {
-      speak(lastChatAiContent, speechRate);
+      speak(lastChatAiContent, { rate: speechRate, voiceURI });
     }
     // 仅在最后一条消息变化时触发
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -409,18 +455,25 @@ export default function Diagnose() {
         <>
           <SectionCard title={elder ? "您要检查哪台设备？点下面的卡片" : "选择设备类型"}>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {CATEGORY_CARDS.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => pickCategory(c.key)}
-                  className="rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
-                >
-                  <span aria-hidden className="text-3xl">{c.emoji}</span>
-                  <p className={`mt-2 font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</p>
-                  <p className="mt-0.5 text-xs text-stone-500">{c.hint}</p>
-                </button>
-              ))}
+              {CATEGORY_CARDS.map((c) => {
+                const Icon = c.icon;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => pickCategory(c.key)}
+                    className="flex items-start gap-3 rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50/50"
+                  >
+                    <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className={`block font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</span>
+                      <span className="mt-0.5 block text-xs text-stone-500">{c.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </SectionCard>
 
@@ -466,8 +519,11 @@ export default function Diagnose() {
           {(selectedDevice || draft.category) && (
             <div className="card-base flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="flex items-center gap-3">
-                <span aria-hidden className="text-2xl">
-                  {draft.category === "ac" ? "❄️" : draft.category === "fridge" ? "🧊" : draft.category === "washer" ? "🫧" : "📺"}
+                <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                  {(() => {
+                    const Icon = CATEGORY_CARDS.find((c) => c.key === draft.category)?.icon ?? Wrench;
+                    return <Icon className="h-5 w-5" />;
+                  })()}
                 </span>
                 <div>
                   <p className="flex items-center gap-2 font-semibold text-stone-900">
@@ -683,9 +739,12 @@ export default function Diagnose() {
             <div className="flex items-center gap-2 border-t border-stone-100 p-3">
               <input
                 type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
+                value={voiceRec.listening ? heardText || "正在听写，请说话…" : input}
+                onChange={(e) => {
+                  if (!voiceRec.listening) setInput(e.target.value);
+                }}
                 onKeyDown={(e) => {
+                  if (voiceRec.listening) return;
                   // 中文输入法组合中（选字 / 候选词）不触发发送；
                   // keyCode 229 兼容部分浏览器组合态上报
                   const composing =
@@ -695,18 +754,35 @@ export default function Diagnose() {
                     if (sendAnswer(input)) setInput("");
                   }
                 }}
-                placeholder={elder ? "也可以打字告诉我…" : "请输入您的问题，比如：空调不制冷了…"}
-                className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                placeholder={elder ? "也可以打字或点麦克风说话…" : "请输入您的问题，比如：空调不制冷了…"}
+                className={[
+                  "min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none",
+                  voiceRec.listening
+                    ? "border-risk-high bg-risk-high-bg/40 focus:border-risk-high"
+                    : "border-stone-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
+                ].join(" ")}
               />
-              <Button
-                variant="secondary"
-                onClick={() => notify("语音输入开发中", "info")}
-                aria-label="语音输入（开发中）"
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                aria-label={voiceRec.listening ? "停止语音输入" : "语音输入"}
+                title={voiceRec.listening ? "点击结束听写" : "点我说话，说完再点一下结束"}
+                className={[
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
+                  voiceRec.listening
+                    ? "border-risk-high bg-risk-high text-white animate-pulse"
+                    : "border-stone-300 bg-surface text-stone-600 hover:border-brand-400 hover:text-brand-700",
+                ].join(" ")}
               >
-                <Mic className="h-4 w-4" />
-              </Button>
+                {voiceRec.listening ? (
+                  <Square aria-hidden className="h-4 w-4" />
+                ) : (
+                  <Mic aria-hidden className="h-4 w-4" />
+                )}
+              </button>
               <Button
                 onClick={() => {
+                  if (voiceRec.listening) voiceRec.stop();
                   if (sendAnswer(input)) setInput("");
                 }}
               >
@@ -715,17 +791,78 @@ export default function Diagnose() {
             </div>
           </SectionCard>
 
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setDraft({ step: 1 })}>
-              ← 返回重新描述
+          {/* 底部操作条：返回 / 重开 */}
+          <div className="flex items-center justify-between gap-3 border-t border-stone-200 pt-4">
+            <Button variant="outline" onClick={() => setDraft({ step: 1 })}>
+              <ArrowLeft aria-hidden className="h-4 w-4" />
+              返回重新描述
             </Button>
             {(draft.answers.length > 0 || draft.chat.length > 0) && (
-              <Button variant="ghost" onClick={resetDraft}>
+              <Button variant="outline" onClick={resetDraft}>
+                <RotateCcw aria-hidden className="h-4 w-4" />
                 重新开始
               </Button>
             )}
           </div>
         </>
+      )}
+
+      {/* 第 4 步：诊断完成后的流程闭环（避免回到本页时一片空白卡死） */}
+      {draft.step === 3 && (
+        <SectionCard title="诊断完成">
+          {lastDiagnosis ? (
+            <>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 aria-hidden className="mt-0.5 h-8 w-8 shrink-0 text-brand-600" />
+                <div className="min-w-0">
+                  <p className={`font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
+                    {lastDiagnosis.deviceName ? `${lastDiagnosis.deviceName} · ` : ""}
+                    {lastDiagnosis.symptom}
+                  </p>
+                  <p className={`mt-1 leading-relaxed text-stone-600 ${elder ? "text-base" : "text-sm"}`}>
+                    {lastDiagnosis.conclusion}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <RiskBadge level={lastDiagnosis.riskLevel} />
+                    <span className="text-xs text-stone-400">
+                      已自动保存到维修档案
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 流程闭环：看报告 → 报修 / 回档案 / 再来一次 */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button onClick={() => navigate(`/diagnosis/${lastDiagnosis.id}/report`)}>
+                  <FileText aria-hidden className="h-4 w-4" />
+                  查看完整报告
+                </Button>
+                <Button variant="outline" onClick={() => navigate(`/repair?diagnosisId=${lastDiagnosis.id}`)}>
+                  <Wrench aria-hidden className="h-4 w-4" />
+                  生成报修说明
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/records")}>
+                  <ClipboardList aria-hidden className="h-4 w-4" />
+                  去维修档案
+                </Button>
+                <Button variant="outline" onClick={resetDraft}>
+                  <RotateCcw aria-hidden className="h-4 w-4" />
+                  再诊断一次
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-stone-500">暂未找到本次诊断结果。</p>
+              <div className="mt-3">
+                <Button onClick={resetDraft}>
+                  <RotateCcw aria-hidden className="h-4 w-4" />
+                  开始新的诊断
+                </Button>
+              </div>
+            </>
+          )}
+        </SectionCard>
       )}
     </div>
   );

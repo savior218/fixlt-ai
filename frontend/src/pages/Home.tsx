@@ -1,6 +1,16 @@
-﻿import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, AlertTriangle } from "lucide-react";
+﻿﻿import { Link, useNavigate } from "react-router-dom";
+import {
+  AirVent,
+  ArrowRight,
+  ClipboardList,
+  Refrigerator,
+  Wrench,
+  WashingMachine,
+  ChevronRight,
+  AlertTriangle,
+} from "lucide-react";
 
+import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
@@ -8,12 +18,12 @@ import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
 
-/** 快速入口三张卡片（点击直接进入对应类型诊断） */
+/** 快速入口（点击直接进入对应类型诊断） */
 const QUICK_ENTRIES = [
-  { category: "ac", emoji: "❄️", title: "空调", hint: "制冷/制热异常？" },
-  { category: "fridge", emoji: "🧊", title: "冰箱", hint: "不制冷或有异响？" },
-  { category: "washer", emoji: "🫧", title: "洗衣机", hint: "无法启动或漏水？" },
-];
+  { category: "ac", icon: AirVent, title: "空调", hint: "不制冷、不制热、漏水" },
+  { category: "fridge", icon: Refrigerator, title: "冰箱", hint: "不制冷、噪音大、结冰" },
+  { category: "washer", icon: WashingMachine, title: "洗衣机", hint: "不启动、不脱水、漏水" },
+] as const;
 
 const FAQ_ITEMS = [
   { q: "空调不制冷怎么办？", to: "/diagnose?category=ac" },
@@ -22,7 +32,16 @@ const FAQ_ITEMS = [
   { q: "什么情况必须立即停机？", to: "/diagnose" },
 ];
 
-/** 首页（对照 UI 设计稿「智修AI家庭家电助手仪表盘.png」） */
+function greetingByHour(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "夜深了";
+  if (h < 11) return "上午好";
+  if (h < 14) return "中午好";
+  if (h < 18) return "下午好";
+  return "晚上好";
+}
+
+/** 首页 */
 export default function Home() {
   const navigate = useNavigate();
   const { mode } = usePrefs();
@@ -32,50 +51,76 @@ export default function Home() {
   const recent = history.slice(0, 3);
 
   return (
-    <div className="space-y-5">
-      {/* 欢迎横幅（暖纸风：陶土主色 + 衬线标题，像杂志开篇） */}
-      <section className="rounded-2xl bg-brand-600 p-6 text-white shadow-card">
-        <h1 className={elder ? "text-2xl font-bold" : "text-xl font-bold"}>
-          {elder ? "你好！家里电器坏了吗？" : "你好，欢迎使用修必达！"}
-        </h1>
-        <p className="mt-1.5 text-sm text-brand-100">
-          {elder
-            ? "点下面的按钮，AI 帮您一步一步找出问题，安全又放心。"
-            : "遇到家电故障？让 AI 帮你快速诊断，安全解决！"}
+    <div className="space-y-6">
+      {/* 顶部：问候 + 主操作（干净的纸面卡，不再用大色块横幅） */}
+      <section className="card-base relative overflow-hidden p-6 sm:p-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
+        >
+          <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
+        </div>
+
+        <p className="text-sm text-stone-500">
+          {greetingByHour()}
+          {elder ? "，家里电器还好用吗？" : "，家里电器用得还顺手吗？"}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate("/diagnose")}
-          className={`mt-4 inline-flex items-center gap-2 rounded-xl bg-white font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50 ${
-            elder ? "px-6 py-3.5 text-lg" : "px-5 py-2.5 text-sm"
+        <h1
+          className={`mt-2 font-semibold leading-snug text-stone-900 ${
+            elder ? "text-2xl" : "text-[26px] sm:text-3xl"
           }`}
         >
-          开始智能诊断
-          <ArrowRight aria-hidden className="h-4 w-4" />
-        </button>
+          家电出了故障，
+          <span className="text-brand-700">一步步帮你找到原因</span>
+        </h1>
+        <p className={`mt-2 max-w-lg leading-relaxed text-stone-600 ${elder ? "text-lg" : "text-sm"}`}>
+          {elder
+            ? "像聊天一样把问题说出来，AI 帮您慢慢查；有危险会第一时间提醒您。"
+            : "像聊天一样描述问题，AI 陪你逐步排查；遇到危险情况会第一时间提醒你停手。"}
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button size="lg" onClick={() => navigate("/diagnose")}>
+            开始智能诊断
+            <ArrowRight aria-hidden className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => navigate("/repair")}>
+            <ClipboardList aria-hidden className="h-4 w-4" />
+            已找师傅，直接报修
+          </Button>
+        </div>
       </section>
 
-      {/* 快速入口三张卡片 */}
+      {/* 快速入口 */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-stone-600">快速入口</h2>
+        <h2 className={`mb-3 font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
+          按设备开始
+        </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {QUICK_ENTRIES.map((e) => (
-            <Link
-              key={e.category}
-              to={`/diagnose?category=${e.category}`}
-              className="card-base flex items-center gap-3 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
-            >
-              <span aria-hidden className="text-3xl">
-                {e.emoji}
-              </span>
-              <span>
-                <span className={`block font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
-                  {e.title}
+          {QUICK_ENTRIES.map((e) => {
+            const Icon = e.icon;
+            return (
+              <Link
+                key={e.category}
+                to={`/diagnose?category=${e.category}`}
+                className="card-base group flex items-center gap-3.5 p-4 transition-colors hover:border-brand-300"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-100">
+                  <Icon aria-hidden className="h-5 w-5" />
                 </span>
-                <span className="block text-sm text-stone-500">{e.hint}</span>
-              </span>
-            </Link>
-          ))}
+                <span className="min-w-0 flex-1">
+                  <span className={`block font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
+                    {e.title}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className="h-4 w-4 shrink-0 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500"
+                />
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -136,7 +181,7 @@ export default function Home() {
                   className="flex items-center justify-between py-2.5 text-sm text-stone-700 transition-colors hover:text-brand-700"
                 >
                   {item.q}
-                  <span aria-hidden>›</span>
+                  <ChevronRight aria-hidden className="h-3.5 w-3.5 text-stone-300" />
                 </Link>
               </li>
             ))}
@@ -155,7 +200,6 @@ export default function Home() {
           ，请立即停止使用，并联系专业人员。
         </p>
       </div>
-
     </div>
   );
 }

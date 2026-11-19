@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+﻿﻿import { useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Lightbulb, PhoneCall } from "lucide-react";
 
@@ -151,11 +151,8 @@ export default function DiagnosisReport() {
               <Link to={`/repair?diagnosisId=${diagnosis.id}`} className={buttonClass("primary", "md")}>
                 <PhoneCall className="h-4 w-4" /> 生成报修说明并联系
               </Link>
-              <Button variant="secondary" onClick={() => notify("演示功能，暂未对接真实售后平台", "info")}>
-                一键联系维修
-              </Button>
             </div>
-            <p className="mt-2 text-xs text-stone-400">联系维修为演示功能，暂未对接真实售后平台。</p>
+            <p className="mt-2 text-xs text-stone-400">生成说明后可直接发给维修师傅或提交工单跟踪进度。</p>
           </SectionCard>
         </div>
       </div>

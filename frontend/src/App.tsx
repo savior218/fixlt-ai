@@ -7,6 +7,7 @@ import Diagnose from "./pages/Diagnose";
 import DiagnosisReport from "./pages/DiagnosisReport";
 import DiagnosisResult from "./pages/DiagnosisResult";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Records from "./pages/Records";
 import RepairAssistant from "./pages/RepairAssistant";
@@ -17,6 +18,8 @@ import UiKit from "./pages/UiKit";
 export default function App() {
   return (
     <Routes>
+      {/* 登录 / 注册（独立页，无侧栏） */}
+      <Route path="login" element={<Login />} />
       <Route element={<AppLayout />}>
         {/* 首页 */}
         <Route index element={<Home />} />

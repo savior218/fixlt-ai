@@ -23,6 +23,8 @@ interface PrefsState {
   autoRead: boolean;
   /** 语速 0.5 ~ 2.0 */
   speechRate: number;
+  /** 播报嗓音（voiceURI）；null = 自动挑选温柔女声 */
+  voiceURI: string | null;
   reduceMotion: boolean;
   setMode: (mode: InteractionMode) => void;
   setFontScale: (scale: FontScale) => void;
@@ -31,6 +33,7 @@ interface PrefsState {
   setVoiceEnabled: (v: boolean) => void;
   setAutoRead: (v: boolean) => void;
   setSpeechRate: (v: number) => void;
+  setVoiceURI: (v: string | null) => void;
   setReduceMotion: (v: boolean) => void;
   reset: () => void;
 }
@@ -49,6 +52,7 @@ const INITIAL = {
   voiceEnabled: false,
   autoRead: false,
   speechRate: 1,
+  voiceURI: null,
   reduceMotion: false,
 };
 
@@ -74,6 +78,7 @@ export const usePrefs = create<PrefsState>()(
             Math.max(SPEECH_RATE_MIN, Number(speechRate.toFixed(1)))
           ),
         }),
+      setVoiceURI: (voiceURI) => set({ voiceURI }),
       setReduceMotion: (reduceMotion) => set({ reduceMotion }),
       reset: () => set({ ...INITIAL }),
     }),

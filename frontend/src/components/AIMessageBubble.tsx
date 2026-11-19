@@ -29,6 +29,7 @@ export default function AIMessageBubble({
 }) {
   const elder = tone === "elder";
   const speechRate = usePrefs((s) => s.speechRate);
+  const voiceURI = usePrefs((s) => s.voiceURI);
   const [speaking, setSpeaking] = useState(false);
   const canSpeak = isSpeechSupported();
 
@@ -39,7 +40,8 @@ export default function AIMessageBubble({
       setSpeaking(false);
       return;
     }
-    if (content && speak(content, speechRate)) setSpeaking(true);
+    if (content && speak(content, { rate: speechRate, voiceURI, onEnd: () => setSpeaking(false) }))
+      setSpeaking(true);
   }
 
   if (role === "user") {

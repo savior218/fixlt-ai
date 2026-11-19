@@ -4,6 +4,7 @@ from datetime import date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.security import hash_password
 from app.models.device import Device
 from app.models.preference import UserPreference
 from app.models.user import User
@@ -40,11 +41,20 @@ DEMO_DEVICES = [
 
 
 def seed_demo_data(db: Session) -> None:
-    if db.scalar(select(func.count()).select_from(User)) == 0:
-        user = User(username="demo", password_hash="", email="demo@fixitai.local")
+    demo = db.scalar(select(User).where(User.username == "demo"))
+    if demo is None and db.scalar(select(func.count()).select_from(User)) == 0:
+        user = User(
+            username="demo",
+            password_hash=hash_password("123456"),
+            email="demo@fixitai.local",
+        )
         user.preferences = UserPreference()
         db.add(user)
         db.flush()
         for item in DEMO_DEVICES:
             db.add(Device(user_id=user.id, **item))
+        db.commit()
+    elif demo is not None and not demo.password_hash:
+        # 旧库升级：早期 demo 账号无密码，补上默认密码 123456
+        demo.password_hash = hash_password("123456")
         db.commit()
