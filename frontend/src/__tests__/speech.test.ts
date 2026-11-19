@@ -76,6 +76,26 @@ describe("语音朗读（阶段十三）", () => {
     expect(
       normalizeSpeechText(["结论一", null, "  ", "结论二。"])
     ).toBe("结论一。结论二");
+    expect(normalizeSpeechText(["AI 建议：**先断电**"])).toBe(
+      "AI 建议：先断电"
+    );
+  });
+
+  it("默认优先较自然的中文系统音色，也可手动指定音色", async () => {
+    installSpeech([
+      { name: "Microsoft Huihui - Chinese (Simplified, PRC)", lang: "zh-CN" },
+      { name: "Microsoft Yaoyao - Chinese (Simplified, PRC)", lang: "zh-CN" },
+      { name: "Microsoft Kangkang - Chinese (Simplified, PRC)", lang: "zh-CN" },
+    ]);
+    usePrefs.setState({ speechVoiceURI: null });
+    speak({ key: "k0", text: "音色" });
+    await new Promise((r) => setTimeout(r, 60));
+    expect(spoken[0].voice?.name).toContain("Yaoyao");
+
+    usePrefs.setState({ speechVoiceURI: "Microsoft Kangkang - Chinese (Simplified, PRC)" });
+    speak({ key: "k1", text: "换音色" });
+    await new Promise((r) => setTimeout(r, 60));
+    expect(spoken[spoken.length - 1].voice?.name).toContain("Kangkang");
   });
 
   it("模板与未记录来源有明确朗读前说明", () => {

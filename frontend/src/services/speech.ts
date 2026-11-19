@@ -12,6 +12,12 @@ import { SPEECH_RATE_MAX, SPEECH_RATE_MIN, usePrefs } from "../stores/prefs";
 
 export type SpeechStatus = "idle" | "speaking" | "error";
 
+export interface SpeechVoiceOption {
+  /** 音色唯一标识：voiceURI，缺失时退回名称 */
+  id: string;
+  name: string;
+}
+
 interface SpeechState {
   /** 浏览器是否提供 SpeechSynthesis */
   supported: boolean;
@@ -24,6 +30,8 @@ interface SpeechState {
   error: string | null;
   /** 当前选用的音色名称（可能为默认音色） */
   voiceLabel: string | null;
+  /** 可用的中文音色，供设置页手动选择 */
+  voices: SpeechVoiceOption[];
   /** 语音列表已加载但没有中文音色 */
   noZhVoice: boolean;
   /** 当前语速（用于界面展示） */
@@ -37,6 +45,7 @@ export const useSpeech = create<SpeechState>(() => ({
   activeKey: null,
   error: null,
   voiceLabel: null,
+  voices: [],
   noZhVoice: false,
   rate: 1,
 }));
@@ -87,26 +96,74 @@ function refreshVoices(): void {
     return;
   }
   voicesLoaded = true;
-  const zh = pickChineseVoice(cachedVoices);
+  const zhVoices = listChineseVoices(cachedVoices);
+  const zh = pickChineseVoice(cachedVoices, usePrefs.getState().speechVoiceURI);
   useSpeech.setState({
     ready: true,
     voiceLabel: zh?.name ?? null,
-    noZhVoice: !zh,
+    voices: zhVoices,
+    noZhVoice: zhVoices.length === 0,
   });
 }
 
-/** 依次按语言标签、语言前缀、常见中文音色关键词选择，不依赖固定名称 */
-function pickChineseVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-  const normalized = (v: SpeechSynthesisVoice) => ({
-    lang: (v.lang || "").toLowerCase(),
-    name: (v.name || "").toLowerCase(),
-  });
+function voiceKey(v: SpeechSynthesisVoice): string {
+  return v.voiceURI || v.name || "";
+}
+
+function isChineseVoice(v: SpeechSynthesisVoice): boolean {
+  const lang = (v.lang || "").toLowerCase();
+  const name = (v.name || "").toLowerCase();
   return (
-    voices.find((v) => normalized(v).lang.startsWith("zh-cn")) ??
-    voices.find((v) => normalized(v).lang.startsWith("zh")) ??
-    voices.find((v) => /chinese|mandarin|中文|普通话|国语/.test(normalized(v).name)) ??
-    voices.find((v) => /chinese|mandarin|中文|普通话|国语/.test(normalized(v).lang))
+    lang.startsWith("zh") ||
+    /chinese|mandarin|中文|普通话|国语/.test(name) ||
+    /chinese|mandarin|中文|普通话|国语/.test(lang)
   );
+}
+
+/** 自然/神经网络音色通常明显不如系统旧版音色机械 */
+const NATURAL_VOICE = /natural|neural|online|premium|enhanced|xiaoxiao|yunxi|yunyang|xiaoyi|yunjian|xiaomo|xiaoxuan|tutu/;
+/** 同为系统音色时，优先语调更自然的常见中文女声；不存在时自动退回其他中文音色 */
+const PREFERRED_SYSTEM_VOICE = /yaoyao|xiaoxiao|xiaoyi|tingting|meijia|mei-jia|sinji/;
+
+/** 依次按语言标签、自然音色、语言前缀、常见中文音色关键词选择，不依赖固定名称 */
+export function pickChineseVoice(
+  voices: SpeechSynthesisVoice[],
+  preferredId?: string | null
+): SpeechSynthesisVoice | undefined {
+  const chinese = voices.filter(isChineseVoice);
+  if (chinese.length === 0) return undefined;
+  if (preferredId) {
+    const chosen = chinese.find((v) => voiceKey(v) === preferredId);
+    if (chosen) return chosen;
+  }
+  const scored = chinese
+    .map((v, index) => {
+      const lang = (v.lang || "").toLowerCase();
+      const name = (v.name || "").toLowerCase();
+      let score = 0;
+      if (lang.startsWith("zh-cn")) score += 10;
+      if (lang.startsWith("zh")) score += 2;
+      if (NATURAL_VOICE.test(name)) score += 30;
+      if (PREFERRED_SYSTEM_VOICE.test(name)) score += 15;
+      return { v, index, score };
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored[0]?.v;
+}
+
+function listChineseVoices(voices: SpeechSynthesisVoice[]): SpeechVoiceOption[] {
+  return voices.filter(isChineseVoice).map((v) => ({
+    id: voiceKey(v),
+    name: v.name,
+  }));
+}
+
+/** 设置页切换音色：保存偏好并立即停止旧音色，下一次朗读生效 */
+export function selectSpeechVoice(id: string | null): void {
+  usePrefs.getState().setSpeechVoiceURI(id);
+  stopSpeech();
+  const zh = pickChineseVoice(cachedVoices, id);
+  useSpeech.setState({ voiceLabel: zh?.name ?? null });
 }
 
 /** 初始化：只绑定一次 voiceschanged，并在超时后标记“已尝试加载” */
@@ -187,7 +244,7 @@ export function speak({ key, text, rate }: SpeakOptions): boolean {
   stopSpeech();
   initSpeech();
   const myGeneration = generation;
-  const voice = pickChineseVoice(cachedVoices);
+  const voice = pickChineseVoice(cachedVoices, prefs.speechVoiceURI);
   const effectiveRate = clampRate(rate ?? prefs.speechRate);
   const s = synth();
   if (!s) return false;
@@ -277,6 +334,7 @@ export function normalizeSpeechText(parts: Array<string | null | undefined>): st
     .map((part) => part.trim())
     .join("。")
     .replace(/\s+/g, " ")
+    .replace(/[`*#_]/g, "")
     .replace(/[。]{2,}/g, "。")
     .replace(/^。|。$/g, "")
     .trim();

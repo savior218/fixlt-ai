@@ -30,6 +30,7 @@ import { useRepairStore } from "../stores/repairStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import {
   initSpeech,
+  selectSpeechVoice,
   speak,
   stopSpeech,
   useSpeech,
@@ -71,6 +72,7 @@ export default function Settings() {
   const speechActiveKey = useSpeech((s) => s.activeKey);
   const speechError = useSpeech((s) => s.error);
   const speechVoiceLabel = useSpeech((s) => s.voiceLabel);
+  const speechVoices = useSpeech((s) => s.voices);
   const speechNoZh = useSpeech((s) => s.noZhVoice);
   const audioSupported =
     typeof window !== "undefined" &&
@@ -408,6 +410,26 @@ export default function Settings() {
           />
         </div>
         <div className="pt-3">
+          {speechReady && speechVoices.length > 1 && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="speech-voice" className="text-sm text-stone-700">
+                朗读音色
+              </label>
+              <select
+                id="speech-voice"
+                value={prefs.speechVoiceURI ?? ""}
+                onChange={(e) => selectSpeechVoice(e.target.value || null)}
+                className="max-w-[70%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
+              >
+                <option value="">自动（优先自然音色）</option>
+                {speechVoices.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <SliderControl
             label="语速"
             min={0.5}
@@ -455,6 +477,10 @@ export default function Settings() {
             </p>
           )}
           {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
+          <p>
+            音色由设备与浏览器提供。系统旧版音色偏机械时，可在上方切换其他中文音色；
+            设备安装自然/神经网络音色后会自动优先使用。
+          </p>
           <p>自动朗读默认关闭；只有你主动开启后才会在新问题到达时播放一次。</p>
         </div>
       </SectionCard>
