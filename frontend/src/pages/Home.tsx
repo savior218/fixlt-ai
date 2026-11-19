@@ -61,23 +61,15 @@ export default function Home() {
           <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
         </div>
 
-        <p className="text-sm text-stone-500">
-          {greetingByHour()}
-          {elder ? "，家里电器还好用吗？" : "，家里电器用得还顺手吗？"}
-        </p>
+        <p className="text-sm text-stone-500">{greetingByHour()}</p>
         <h1
           className={`mt-2 font-semibold leading-snug text-stone-900 ${
             elder ? "text-2xl" : "text-[26px] sm:text-3xl"
           }`}
         >
-          家电出了故障，
+          家电坏了？
           <span className="text-brand-700">一步步帮你找到原因</span>
         </h1>
-        <p className={`mt-2 max-w-lg leading-relaxed text-stone-600 ${elder ? "text-lg" : "text-sm"}`}>
-          {elder
-            ? "像聊天一样把问题说出来，AI 帮您慢慢查；有危险会第一时间提醒您。"
-            : "像聊天一样描述问题，AI 陪你逐步排查；遇到危险情况会第一时间提醒你停手。"}
-        </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Button size="lg" onClick={() => navigate("/diagnose")}>
