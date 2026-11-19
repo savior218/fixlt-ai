@@ -14,6 +14,9 @@ interface TopBarProps {
 export default function TopBar({ onMenuClick }: TopBarProps) {
   const { mode, setMode } = usePrefs();
   const user = useAuthStore((s) => s.user);
+  const avatarUrl = useAuthStore((s) =>
+    s.user ? (s.avatars[s.user.id] ?? null) : null,
+  );
   const signOut = useAuthStore((s) => s.signOut);
   const navigate = useNavigate();
 
@@ -95,7 +98,13 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
             aria-label="用户菜单"
             className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-700 transition-colors hover:bg-brand-200"
           >
-            {user ? (
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover"
+              />
+            ) : user ? (
               <span aria-hidden className="text-xs font-bold">
                 {user.username.slice(0, 1).toUpperCase()}
               </span>

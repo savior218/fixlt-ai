@@ -1,6 +1,6 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, ShieldCheck, Square, Volume2 } from "lucide-react";
+import { Camera, LogOut, ShieldCheck, Square, Volume2 } from "lucide-react";
 
 import Button from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
@@ -27,6 +27,7 @@ import { useAuthStore } from "../stores/authStore";
 import { isSpeechSupported, speak, stopSpeech, listChineseVoices } from "../utils/speech";
 import { DEMO_USER } from "../types/user";
 import { maskPhone } from "../utils/format";
+import { compressAvatar, validatePhoto } from "../utils/image";
 
 type SaveState = "idle" | "saving" | "saved";
 
@@ -41,6 +42,29 @@ export default function Settings() {
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const setAvatar = useAuthStore((s) => s.setAvatar);
+  const avatarUrl = useAuthStore((s) =>
+    s.user ? (s.avatars[s.user.id] ?? null) : null,
+  );
+
+  /** 选择头像图片 → 校验 → 方形压缩 128px → 按账号保存（本地） */
+  async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 允许再次选择同一文件
+    if (!file || !authUser) return;
+    const err = validatePhoto(file);
+    if (err) {
+      notify(err, "error");
+      return;
+    }
+    try {
+      const dataUrl = await compressAvatar(file);
+      setAvatar(authUser.id, dataUrl);
+      notify("头像已更新", "success");
+    } catch {
+      notify("头像处理失败，请换一张试试", "error");
+    }
+  }
 
   /** 退出登录：清除会话并回到登录页 */
   function handleLogout() {
@@ -135,9 +159,32 @@ export default function Settings() {
       <SectionCard title="用户资料">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-              {authUser?.username.slice(0, 1).toUpperCase() ?? DEMO_USER.nickname.slice(0, 1)}
-            </span>
+            {/* 可点击更换的头像（压缩后按账号本地存储） */}
+            <label
+              className="group relative block h-12 w-12 cursor-pointer"
+              title="点击更换头像"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="用户头像"
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+                  {authUser?.username.slice(0, 1).toUpperCase() ?? DEMO_USER.nickname.slice(0, 1)}
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera aria-hidden className="h-4 w-4" />
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
             <div>
               <p className="text-sm font-semibold text-stone-900">
                 {authUser?.username ?? DEMO_USER.nickname}
