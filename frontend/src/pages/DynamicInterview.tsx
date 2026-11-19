@@ -15,6 +15,7 @@ import {
   ApiError,
   answerInterview,
   finishInterview,
+  getInterview,
   startInterview,
   type InterviewOption,
   type InterviewState,
@@ -24,6 +25,24 @@ import { speak, stopSpeech } from "../services/speech";
 import type { QAPair } from "../types/diagnosis";
 
 type Phase = "describe" | "active" | "done" | "generating" | "error";
+
+/** 本机会话草稿：刷新后恢复同一会话，不丢已答问题；按账号隔离 */
+type InterviewDraft = { sessionId?: string; description?: string };
+
+function draftKeyFor(userId: number): string {
+  return `fixitai-interview-draft:${userId}`;
+}
+
+function readInterviewDraft(key: string): InterviewDraft | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as InterviewDraft;
+    return typeof parsed === "object" && parsed ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 const END_REASON_LABELS: Record<string, string> = {
   enough_info: "信息已足够，提前结束",
@@ -37,6 +56,7 @@ export default function DynamicInterview() {
   const navigate = useNavigate();
   const { notify } = useToast();
   const authStatus = useAuthStore((s) => s.status);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   const elder = usePrefs((s) => s.mode === "elder");
   const autoRead = usePrefs((s) => s.autoRead);
   const speechEnabled = usePrefs((s) => s.voiceEnabled);
@@ -57,6 +77,49 @@ export default function DynamicInterview() {
   const autoSpokenRef = useRef<string | null>(null);
   const voice = useSpeechRecognition();
   const voiceConsumedRef = useRef("");
+  const restoreDoneRef = useRef(false);
+  const persistReadyRef = useRef(false);
+  const restoringRef = useRef(false);
+  const draftKey = userId != null ? draftKeyFor(userId) : null;
+
+  // 刷新后恢复同一会话：会话不因刷新而重置，已答问题与当前问题都来自后端
+  useEffect(() => {
+    if (authStatus !== "authenticated" || !draftKey || restoreDoneRef.current) return;
+    restoreDoneRef.current = true;
+    const draft = readInterviewDraft(draftKey);
+    persistReadyRef.current = true;
+    if (!draft) return;
+    if (draft.description) setDescription(draft.description);
+    if (!draft.sessionId) return;
+    restoringRef.current = true;
+    void (async () => {
+      try {
+        const s = await getInterview(draft.sessionId!);
+        setSession(s);
+        setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
+      } catch (err) {
+        // 会话过期或不属于当前账号：保留描述草稿，重新开始新会话
+        if (err instanceof ApiError && [401, 403, 404, 410].includes(err.status)) {
+          localStorage.setItem(draftKey, JSON.stringify({ description: draft.description ?? "" }));
+        }
+      } finally {
+        restoringRef.current = false;
+      }
+    })();
+  }, [authStatus, draftKey]);
+
+  // 描述草稿随时保存；开始问诊后同时保存会话 ID；恢复完成前不覆盖已有会话草稿
+  useEffect(() => {
+    if (!draftKey || !persistReadyRef.current || restoringRef.current) return;
+    if (phase === "active" || phase === "done") {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({ sessionId: session?.session_id, description })
+      );
+    } else if (phase === "describe" && description) {
+      localStorage.setItem(draftKey, JSON.stringify({ description }));
+    }
+  }, [draftKey, phase, description, session?.session_id]);
 
   // 语音转写只填入可编辑输入框，必须由用户确认后才提交
   useEffect(() => {
@@ -233,6 +296,7 @@ export default function DynamicInterview() {
         elder ? "elder" : "standard"
       );
       if (result.ok) {
+        if (draftKey) localStorage.removeItem(draftKey);
         saveDiagnosis(result.diagnosis);
         notify("已生成建议；报告会保留本次问答来源", "success");
         navigate(`/diagnosis/${result.diagnosis.id}/result`);
@@ -256,6 +320,7 @@ export default function DynamicInterview() {
 
   function restart() {
     stopSpeech();
+    if (draftKey) localStorage.removeItem(draftKey);
     setSession(null);
     setPhase("describe");
     setAnswerText("");
@@ -388,7 +453,8 @@ export default function DynamicInterview() {
                     value={answerText}
                     onChange={(e) => {
                       setAnswerText(e.target.value);
-                      setAnswerSource("text");
+                      // 修改语音转写仍算语音来源；从选项改为文字输入则记为文字
+                      setAnswerSource((prev) => (prev === "voice" ? "voice" : "text"));
                     }}
                     className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     placeholder="点选项或直接输入；不知道也可以"

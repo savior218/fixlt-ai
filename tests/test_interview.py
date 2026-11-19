@@ -43,6 +43,21 @@ def answer(client, csrf, sid, version, qid, option_id=None, text=None, source="t
     return r
 
 
+def test_dirty_filter_is_not_misread_as_cleaned():
+    """“很久没洗了”不能被“洗了”误判成已清洗，否则会凭空产生矛盾。"""
+    with TestClient(app) as c:
+        _, csrf = register(c)
+        r = start(c, csrf, "开的是制冷模式，风量正常，过滤网很久没洗了")
+        assert r.status_code == 201, r.text
+        s = r.json()
+        assert s["conflicts"] == []
+        assert s["status"] == "completed"
+        assert s["end_reason"] == "filter_actionable"
+        assert s["current_question"] is None
+        assert [f["value"] for f in s["facts"]].count("filter_dirty") == 1
+        assert "filter_cleaned" not in {f["value"] for f in s["facts"]}
+
+
 def test_known_info_is_not_asked_again():
     with TestClient(app) as c:
         _, csrf = register(c)

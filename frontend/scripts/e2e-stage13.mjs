@@ -48,7 +48,7 @@ async function gotoDiagnoseFresh(page) {
 
 async function pickAcSymptom(page) {
   await page.getByRole("button", { name: /^空调/ }).first().click();
-  await page.getByRole("button", { name: /制冷效果变差/ }).first().click();
+  await page.getByRole("button", { name: /漏水/ }).first().click();
 }
 
 async function answerAllUnknown(page) {
@@ -296,7 +296,11 @@ try {
   await page.getByRole("button", { name: /其他问题，直接描述/ }).first().click();
   await page.getByPlaceholder(/请输入您的问题/).fill("空调冒烟了，还有焦味");
   await page.getByRole("button", { name: /开始 AI 问诊|写好了，开始问诊/ }).click();
-  await page.getByRole("alert").waitFor({ timeout: 10_000 });
+  await page
+    .locator('[role="alert"]')
+    .filter({ hasText: "朗读安全提示" })
+    .first()
+    .waitFor({ timeout: 10_000 });
   record("高风险拦截页展示安全提示", (await page.getByRole("button", { name: "朗读安全提示" }).count()) >= 1);
   await page.waitForTimeout(800);
   record("已开启自动朗读时优先播报安全提示", (await isSpeaking(page)) === true);
