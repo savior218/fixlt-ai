@@ -19,7 +19,9 @@ import InputField from "../components/InputField";
 import AIMessageBubble from "../components/AIMessageBubble";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
+import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
+import { normalizeSpeechText, shouldAutoRead, speak, stopSpeech, useSpeech } from "../services/speech";
 import { CATEGORY_LABELS } from "../services/api";
 import type { DiagnoseCategory } from "../services/diagnosisService";
 import {
@@ -60,7 +62,8 @@ export default function Diagnose() {
   const navigate = useNavigate();
   const { notify } = useToast();
   const [params] = useSearchParams();
-  const { mode } = usePrefs();
+  const { mode, autoRead, voiceEnabled } = usePrefs();
+  const speechError = useSpeech((s) => s.error);
   const elder = mode === "elder";
 
   const { devices, load } = useDeviceStore();
@@ -389,8 +392,48 @@ export default function Diagnose() {
   const allAnswered = draft.qa.length >= questions.length;
   const riskPreview = buildLocalRisk(makeCtx());
 
-  /** 仅最新一条 AI 消息展示可点选建议：防止历史选项误答新一轮问题 */
-  const lastAiId = [...draft.chat].reverse().find((m) => m.role === "ai")?.id;
+  /** 仅最新一条 AI 消息展示可点选建议与朗读：防止历史选项误答新一轮问题 */
+  const lastAi = useMemo(
+    () => [...draft.chat].reverse().find((m) => m.role === "ai") ?? null,
+    [draft.chat]
+  );
+  const lastAiId = lastAi?.id;
+
+  /** 自动朗读：只读最新的助手问题（带建议选项），不读用户输入与开场白 */
+  /** 进入页面时已存在的问题只作基线，不当作“新问题”自动朗读（刷新/返回不重复播报） */
+  const autoBaselineRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (autoBaselineRef.current === undefined) {
+      autoBaselineRef.current = lastAiId ?? null;
+      return;
+    }
+    if (!autoRead || !voiceEnabled || thinking || generating || interception) return;
+    if (!lastAi?.content || !lastAi.suggestions?.length) return;
+    if (lastAi.id === autoBaselineRef.current) return;
+    const key = `auto:diag:${lastAi.id}:${mode}`;
+    if (!shouldAutoRead(key)) return;
+    speak({ key, text: lastAi.content });
+  }, [lastAi, lastAiId, autoRead, voiceEnabled, thinking, generating, interception, mode]);
+
+  /** 高风险拦截优先：停止普通内容，自动播报一次安全提示 */
+  const interceptionSpeechText = interception
+    ? normalizeSpeechText([
+        `高风险。${interception.title}`,
+        interception.description,
+        ...interception.immediateActions.map((a) => `${a.title}。${a.description}`),
+        ...interception.forbiddenActions.map((f) => `禁止：${f}`),
+      ])
+    : "";
+
+  useEffect(() => {
+    if (!interception || !autoRead || !voiceEnabled) return;
+    const key = `auto:risk:${interception.title}:${mode}`;
+    if (!shouldAutoRead(key)) return;
+    speak({ key, text: interceptionSpeechText });
+  }, [interception, interceptionSpeechText, autoRead, voiceEnabled, mode]);
+
+  // 离开问诊页或组件卸载时停止朗读
+  useEffect(() => () => stopSpeech(), []);
 
   /* ================= 高风险安全拦截（4.4 结构，等级不随模式变化） ================= */
   if (interception) {
@@ -414,6 +457,16 @@ export default function Diagnose() {
               触发关键词：{interception.matched.join("、")}
             </p>
           )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SpeakButton
+              text={interceptionSpeechText}
+              speechKey={`risk-interception:${mode}`}
+              label="朗读安全提示"
+              variant="secondary"
+              size="md"
+              elder={elder}
+            />
+          </div>
         </div>
 
         <SectionCard title="立即采取的行动">
@@ -671,6 +724,11 @@ export default function Diagnose() {
                   }
                   onSuggestion={sendAnswer}
                   tone={elder ? "elder" : "standard"}
+                  speakKey={
+                    m.role === "ai" && m.id === lastAiId
+                      ? `chat:${m.id}:${mode}`
+                      : undefined
+                  }
                 />
               ))}
               {thinking && <AIMessageBubble role="ai" loading tone={elder ? "elder" : "standard"} />}
@@ -725,6 +783,16 @@ export default function Diagnose() {
               </Button>
             </div>
           </SectionCard>
+
+          {/* 自动朗读失败：明确提示，不假装已播放；文字问答不受影响 */}
+          {speechError && autoRead && (
+            <p
+              role="status"
+              className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              自动朗读未播放：{speechError} 可点击问题下方的「朗读」手动播放。
+            </p>
+          )}
 
           {/* AI 失败：保留输入，明确来源，允许重试或主动选择模板 */}
           {draft.aiError && (

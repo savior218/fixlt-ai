@@ -1,6 +1,7 @@
 ﻿import { Bot } from "lucide-react";
 
 import Chip from "./Chip";
+import SpeakButton from "./SpeakButton";
 
 /** AI 问诊对话气泡（TASK-11）：AI 消息 / 用户消息 / 加载中 / 建议选项 */
 export default function AIMessageBubble({
@@ -11,6 +12,7 @@ export default function AIMessageBubble({
   suggestions = [],
   onSuggestion,
   tone = "standard",
+  speakKey,
 }: {
   role: "ai" | "user";
   content?: string;
@@ -23,6 +25,8 @@ export default function AIMessageBubble({
   onSuggestion?: (text: string) => void;
   /** standard 标准 / elder 长辈关怀（更大字号与行距） */
   tone?: "standard" | "elder";
+  /** 仅当前助手问题显示朗读入口；用户消息与历史消息不显示 */
+  speakKey?: string;
 }) {
   const elder = tone === "elder";
 
@@ -75,7 +79,19 @@ export default function AIMessageBubble({
           )}
         </div>
       </div>
-      {time && <span className="pl-10 text-xs text-stone-400">{time}</span>}
+      <div className="flex items-center gap-2 pl-10">
+        {time && <span className="text-xs text-stone-400">{time}</span>}
+        {speakKey && content && (
+          <SpeakButton
+            text={content}
+            speechKey={speakKey}
+            label={elder ? "朗读这个问题" : "朗读"}
+            size="sm"
+            variant="ghost"
+            elder={elder}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,15 +1,17 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, FileText, RotateCcw, Save } from "lucide-react";
 
 import { buttonClass } from "../components/Button";
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
-import RiskAlert from "../components/RiskAlert";
+import RiskAlert, { riskSpeechTitle } from "../components/RiskAlert";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
+import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
 import { createRecordFromDiagnosis } from "../services/repairService";
+import { normalizeSpeechText, shouldAutoRead, speak, speechLeadIn, stopSpeech } from "../services/speech";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { recordsForOwner, useRepairStore } from "../stores/repairStore";
 import { useAuthStore } from "../stores/authStore";
@@ -30,7 +32,7 @@ export default function DiagnosisResult() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { notify } = useToast();
-  const { mode } = usePrefs();
+  const { mode, autoRead, voiceEnabled } = usePrefs();
   const elder = mode === "elder";
 
   const history = useDiagnosisStore((s) => s.history);
@@ -75,6 +77,47 @@ export default function DiagnosisResult() {
   const reportSaved = !!diagnosis && (!!diagnosis.cloud || diagnosis.saveStatus === "saved");
   const reportFailed = diagnosis?.saveStatus === "failed";
   const reportSaving = diagnosis?.saveStatus === "saving" || reportBusy;
+
+  /** 朗读文本直接使用当前显示的已保存文案，不重新调用模型 */
+  const speechView = diagnosis
+    ? contentFor(diagnosis, elder ? "elder" : "standard")
+    : null;
+  const speechLead = diagnosis ? speechLeadIn(diagnosis.source) : "";
+  const riskSpeech = diagnosis && speechView
+    ? normalizeSpeechText([
+        speechLead,
+        riskSpeechTitle(diagnosis.riskLevel, elder),
+        speechView.content.riskNote,
+      ])
+    : "";
+  const conclusionSpeech = diagnosis && speechView
+    ? normalizeSpeechText([speechLead, speechView.content.conclusion])
+    : "";
+  const summarySpeech = diagnosis && speechView
+    ? normalizeSpeechText([
+        speechLead,
+        "诊断结论。",
+        speechView.content.conclusion,
+        "风险提示。",
+        riskSpeechTitle(diagnosis.riskLevel, elder),
+        speechView.content.riskNote,
+        "维修建议。",
+        ...speechView.content.suggestions.map(
+          (s, i) => `第${i + 1}步，${s.title}。${s.description}`
+        ),
+        speechView.content.tips ? `小贴士。${speechView.content.tips}` : "",
+      ])
+    : "";
+
+  /** 高风险优先：启用自动朗读时，停掉普通内容并播报一次当前安全提示 */
+  useEffect(() => {
+    if (!autoRead || !voiceEnabled || !diagnosis || diagnosis.riskLevel !== "high") return;
+    const key = `auto:result-risk:${diagnosis.id}:${mode}`;
+    if (!shouldAutoRead(key)) return;
+    speak({ key, text: riskSpeech });
+  }, [autoRead, voiceEnabled, diagnosis, mode, riskSpeech]);
+
+  useEffect(() => () => stopSpeech(), []);
 
   if (!diagnosis) {
     return (
@@ -210,7 +253,18 @@ export default function DiagnosisResult() {
       )}
 
       {/* 核心结论 */}
-      <SectionCard title="诊断结论">
+      <SectionCard
+        title="诊断结论"
+        action={
+          <SpeakButton
+            text={conclusionSpeech}
+            speechKey={`result:conclusion:${diagnosis.id}:${mode}`}
+            label="朗读结论"
+            size="sm"
+            elder={elder}
+          />
+        }
+      >
         <p className={`text-stone-800 ${elder ? "text-lg leading-loose" : "text-sm leading-relaxed"}`}>
           {view.content.conclusion}
         </p>
@@ -227,6 +281,7 @@ export default function DiagnosisResult() {
       <RiskAlert
         level={diagnosis.riskLevel}
         description={view.content.riskNote ?? undefined}
+        speechKey={`result:risk:${diagnosis.id}:${mode}`}
       />
 
       {/* elder 第一步 → 第二步 */}
@@ -306,6 +361,13 @@ export default function DiagnosisResult() {
       {/* 操作区（elder 最后一步才出现） */}
       {showRest && (
         <div className="card-base flex flex-wrap items-center gap-2 p-4">
+          <SpeakButton
+            text={summarySpeech}
+            speechKey={`result:summary:${diagnosis.id}:${mode}`}
+            label={elder ? "朗读结论、风险和建议" : "朗读本页重点"}
+            size={elder ? "md" : "sm"}
+            elder={elder}
+          />
           <Button
             variant="secondary"
             onClick={() => {

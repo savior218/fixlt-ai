@@ -10,6 +10,7 @@ import TopBar from "../components/TopBar";
 import { ToastProvider } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
+import { initSpeech, stopSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
 
 export default function AppLayout() {
@@ -22,6 +23,19 @@ export default function AppLayout() {
   const authError = useAuthStore((s) => s.error);
   const clearAuthError = useAuthStore((s) => s.clearError);
   const hydrate = useAuthStore((s) => s.hydrate);
+
+  // 初始化浏览器语音合成（只绑定一次；不支持时页面照常使用）
+  useEffect(() => {
+    initSpeech();
+  }, []);
+
+  // 页面切换、退出登录、账号切换时停止朗读，避免旧内容跟着新页面
+  useEffect(() => {
+    stopSpeech();
+  }, [location.pathname, epoch]);
+
+  // 模式切换 / 关闭语音由 speech 服务订阅设置后统一停止，这里不重复处理
+  useEffect(() => () => stopSpeech(), []);
 
   // 刷新后必须通过服务端恢复登录状态，不能仅凭本地标志认定已登录
   useEffect(() => {

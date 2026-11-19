@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+﻿import { useEffect, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Lightbulb, MessageSquare, PhoneCall } from "lucide-react";
 
@@ -7,9 +7,11 @@ import EmptyState from "../components/EmptyState";
 import RiskAlert from "../components/RiskAlert";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
+import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
+import { normalizeSpeechText, speechLeadIn, stopSpeech } from "../services/speech";
 import { formatDateTime } from "../utils/format";
 import { contentFor, hasElderCopy, normalizeDiagnosis } from "../utils/diagnosis";
 
@@ -51,6 +53,14 @@ export default function DiagnosisReport() {
     ? `${diagnosis.deviceName}（${CATEGORY_NAMES[diagnosis.category ?? "other"] ?? "家电"}）`
     : CATEGORY_NAMES[diagnosis.category ?? "other"] ?? "家电";
 
+  /** 分段朗读：每个区块单独播放当前模式文案，不默认整份连读 */
+  const lead = speechLeadIn(diagnosis.source);
+  const speakText = (parts: Array<string | null | undefined>) =>
+    normalizeSpeechText([lead, ...parts]);
+  const keyFor = (section: string) => `report:${diagnosis.id}:${section}:${mode}`;
+
+  useEffect(() => () => stopSpeech(), []);
+
   return (
     <div className="space-y-5">
       <Link to={`/diagnosis/${diagnosis.id}/result`} className={buttonClass("ghost", "sm")}>
@@ -65,6 +75,9 @@ export default function DiagnosisReport() {
           </div>
           <p className="mt-1 text-sm text-stone-500">
             {formatDateTime(diagnosis.createdAt)} 生成 · {elder ? "长辈版表达" : "标准版表达"}
+          </p>
+          <p className="mt-1 text-xs text-stone-400">
+            语音按段落朗读，不会自动播放整份报告。
           </p>
         </div>
         <Link to={`/repair?diagnosisId=${diagnosis.id}`} className={buttonClass("primary", "md")}>
@@ -94,7 +107,20 @@ export default function DiagnosisReport() {
       <div className="grid gap-5 lg:grid-cols-2">
         {/* 左栏：设备信息 + 问答记录 + 诊断结论 + 已确认事实 */}
         <div className="space-y-5">
-          <SectionCard title="设备信息">
+          <SectionCard
+            title="设备信息"
+            action={
+              <SpeakButton
+                text={speakText([
+                  `设备：${deviceLabel}`,
+                  `故障现象：${diagnosis.symptom || "自定义描述"}`,
+                  diagnosis.description.trim() ? `补充描述：${diagnosis.description}` : "",
+                ])}
+                speechKey={keyFor("device")}
+                label="朗读设备信息"
+              />
+            }
+          >
             <div className="space-y-2 text-sm">
               <p className="text-stone-800">
                 <span className="text-stone-400">设备：</span>
@@ -152,12 +178,30 @@ export default function DiagnosisReport() {
             )}
           </SectionCard>
 
-          <SectionCard title="诊断结论">
+          <SectionCard
+            title="诊断结论"
+            action={
+              <SpeakButton
+                text={speakText([view.content.conclusion])}
+                speechKey={keyFor("conclusion")}
+                label="朗读结论"
+              />
+            }
+          >
             <p className="text-sm leading-relaxed text-stone-800">{view.content.conclusion}</p>
           </SectionCard>
 
           {/* 已确认的事实（独立区块，与可能原因严格分离） */}
-          <SectionCard title="已确认的事实">
+          <SectionCard
+            title="已确认的事实"
+            action={
+              <SpeakButton
+                text={speakText(view.content.evidence)}
+                speechKey={keyFor("evidence")}
+                label="朗读事实"
+              />
+            }
+          >
             <ul className="space-y-2">
               {view.content.evidence.map((e) => (
                 <li key={e} className="flex items-start gap-2 text-sm text-stone-700">
@@ -173,7 +217,16 @@ export default function DiagnosisReport() {
 
           {/* 未知 / 待确认信息 */}
           {view.content.unknownInformation.length > 0 && (
-            <SectionCard title="待确认信息">
+            <SectionCard
+              title="待确认信息"
+              action={
+                <SpeakButton
+                  text={speakText(view.content.unknownInformation)}
+                  speechKey={keyFor("unknown")}
+                  label="朗读待确认信息"
+                />
+              }
+            >
               <ul className="space-y-2">
                 {view.content.unknownInformation.map((u) => (
                   <li key={u} className="flex items-start gap-2 text-sm text-amber-800">
@@ -191,9 +244,26 @@ export default function DiagnosisReport() {
 
         {/* 右栏：风险 + 可能原因 + 判断依据 + 维修建议 + 联系维修 */}
         <div className="space-y-5">
-          <RiskAlert level={diagnosis.riskLevel} description={view.content.riskNote ?? undefined} />
+          <RiskAlert
+            level={diagnosis.riskLevel}
+            description={view.content.riskNote ?? undefined}
+            speechKey={keyFor("risk")}
+          />
 
-          <SectionCard title="可能原因">
+          <SectionCard
+            title="可能原因"
+            action={
+              <SpeakButton
+                text={speakText(
+                  view.content.possibleCauses.map(
+                    (c, i) => `第${i + 1}个可能原因：${c.title}。${c.description}`
+                  )
+                )}
+                speechKey={keyFor("causes")}
+                label="朗读可能原因"
+              />
+            }
+          >
             <ul className="space-y-3">
               {view.content.possibleCauses.map((c, i) => (
                 <li key={c.title} className="flex gap-3">
@@ -209,7 +279,16 @@ export default function DiagnosisReport() {
             </ul>
           </SectionCard>
 
-          <SectionCard title="判断依据">
+          <SectionCard
+            title="判断依据"
+            action={
+              <SpeakButton
+                text={speakText(view.content.evidence)}
+                speechKey={keyFor("basis")}
+                label="朗读判断依据"
+              />
+            }
+          >
             <ul className="space-y-2">
               {view.content.evidence.map((e) => (
                 <li key={e} className="flex items-start gap-2 text-sm text-stone-600">
@@ -220,7 +299,20 @@ export default function DiagnosisReport() {
             </ul>
           </SectionCard>
 
-          <SectionCard title="维修建议（三步）">
+          <SectionCard
+            title="维修建议（三步）"
+            action={
+              <SpeakButton
+                text={speakText(
+                  view.content.suggestions.map(
+                    (s, i) => `第${i + 1}步，${s.title}。${s.description}`
+                  )
+                )}
+                speechKey={keyFor("suggestions")}
+                label="朗读维修建议"
+              />
+            }
+          >
             <ol className="space-y-3">
               {view.content.suggestions.map((s, i) => (
                 <li key={s.title} className="rounded-xl border border-stone-200 p-3">
@@ -252,12 +344,17 @@ export default function DiagnosisReport() {
 
       {/* 底部：小贴士 + 完成诊断 */}
       {view.content.tips && (
-        <div className="flex items-start gap-3 rounded-2xl border border-risk-medium-border bg-tip-bg p-4 text-sm text-tip-text">
+        <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-risk-medium-border bg-tip-bg p-4 text-sm text-tip-text">
           <Lightbulb aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-tip-icon" />
-          <p className="min-w-0 break-words">
+          <p className="min-w-0 flex-1 break-words">
             <span className="font-semibold">小贴士：</span>
             {view.content.tips}
           </p>
+          <SpeakButton
+            text={speakText(["小贴士。", view.content.tips])}
+            speechKey={keyFor("tips")}
+            label="朗读小贴士"
+          />
         </div>
       )}
 

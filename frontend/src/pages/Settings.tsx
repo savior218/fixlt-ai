@@ -28,6 +28,12 @@ import { useAuthStore } from "../stores/authStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useRepairStore } from "../stores/repairStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
+import {
+  initSpeech,
+  speak,
+  stopSpeech,
+  useSpeech,
+} from "../services/speech";
 import { loginHref } from "../utils/redirect";
 
 type SaveState = "idle" | "saving" | "saved";
@@ -57,6 +63,62 @@ export default function Settings() {
   const diagnosisHistory = useDiagnosisStore((s) => s.history);
   const repairRecords = useRepairStore((s) => s.records);
   const localCounts = countLocalHistory(diagnosisHistory, repairRecords);
+
+  // 浏览器语音合成状态（异步加载音色，不在设置里假装已开启）
+  const speechSupported = useSpeech((s) => s.supported);
+  const speechReady = useSpeech((s) => s.ready);
+  const speechStatus = useSpeech((s) => s.status);
+  const speechActiveKey = useSpeech((s) => s.activeKey);
+  const speechError = useSpeech((s) => s.error);
+  const speechVoiceLabel = useSpeech((s) => s.voiceLabel);
+  const speechNoZh = useSpeech((s) => s.noZhVoice);
+  const audioSupported =
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window &&
+    typeof window.SpeechSynthesisUtterance !== "undefined";
+  const testKey = "settings:test";
+  const testActive = speechStatus === "speaking" && speechActiveKey === testKey;
+
+  useEffect(() => {
+    initSpeech();
+  }, []);
+
+  const testText = `您好，这是修必达的语音朗读测试。当前语速为 ${prefs.speechRate.toFixed(1)} 倍。`;
+
+  function handleVoiceToggle(next: boolean) {
+    prefs.setVoiceEnabled(next);
+    if (!next) {
+      // 关闭语音时同步关闭自动朗读并立即停止当前朗读
+      prefs.setAutoRead(false);
+      stopSpeech();
+    } else {
+      initSpeech();
+    }
+  }
+
+  function handleAutoToggle(next: boolean) {
+    if (next && !prefs.voiceEnabled) prefs.setVoiceEnabled(true);
+    prefs.setAutoRead(next);
+  }
+
+  function playTestVoice() {
+    if (!audioSupported) {
+      notify("当前浏览器不支持语音合成，文字内容仍可正常使用", "error");
+      return;
+    }
+    if (!prefs.voiceEnabled) prefs.setVoiceEnabled(true);
+    if (testActive) {
+      stopSpeech();
+      return;
+    }
+    const started = speak({ key: testKey, text: testText });
+    if (!started) {
+      window.setTimeout(() => {
+        const state = useSpeech.getState();
+        if (state.error) notify(state.error, "error");
+      }, 100);
+    }
+  }
 
   // 账户资料 / 密码弹窗
   const [profileOpen, setProfileOpen] = useState(false);
@@ -334,15 +396,15 @@ export default function Settings() {
         <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
-            description="将 AI 回复转为语音播报"
+            description="允许使用浏览器语音合成朗读页面文字（不调用模型、不产生模型费用）"
             checked={prefs.voiceEnabled}
-            onChange={prefs.setVoiceEnabled}
+            onChange={handleVoiceToggle}
           />
           <SwitchControl
             label="自动朗读"
-            description="新消息到达时自动播放"
+            description="新问题到达时自动朗读一次；公共场所可能被他人听到"
             checked={prefs.autoRead}
-            onChange={prefs.setAutoRead}
+            onChange={handleAutoToggle}
           />
         </div>
         <div className="pt-3">
@@ -357,9 +419,45 @@ export default function Settings() {
             maxLabel="快"
             formatValue={(v) => `${v.toFixed(1)}x`}
           />
-          <Button variant="secondary" size="sm" onClick={() => notify("语音功能开发中", "info")}>
-            <Volume2 className="h-4 w-4" /> 播放测试语音
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={playTestVoice}
+            disabled={!audioSupported}
+          >
+            <Volume2 className="h-4 w-4" />
+            {testActive ? "停止测试语音" : "播放测试语音"}
           </Button>
+          {audioSupported && speechStatus === "speaking" && (
+            <span aria-live="polite" className="ml-2 text-xs text-stone-500">
+              正在播放…
+            </span>
+          )}
+        </div>
+
+        {/* 明确支持情况，避免“开关看似开启却完全无反馈” */}
+        <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
+          {!audioSupported || !speechSupported ? (
+            <>
+              <p role="status">
+                当前浏览器不支持语音合成。可改用最新版 Chrome / Edge / Safari；文字阅读、诊断与安全提示均不受影响。
+              </p>
+            </>
+          ) : !speechReady ? (
+            <p role="status">正在加载系统语音列表…</p>
+          ) : speechNoZh ? (
+            <p role="status">
+              未检测到中文音色，将尝试浏览器默认音色朗读；若无声或发音不准，请更换浏览器或在系统中安装中文语音。
+            </p>
+          ) : (
+            <p role="status">
+              语音合成可用
+              {speechVoiceLabel ? `，当前音色：${speechVoiceLabel}` : "，使用浏览器默认音色"}。
+              具体音色与是否离线由设备和浏览器决定，本项目不承诺所有设备都能离线朗读。
+            </p>
+          )}
+          {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
+          <p>自动朗读默认关闭；只有你主动开启后才会在新问题到达时播放一次。</p>
         </div>
       </SectionCard>
 
