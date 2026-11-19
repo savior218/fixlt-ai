@@ -1,4 +1,4 @@
-﻿/** 开关控件：语音/高对比度/减少动画等偏好（PRD 第 8 章） */
+﻿﻿/** 开关控件：语音/高对比度/减少动画等偏好（PRD 第 8 章） */
 export default function Toggle({
   label,
   description,

@@ -1,4 +1,4 @@
-﻿import { useId } from "react";
+﻿﻿import { useId } from "react";
 import { Search } from "lucide-react";
 
 /** 统一输入控件（TASK-08）：text / textarea / search 三种模式 */

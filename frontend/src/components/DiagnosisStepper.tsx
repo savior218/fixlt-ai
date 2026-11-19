@@ -1,4 +1,4 @@
-﻿import { Check } from "lucide-react";
+﻿﻿import { Check } from "lucide-react";
 
 /** 诊断流程默认四步（PRD 6.x） */
 export const DEFAULT_DIAGNOSIS_STEPS = [

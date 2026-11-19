@@ -1,4 +1,4 @@
-﻿import { NavLink } from "react-router-dom";
+﻿﻿import { NavLink } from "react-router-dom";
 
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
 

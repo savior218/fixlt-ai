@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, type ReactNode } from "react";
+﻿﻿import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 /** 通用弹窗（TASK-09）：title + description + 内容区 + 自定义底部 */

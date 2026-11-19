@@ -1,4 +1,4 @@
-﻿import { Wrench } from "lucide-react";
+﻿﻿import { Wrench } from "lucide-react";
 
 import type { DeviceCategory } from "../services/api";
 import { CATEGORY_LABELS } from "../services/api";
