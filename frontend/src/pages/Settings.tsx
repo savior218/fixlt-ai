@@ -197,7 +197,7 @@ export default function Settings() {
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
-            <div className="flex w-56 items-center gap-2">
+            <div className="flex w-full items-center justify-between gap-2 sm:w-56 sm:justify-end">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>
