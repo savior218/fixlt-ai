@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 interface SectionCardProps {
   title?: string;
@@ -45,9 +45,9 @@ export default function SectionCard({
   return (
     <section
       className={[
-        "bg-white",
-        bordered ? "border border-slate-200" : "border border-transparent",
-        shadow ? "shadow-sm" : "",
+        "bg-surface",
+        bordered ? "border border-stone-200" : "border border-transparent",
+        shadow ? "shadow-card" : "",
         PADDING_CLASSES[padding],
         RADIUS_CLASSES[radius],
         className ?? "",
@@ -57,7 +57,7 @@ export default function SectionCard({
     >
       {title && (
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-stone-700">
             {icon && <span className="text-brand-600">{icon}</span>}
             {title}
           </h2>

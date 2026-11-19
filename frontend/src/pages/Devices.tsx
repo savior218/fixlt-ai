@@ -175,7 +175,7 @@ export default function Devices() {
 
       {/* 统计卡片：elder 模式精简为一句话 */}
       {elder ? (
-        <p className="card-base p-4 text-base text-slate-700">
+        <p className="card-base p-4 text-base text-stone-700">
           共有 <span className="font-bold text-brand-700">{stats.total}</span> 台设备，
           <span className="font-bold text-risk-medium-deep">{stats.pending + stats.fault}</span> 台需要关注。
         </p>
@@ -188,7 +188,7 @@ export default function Devices() {
             { label: "故障", value: stats.fault, cls: "text-risk-high-deep" },
           ].map((s) => (
             <div key={s.label} className="card-base p-4">
-              <p className="text-xs text-slate-500">{s.label}</p>
+              <p className="text-xs text-stone-500">{s.label}</p>
               <p className={`mt-1 text-2xl font-bold ${s.cls}`}>{s.value}</p>
             </div>
           ))}
@@ -297,7 +297,7 @@ export default function Devices() {
               onChange={(v) => setForm({ ...form, name: v })}
             />
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-slate-700">
+              <span className="mb-1 block font-medium text-stone-700">
                 设备类型 <span className="text-risk-high">*</span>
               </span>
               <select
@@ -305,7 +305,7 @@ export default function Devices() {
                 onChange={(e) =>
                   setForm({ ...form, category: e.target.value as DeviceCategory })
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               >
                 {(Object.keys(CATEGORY_LABELS) as DeviceCategory[]).map((c) => (
                   <option key={c} value={c}>
@@ -322,12 +322,12 @@ export default function Devices() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm">
-                <span className="mb-1 block font-medium text-slate-700">购买日期</span>
+                <span className="mb-1 block font-medium text-stone-700">购买日期</span>
                 <input
                   type="date"
                   value={form.purchaseDate ?? ""}
                   onChange={(e) => setForm({ ...form, purchaseDate: e.target.value || null })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                 />
               </label>
               <InputField label="摆放位置" placeholder="客厅" value={form.location ?? ""} error={errors.location}
@@ -361,7 +361,7 @@ export default function Devices() {
 
       {/* 状态图例（帮助理解派生状态） */}
       {!elder && devices.length > 0 && (
-        <p className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
+        <p className="flex flex-wrap items-center gap-2 px-1 text-xs text-stone-400">
           状态说明：
           <StatusBadge status="normal" />
           <StatusBadge status="pending" />

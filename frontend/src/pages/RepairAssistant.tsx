@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, ClipboardCopy, PhoneCall, ShieldAlert } from "lucide-react";
 
@@ -191,11 +191,11 @@ export default function RepairAssistant() {
   const basicFields = (
     <>
       <label className="block text-sm">
-        <span className="mb-1 block font-medium text-slate-700">选择已添加的设备（可选）</span>
+        <span className="mb-1 block font-medium text-stone-700">选择已添加的设备（可选）</span>
         <select
           value={form.deviceId ?? ""}
           onChange={(e) => onPickDevice(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         >
           <option value="">手动填写</option>
           {devices.map((d) => (
@@ -207,13 +207,13 @@ export default function RepairAssistant() {
       </label>
 
       <label className="block text-sm">
-        <span className="mb-1 block font-medium text-slate-700">
+        <span className="mb-1 block font-medium text-stone-700">
           设备类型 <span className="text-risk-high">*</span>
         </span>
         <select
           value={form.category}
           onChange={(e) => patch({ category: e.target.value })}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         >
           <option value="">请选择</option>
           {REPAIR_CATEGORIES.map((c) => (
@@ -230,13 +230,13 @@ export default function RepairAssistant() {
       </div>
 
       <label className="block text-sm">
-        <span className="mb-1 block font-medium text-slate-700">
+        <span className="mb-1 block font-medium text-stone-700">
           故障现象 <span className="text-risk-high">*</span>
         </span>
         <select
           value={form.symptom}
           onChange={(e) => patch({ symptom: e.target.value })}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         >
           <option value="">请选择</option>
           {SYMPTOMS.map((s) => (
@@ -261,20 +261,20 @@ export default function RepairAssistant() {
         onChange={(v) => patch({ description: v })}
       />
       <label className="block text-sm">
-        <span className="mb-1 block font-medium text-slate-700">发现时间</span>
+        <span className="mb-1 block font-medium text-stone-700">发现时间</span>
         <input
           type="date"
           value={form.foundAt}
           onChange={(e) => patch({ foundAt: e.target.value })}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
       </label>
 
       <fieldset>
-        <legend className="mb-1.5 text-sm font-medium text-slate-700">已完成的检查（多选）</legend>
+        <legend className="mb-1.5 text-sm font-medium text-stone-700">已完成的检查（多选）</legend>
         <div className="space-y-2">
           {CHECK_OPTIONS.map((c) => (
-            <label key={c} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <label key={c} className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
               <input
                 type="checkbox"
                 checked={form.checks.includes(c)}
@@ -292,9 +292,9 @@ export default function RepairAssistant() {
         </div>
       </fieldset>
 
-      <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center">
-        <p className="text-sm text-slate-500">上传照片（可选）</p>
-        <p className="mt-1 text-xs text-slate-400">图片上传为演示状态，暂未接入后端</p>
+      <div className="rounded-xl border border-dashed border-stone-300 p-4 text-center">
+        <p className="text-sm text-stone-500">上传照片（可选）</p>
+        <p className="mt-1 text-xs text-stone-400">图片上传为演示状态，暂未接入后端</p>
       </div>
     </>
   );
@@ -409,17 +409,17 @@ export default function RepairAssistant() {
             </div>
           ) : (
             <div className="space-y-4">
-              <pre className="whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+              <pre className="whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">
                 {generated}
               </pre>
 
-              <div className="rounded-xl border border-slate-200 p-3">
-                <p className="text-sm font-semibold text-slate-800">专业建议</p>
-                <p className="mt-1 text-sm text-slate-600">{PRO_ADVICE}</p>
-                <p className="mt-2 text-sm font-semibold text-slate-800">注意事项</p>
+              <div className="rounded-xl border border-stone-200 p-3">
+                <p className="text-sm font-semibold text-stone-800">专业建议</p>
+                <p className="mt-1 text-sm text-stone-600">{PRO_ADVICE}</p>
+                <p className="mt-2 text-sm font-semibold text-stone-800">注意事项</p>
                 <ul className="mt-1 space-y-1">
                   {CAUTIONS.map((c) => (
-                    <li key={c} className="flex items-center gap-1.5 text-sm text-slate-600">
+                    <li key={c} className="flex items-center gap-1.5 text-sm text-stone-600">
                       <CheckCircle2 aria-hidden className="h-4 w-4 text-risk-low" />
                       {c}
                     </li>
@@ -435,7 +435,7 @@ export default function RepairAssistant() {
                   <PhoneCall className="h-4 w-4" /> 一键联系维修
                 </Button>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-400">
                 「一键联系维修 / 联系售后」为演示功能，暂未对接真实售后平台。
               </p>
             </div>

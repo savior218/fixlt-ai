@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, Download, RotateCcw } from "lucide-react";
 
@@ -122,7 +122,7 @@ export default function Records() {
         <Stat label="累计维修" value={String(stats.total)} cls="text-brand-700" />
         <Stat label="已恢复" value={String(stats.recovered)} cls="text-risk-low-deep" />
         <Stat label="待验证" value={String(stats.unverified)} cls="text-risk-medium-deep" />
-        <Stat label="平均维修间隔" value={avgIntervalLabel(stats)} cls="text-slate-900" small />
+        <Stat label="平均维修间隔" value={avgIntervalLabel(stats)} cls="text-stone-900" small />
       </div>
 
       {/* 筛选 */}
@@ -176,24 +176,24 @@ export default function Records() {
                   type="button"
                   onClick={() => setExpandedId(open ? null : r.id)}
                   aria-expanded={open}
-                  className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-stone-50"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-semibold text-stone-900">
                       {r.deviceName} · {r.faultDescription}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-stone-400">
                       {relativeTime(r.createdAt)} · {REPAIR_STATUS_LABELS[r.status]} · 验证：
                       {VERIFICATION_LABELS[r.verificationStatus]}
                     </p>
                   </div>
-                  <span aria-hidden className="text-slate-300">
+                  <span aria-hidden className="text-stone-300">
                     {open ? "▴" : "▾"}
                   </span>
                 </button>
 
                 {open && (
-                  <div className="space-y-4 border-t border-slate-100 p-4">
+                  <div className="space-y-4 border-t border-stone-100 p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="创建时间" value={formatDateTime(r.createdAt)} />
                       <Field label="维修时间" value={r.repairTime ? formatDateTime(r.repairTime) : "—"} />
@@ -202,8 +202,8 @@ export default function Records() {
                       <Field label="诊断来源" value={sourceLabel} />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-slate-400">处理方式</p>
-                      <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{r.repairMethod}</p>
+                      <p className="text-xs font-medium text-stone-400">处理方式</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">{r.repairMethod}</p>
                     </div>
                     {r.diagnosisId && (
                       <p className="text-xs">
@@ -214,9 +214,9 @@ export default function Records() {
                     )}
 
                     {/* 维修结果验证（四选一） */}
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-sm font-medium text-slate-700">维修结果验证</p>
-                      <p className="mt-0.5 text-xs text-slate-400">当前：{VERIFICATION_LABELS[r.verificationStatus]}</p>
+                    <div className="rounded-xl bg-stone-50 p-3">
+                      <p className="text-sm font-medium text-stone-700">维修结果验证</p>
+                      <p className="mt-0.5 text-xs text-stone-400">当前：{VERIFICATION_LABELS[r.verificationStatus]}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {VERIFY_OPTIONS.map((o) => (
                           <button
@@ -227,7 +227,7 @@ export default function Records() {
                               "rounded-lg border px-3 py-1.5 text-sm transition-colors",
                               r.verificationStatus === o.value
                                 ? "border-brand-600 bg-brand-50 font-medium text-brand-700"
-                                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100",
+                                : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
                             ].join(" ")}
                           >
                             {o.label}
@@ -237,7 +237,7 @@ export default function Records() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-stone-400">
                         如问题再次出现，可点击「再次诊断」或联系客服。
                       </p>
                       <Link to="/diagnose" className={buttonClass("secondary", "sm")}>
@@ -258,7 +258,7 @@ export default function Records() {
 function Stat({ label, value, cls, small }: { label: string; value: string; cls: string; small?: boolean }) {
   return (
     <div className="card-base p-4">
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-stone-500">{label}</p>
       <p className={`mt-1 font-bold ${small ? "text-lg" : "text-2xl"} ${cls}`}>{value}</p>
     </div>
   );
@@ -267,8 +267,8 @@ function Stat({ label, value, cls, small }: { label: string; value: string; cls:
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-slate-800">{value}</p>
+      <p className="text-xs text-stone-400">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-stone-800">{value}</p>
     </div>
   );
 }

@@ -99,23 +99,23 @@ export default function ModalDialog({
       <div
         ref={panelRef}
         onKeyDown={handleKeyDown}
-        className={`modal-panel flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl supports-[height:100dvh]:max-h-[85dvh] sm:max-h-[85vh] sm:rounded-2xl ${width}`}
+        className={`modal-panel flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-card supports-[height:100dvh]:max-h-[85dvh] sm:max-h-[85vh] sm:rounded-2xl ${width}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 p-5 pb-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-100 p-5 pb-4">
           <div className="min-w-0">
-            <h3 id={titleId} className="text-base font-bold text-slate-900">
+            <h3 id={titleId} className="text-base font-bold text-stone-900">
               {title}
             </h3>
             {description && (
-              <p className="mt-1 text-sm text-slate-500">{description}</p>
+              <p className="mt-1 text-sm text-stone-500">{description}</p>
             )}
           </div>
           <button
             type="button"
             aria-label="关闭"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="shrink-0 rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -127,7 +127,7 @@ export default function ModalDialog({
           </div>
         )}
         {footer && (
-          <div className="safe-pad-bottom flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-100 p-4">
+          <div className="safe-pad-bottom flex shrink-0 flex-wrap justify-end gap-2 border-t border-stone-100 p-4">
             {footer}
           </div>
         )}

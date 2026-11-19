@@ -1,20 +1,24 @@
 """全局配置：仅通过环境变量注入，密钥不写入代码。"""
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "修必达 FixIt AI"
-    app_version: str = "0.2.0-stage10"
+    app_version: str = "0.3.0-stage11"
 
     # 运行边界：dev = 本机/比赛演示；public = 对外公开服务
     # public 模式会关闭交互式 API 文档，并要求显式配置 CORS 与调用额度
     deployment_mode: Literal["dev", "public"] = "dev"
     expose_api_docs: bool = True
 
-    database_url: str = "sqlite:///./fixitai.db"
+    # 同时兼容 Render 关联数据库时默认注入的 DATABASE_URL
+    database_url: str = Field(
+        default="sqlite:///./fixitai.db",
+        validation_alias=AliasChoices("FIXITAI_DATABASE_URL", "DATABASE_URL"),
+    )
     # 前端构建产物目录（生产部署时由 FastAPI 统一托管；留空 = 本地开发模式，不托管）
     # 环境变量名：FIXITAI_FRONTEND_DIST_DIR
     frontend_dist_dir: str = ""

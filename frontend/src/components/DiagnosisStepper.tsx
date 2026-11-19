@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+﻿import { Check } from "lucide-react";
 
 /** 诊断流程默认四步（PRD 6.x） */
 export const DEFAULT_DIAGNOSIS_STEPS = [
@@ -47,13 +47,13 @@ export default function DiagnosisStepper({
               {allDone ? "诊断完成" : `第 ${currentStepNo} 步 · ${steps[current]}`}
             </span>
           </span>
-          <span className="shrink-0 text-xs text-slate-400">
+          <span className="shrink-0 text-xs text-stone-400">
             {Math.min(current, total)}/{total}
           </span>
         </div>
         <div
           aria-hidden
-          className="mt-2 h-1.5 w-full rounded-full bg-slate-200"
+          className="mt-2 h-1.5 w-full rounded-full bg-stone-200"
         >
           <div
             className="h-full rounded-full bg-brand-600 transition-all duration-300"
@@ -79,7 +79,7 @@ export default function DiagnosisStepper({
                   ? "bg-brand-50 text-brand-700"
                   : active
                     ? "bg-brand-600 text-white"
-                    : "bg-white text-slate-400 ring-1 ring-slate-200"
+                    : "bg-surface text-stone-400 ring-1 ring-stone-200"
               }`}
             >
               <span
@@ -89,7 +89,7 @@ export default function DiagnosisStepper({
                     ? "bg-brand-600 text-white"
                     : active
                       ? "bg-white/20 text-white"
-                      : "bg-slate-100 text-slate-400"
+                      : "bg-stone-100 text-stone-400"
                 }`}
               >
                 {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
@@ -99,7 +99,7 @@ export default function DiagnosisStepper({
             {i < steps.length - 1 && (
               <span
                 aria-hidden
-                className={`h-0.5 flex-1 rounded-full ${done ? "bg-brand-200" : "bg-slate-200"}`}
+                className={`h-0.5 flex-1 rounded-full ${done ? "bg-brand-200" : "bg-stone-200"}`}
               />
             )}
           </li>

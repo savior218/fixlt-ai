@@ -1,4 +1,4 @@
-import Button from "./Button";
+﻿import Button from "./Button";
 import ModalDialog from "./ModalDialog";
 
 /** 危险操作二次确认（PRD 14 章：删除等不可逆操作需确认），基于 ModalDialog（TASK-09） */
@@ -38,7 +38,7 @@ export default function ConfirmDialog({
         </>
       }
     >
-      <p className="text-sm text-slate-600">{message}</p>
+      <p className="text-sm text-stone-600">{message}</p>
     </ModalDialog>
   );
 }

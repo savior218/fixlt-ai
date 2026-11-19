@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+﻿import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Stethoscope, History, Info, ChevronDown } from "lucide-react";
 
@@ -133,7 +133,7 @@ export default function DeviceDetail() {
       {/* elder 模式：状态卡置顶独立展示（第一步核心内容） */}
       {elder && (
         <div className="card-base flex items-center justify-between p-5">
-          <p className="text-lg font-semibold text-slate-900">当前状态</p>
+          <p className="text-lg font-semibold text-stone-900">当前状态</p>
           <StatusBadge status={meta.status} />
         </div>
       )}
@@ -141,7 +141,7 @@ export default function DeviceDetail() {
       {/* elder 第一步：一句话概况 + 展开按钮；不堆叠详情 */}
       {elder && !elderExpanded ? (
         <>
-          <p className="card-base p-5 text-base leading-relaxed text-slate-700">
+          <p className="card-base p-5 text-base leading-relaxed text-stone-700">
             这台设备共维修过 <span className="font-bold text-brand-700">{meta.repairCount}</span> 次，
             做过 <span className="font-bold text-brand-700">{deviceDiagnoses.length}</span> 次诊断
             {lastRepair ? `，最近维修是${relativeTime(lastRepair.createdAt)}` : ""}。
@@ -192,11 +192,11 @@ export default function DeviceDetail() {
 
           {faq.length > 0 && (
             <SectionCard title="常见问题" padding="sm">
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-stone-100">
                 {faq.map((f) => (
                   <li key={f.q} className="py-3">
-                    <p className="text-sm font-medium text-slate-800">{f.q}</p>
-                    <p className="mt-1 text-sm text-slate-500">{f.a}</p>
+                    <p className="text-sm font-medium text-stone-800">{f.q}</p>
+                    <p className="mt-1 text-sm text-stone-500">{f.a}</p>
                   </li>
                 ))}
               </ul>
@@ -210,18 +210,18 @@ export default function DeviceDetail() {
           {deviceDiagnoses.length === 0 ? (
             <EmptyState icon="📋" title="暂无故障记录" description="该设备尚未进行过 AI 诊断。" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-stone-100">
               {deviceDiagnoses.map((d) => (
                 <li key={d.id}>
                   <Link
                     to={`/diagnosis/${d.id}/result`}
-                    className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-slate-50"
+                    className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-stone-50"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-slate-800">
+                      <span className="block truncate text-sm font-medium text-stone-800">
                         {d.symptom}
                       </span>
-                      <span className="block text-xs text-slate-400">{relativeTime(d.createdAt)}</span>
+                      <span className="block text-xs text-stone-400">{relativeTime(d.createdAt)}</span>
                     </span>
                     <RiskBadge level={d.riskLevel} />
                   </Link>
@@ -237,13 +237,13 @@ export default function DeviceDetail() {
           {deviceRecords.length === 0 ? (
             <EmptyState icon="🔧" title="暂无维修记录" description="保存诊断结果或手动添加后会显示在这里。" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-stone-100">
               {deviceRecords.map((r) => (
                 <li key={r.id} className="py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-800">{r.faultDescription}</p>
-                      <p className="mt-0.5 text-xs text-slate-400">
+                      <p className="truncate text-sm font-medium text-stone-800">{r.faultDescription}</p>
+                      <p className="mt-0.5 text-xs text-stone-400">
                         {relativeTime(r.createdAt)} · {REPAIR_STATUS_LABELS[r.status]} · 验证：
                         {VERIFICATION_LABELS[r.verificationStatus]}
                       </p>
@@ -269,8 +269,8 @@ export default function DeviceDetail() {
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-slate-800">{value}</p>
+      <p className="text-xs text-stone-400">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-stone-800">{value}</p>
     </div>
   );
 }
@@ -278,8 +278,8 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card-base p-4">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+      <p className="text-xs text-stone-500">{label}</p>
+      <p className="mt-1 text-xl font-bold text-stone-900">{value}</p>
     </div>
   );
 }

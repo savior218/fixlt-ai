@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 /** 页面标题区：图标 + 标题 + 副标题 + 右侧操作（TASK-04） */
 export default function PageHeader({
@@ -26,9 +26,9 @@ export default function PageHeader({
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="break-words text-xl font-bold text-slate-900">{title}</h1>
+          <h1 className="break-words text-xl font-bold text-stone-900">{title}</h1>
           {subtitle && (
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+            <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
           )}
         </div>
       </div>

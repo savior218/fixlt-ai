@@ -45,7 +45,7 @@ export default function AppLayout() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-stone-50">
         <Loading label="正在恢复登录状态…" />
       </div>
     );

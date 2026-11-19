@@ -59,24 +59,24 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   }
 
   return (
-    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
+    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
       {/* 左：移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
       <div className="flex min-w-0 items-center gap-1">
         <button
           type="button"
           onClick={onMenuClick}
           aria-label="打开导航菜单"
-          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+          className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">
+          <p className="truncate text-sm font-medium text-stone-900">
             {status === "authenticated" && user
               ? `你好，${user.nickname}`
               : "欢迎使用修必达"}
           </p>
-          <p className="hidden truncate text-xs text-slate-500 sm:block">
+          <p className="hidden truncate text-xs text-stone-500 sm:block">
             {status === "authenticated"
               ? `已登录 · 账号 ${user?.username}`
               : "家电故障分诊与维修决策助手"}
@@ -96,7 +96,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
             "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
             mode === "elder"
               ? "border-amber-500 bg-amber-100 text-amber-800"
-              : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100",
+              : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >
           <span className="sm:hidden">{mode === "elder" ? "👵 长辈" : "长辈模式"}</span>
@@ -117,7 +117,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <button
           type="button"
           aria-label="通知（演示状态）"
-          className="hidden rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 sm:block"
+          className="hidden rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700 sm:block"
         >
           <Bell className="h-5 w-5" />
         </button>
@@ -140,13 +140,13 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
               <div
                 role="menu"
                 aria-label="账户菜单"
-                className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+                className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-xl border border-stone-200 bg-surface shadow-card"
               >
-                <div className="border-b border-slate-100 px-4 py-3">
-                  <p className="truncate text-sm font-semibold text-slate-900">
+                <div className="border-b border-stone-100 px-4 py-3">
+                  <p className="truncate text-sm font-semibold text-stone-900">
                     {user.nickname}
                   </p>
-                  <p className="truncate text-xs text-slate-500">账号：{user.username}</p>
+                  <p className="truncate text-xs text-stone-500">账号：{user.username}</p>
                 </div>
                 <button
                   type="button"
@@ -155,7 +155,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                     setMenuOpen(false);
                     navigate("/settings?edit=profile");
                   }}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-50"
                 >
                   <User className="h-4 w-4" /> 编辑资料
                 </button>
@@ -166,7 +166,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                     setMenuOpen(false);
                     navigate("/settings?edit=password");
                   }}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-50"
                 >
                   <Settings className="h-4 w-4" /> 修改密码
                 </button>
@@ -175,7 +175,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                   role="menuitem"
                   disabled={loggingOut}
                   onClick={() => void handleLogout()}
-                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-risk-high hover:bg-risk-high-bg disabled:opacity-50"
+                  className="flex w-full items-center gap-2 border-t border-stone-100 px-4 py-2.5 text-left text-sm text-risk-high hover:bg-risk-high-bg disabled:opacity-50"
                 >
                   <LogOut className="h-4 w-4" />
                   {loggingOut ? "退出中…" : "退出登录"}

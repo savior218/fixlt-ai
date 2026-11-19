@@ -97,11 +97,11 @@ export default function Login() {
         <PageHeader title="账号" subtitle="当前已通过服务端会话验证登录状态" />
         <SectionCard title="已登录">
           <div className="space-y-3">
-            <p className="text-sm text-slate-700">
-              昵称：<span className="font-semibold text-slate-900">{user.nickname}</span>
+            <p className="text-sm text-stone-700">
+              昵称：<span className="font-semibold text-stone-900">{user.nickname}</span>
             </p>
-            <p className="text-sm text-slate-700">
-              账号标识：<span className="font-medium text-slate-900">{user.username}</span>
+            <p className="text-sm text-stone-700">
+              账号标识：<span className="font-medium text-stone-900">{user.username}</span>
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => navigate(returnTo, { replace: true })}>
@@ -137,7 +137,7 @@ export default function Login() {
 
       <SectionCard>
         {/* 登录 / 注册切换 */}
-        <div role="tablist" aria-label="登录或注册" className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+        <div role="tablist" aria-label="登录或注册" className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-stone-100 p-1">
           {(["login", "register"] as Tab[]).map((key) => (
             <button
               key={key}
@@ -148,8 +148,8 @@ export default function Login() {
               className={[
                 "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 tab === key
-                  ? "bg-white text-brand-700 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700",
+                  ? "bg-surface text-brand-700 shadow-sm"
+                  : "text-stone-500 hover:text-stone-700",
               ].join(" ")}
             >
               {key === "login" ? "登录" : "注册"}
@@ -230,14 +230,14 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-stone-400">
           密码由服务端使用成熟哈希算法保存，不保存在浏览器本地；登录令牌仅存放在 HttpOnly Cookie 中。
         </p>
       </SectionCard>
 
       {/* 游客入口：与真实账号数据明确隔离 */}
       <SectionCard title="先体验一下">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-stone-600">
           不登录也可以进行故障诊断和查看游客演示设备。游客设备为只读样例，不会修改真实账号或共享数据；
           游客的诊断草稿与维修记录只保存在本机，并标记为本机历史。
         </p>

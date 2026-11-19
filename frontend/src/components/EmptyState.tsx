@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -14,13 +14,13 @@ export default function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-stone-300 bg-surface px-4 py-10 text-center">
       <p aria-hidden className="text-3xl">
         {icon}
       </p>
-      <p className="mt-2 text-sm font-medium text-slate-700">{title}</p>
+      <p className="mt-2 text-sm font-medium text-stone-700">{title}</p>
       {description && (
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
+        <p className="mt-1 text-xs text-stone-500">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

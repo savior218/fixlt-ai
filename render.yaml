@@ -24,8 +24,8 @@ services:
       - key: FIXITAI_SESSION_COOKIE_SECURE
         value: "true"
       # 线上账号与设备必须使用可持久化数据库。
-      # 在 Render 创建托管 PostgreSQL（或使用其他外部 PostgreSQL）后，
-      # 把连接串填入此变量；不要把凭据写入仓库。
+      # 在 Render 创建托管 PostgreSQL 并“Add from database”后，
+      # Render 通常会注入 DATABASE_URL；后端同时兼容 DATABASE_URL 与 FIXITAI_DATABASE_URL。
       # 未配置时容器内 SQLite 会随重新部署丢失，不能视为线上持久化验收通过。
       - key: FIXITAI_DATABASE_URL
         sync: false

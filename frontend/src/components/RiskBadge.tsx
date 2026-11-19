@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 /** 风险等级（PRD SAFE-001）：低/中/高/待评估 */
 export type RiskLevel = "low" | "medium" | "high" | "unknown";
@@ -7,7 +7,7 @@ const RISK_META: Record<RiskLevel, { label: string; className: string }> = {
   low: { label: "低风险", className: "bg-risk-low-bg text-risk-low-deep border-risk-low-border" },
   medium: { label: "中风险", className: "bg-risk-medium-bg text-risk-medium-deep border-risk-medium-border" },
   high: { label: "高风险", className: "bg-risk-high-bg text-risk-high-deep border-risk-high-border" },
-  unknown: { label: "待评估", className: "bg-slate-100 text-slate-600 border-slate-300" },
+  unknown: { label: "待评估", className: "bg-stone-100 text-stone-600 border-stone-300" },
 };
 
 export default function RiskBadge({

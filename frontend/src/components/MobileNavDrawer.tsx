@@ -96,7 +96,7 @@ export default function MobileNavDrawer({
       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
       isActive
         ? "bg-brand-100 text-brand-800"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+        : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
     ].join(" ");
 
   return (
@@ -114,29 +114,26 @@ export default function MobileNavDrawer({
         aria-hidden
       />
 
-      {/* 抽屉面板 */}
+      {/* 抽屉面板（safe-pad-bottom 兜底 iPhone 底部安全区） */}
       <div
         ref={drawerRef}
         onKeyDown={handleKeyDown}
         className={[
-          "mobile-nav-drawer absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl",
+          "mobile-nav-drawer safe-pad-bottom absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-stone-200 bg-surface shadow-card",
           mounted ? "mobile-nav-drawer-open" : "",
         ].join(" ")}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部：品牌 + 关闭 */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl" aria-hidden>
-              🔧
-            </span>
-            <span className="text-base font-bold text-slate-900">修必达</span>
-          </div>
+        <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">
+          <span className="flex items-center gap-2 text-base font-bold text-stone-900">
+            <span aria-hidden className="text-xl">🔧</span>修必达
+          </span>
           <button
             type="button"
             aria-label="关闭导航菜单"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -165,7 +162,7 @@ export default function MobileNavDrawer({
         </nav>
 
         {/* 底部安全守护（与桌面侧栏一致） */}
-        <div className="border-t border-slate-200 px-3 py-3">
+        <div className="border-t border-stone-200 px-3 py-3">
           <NavLink
             to={SAFETY_ITEM.to}
             onClick={onClose}

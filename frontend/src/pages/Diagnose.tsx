@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -487,11 +487,11 @@ export default function Diagnose() {
                   key={c.key}
                   type="button"
                   onClick={() => pickCategory(c.key)}
-                  className="rounded-xl border border-slate-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                  className="rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
                   <span aria-hidden className="text-3xl">{c.emoji}</span>
-                  <p className={`mt-2 font-semibold text-slate-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{c.hint}</p>
+                  <p className={`mt-2 font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-500">{c.hint}</p>
                 </button>
               ))}
             </div>
@@ -508,7 +508,7 @@ export default function Diagnose() {
             }
           >
             {devices.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-stone-500">
                 暂无已添加设备。可直接在上方选择类型继续，或先到
                 <a href="#/devices" className="text-brand-700 hover:underline">我的设备</a>
                 添加。
@@ -523,7 +523,7 @@ export default function Diagnose() {
                       repairCount={withMeta(d, repairRecords).repairCount}
                       onClick={() => pickExistingDevice(d.id)}
                     />
-                    <p className="text-center text-xs text-slate-400">点击选择此设备</p>
+                    <p className="text-center text-xs text-stone-400">点击选择此设备</p>
                   </div>
                 ))}
               </div>
@@ -543,13 +543,13 @@ export default function Diagnose() {
                   {draft.category === "ac" ? "❄️" : draft.category === "fridge" ? "🧊" : draft.category === "washer" ? "🫧" : "📺"}
                 </span>
                 <div className="min-w-0">
-                  <p className="flex flex-wrap items-center gap-2 font-semibold text-slate-900">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
                     {selectedDevice ? selectedDevice.name : CATEGORY_CARDS.find((c) => c.key === draft.category)?.title}
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                       已识别
                     </span>
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-stone-500">
                     {selectedDevice
                       ? `${CATEGORY_LABELS[selectedDevice.category]}${selectedDevice.brand ? ` · ${selectedDevice.brand}` : ""}${selectedDevice.model ? ` ${selectedDevice.model}` : ""}${selectedDevice.location ? ` · ${selectedDevice.location}` : ""}`
                       : "未关联具体设备，可返回上一步选择"}
@@ -564,10 +564,10 @@ export default function Diagnose() {
 
           {/* 图片上传（演示） */}
           <SectionCard title="上传故障照片（可选）">
-            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center">
-              <Camera aria-hidden className="mx-auto h-8 w-8 text-slate-400" />
-              <p className="mt-2 text-sm text-slate-600">点击上传或拖拽图片到此处</p>
-              <p className="mt-1 text-xs text-slate-400">
+            <div className="rounded-xl border border-dashed border-stone-300 p-6 text-center">
+              <Camera aria-hidden className="mx-auto h-8 w-8 text-stone-400" />
+              <p className="mt-2 text-sm text-stone-600">点击上传或拖拽图片到此处</p>
+              <p className="mt-1 text-xs text-stone-400">
                 支持 JPG、PNG 格式，单张不超过 10MB（演示状态：图片暂不上传服务器）
               </p>
               <Button variant="secondary" size="sm" className="mt-3" onClick={() => notify("演示状态：图片上传暂未接入", "info")}>
@@ -592,26 +592,26 @@ export default function Diagnose() {
                   key={s.title}
                   type="button"
                   onClick={() => pickSymptom(s.title)}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
                   <span className="min-w-0">
-                    <span className={`font-medium text-slate-900 ${elder ? "text-lg" : "text-base"}`}>
+                    <span className={`font-medium text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
                       {s.title}
                     </span>
-                    <span className="ml-2 text-sm text-slate-400">({s.note})</span>
+                    <span className="ml-2 text-sm text-stone-400">({s.note})</span>
                   </span>
-                  <span aria-hidden className="text-slate-300">›</span>
+                  <span aria-hidden className="text-stone-300">›</span>
                 </button>
               ))}
               <button
                 type="button"
                 onClick={() => setCustomSymptom(true)}
-                className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
+                className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-stone-300 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
               >
-                <span className={`font-medium text-slate-600 ${elder ? "text-lg" : "text-base"}`}>
+                <span className={`font-medium text-stone-600 ${elder ? "text-lg" : "text-base"}`}>
                   其他问题，直接描述
                 </span>
-                <span aria-hidden className="text-slate-300">›</span>
+                <span aria-hidden className="text-stone-300">›</span>
               </button>
             </div>
           </SectionCard>
@@ -629,8 +629,8 @@ export default function Diagnose() {
                   onChange={(v) => setDraft({ description: v })}
                 />
                 {/* 已收集信息面板 */}
-                <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-                  <p className="font-medium text-slate-600">已收集信息</p>
+                <div className="rounded-xl bg-stone-50 p-3 text-xs text-stone-500">
+                  <p className="font-medium text-stone-600">已收集信息</p>
                   <p className="mt-1">故障现象：{draft.symptom ?? "自定义描述"}</p>
                   <p>描述字数：{draft.description.length}/500</p>
                   <p>相关图片：0 张</p>
@@ -694,7 +694,7 @@ export default function Diagnose() {
             </div>
 
             {/* 底部输入框 + 语音入口 */}
-            <div className="flex items-center gap-2 border-t border-slate-100 p-3">
+            <div className="flex items-center gap-2 border-t border-stone-100 p-3">
               <input
                 type="text"
                 value={input}
@@ -710,7 +710,7 @@ export default function Diagnose() {
                 autoComplete="off"
                 disabled={generating}
                 placeholder={elder ? "也可以打字告诉我…" : "请输入您的问题，比如：空调不制冷了…"}
-                className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50"
+                className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
               />
               <Button
                 variant="secondary"

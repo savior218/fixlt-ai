@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -87,31 +87,31 @@ export default function RepairHistory() {
                 {/* 时间轴节点 */}
                 <span
                   aria-hidden
-                  className={`absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 border-white ${
+                  className={`absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 border-surface ${
                     r.verificationStatus === "recovered"
                       ? "bg-risk-low"
                       : r.verificationStatus === "notRecovered"
                         ? "bg-risk-high"
-                        : "bg-slate-400"
+                        : "bg-stone-400"
                   }`}
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-stone-900">
                     {formatDateTime(r.createdAt)}
                   </p>
                   <StatusBadge status={repairStatusBadge(r.status)} />
                   <StatusBadge status={verificationBadge(r.verificationStatus)} />
                 </div>
-                <div className="mt-2 space-y-1 rounded-xl bg-slate-50 p-3 text-sm">
-                  <p className="text-slate-700">
-                    <span className="font-medium text-slate-500">故障：</span>
+                <div className="mt-2 space-y-1 rounded-xl bg-stone-50 p-3 text-sm">
+                  <p className="text-stone-700">
+                    <span className="font-medium text-stone-500">故障：</span>
                     {r.faultDescription}
                   </p>
-                  <p className="whitespace-pre-wrap text-slate-700">
-                    <span className="font-medium text-slate-500">处理：</span>
+                  <p className="whitespace-pre-wrap text-stone-700">
+                    <span className="font-medium text-stone-500">处理：</span>
                     {r.repairMethod}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-stone-400">
                     状态 {REPAIR_STATUS_LABELS[r.status]} · 验证 {VERIFICATION_LABELS[r.verificationStatus]}
                     {r.cost != null && ` · 费用 ¥${r.cost}`}
                   </p>
