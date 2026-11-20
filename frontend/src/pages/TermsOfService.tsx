@@ -80,6 +80,11 @@ const SECTIONS: LegalSection[] = [
       </>,
       <>
         如你存在上述行为，我们有权视情节采取警告、限制功能、封禁账号等措施，并保留依法追究责任的权利。
+        完整的使用要求见{" "}
+        <Link to="/guidelines" className={linkCls}>
+          《使用规范》
+        </Link>
+        。
       </>,
       <>
         <span className="text-xs text-stone-500">

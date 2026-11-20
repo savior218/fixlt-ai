@@ -5,10 +5,9 @@ import { ShieldCheck } from "lucide-react";
     elderHide：长辈模式隐藏的次要/重复入口（法定必备的隐私、协议、版权始终保留） */
 const FOOTER_LINKS: { to: string; label: string; elderHide?: boolean }[] = [
   { to: "/about", label: "关于修必达", elderHide: true },
-  { to: "/settings", label: "安全守护", elderHide: true },
+  { to: "/safety", label: "安全守护", elderHide: true },
   { to: "/terms", label: "软件许可及服务协议" },
-  // 用户协议中的"三、用户行为规范"章节，直达使用规范内容
-  { to: "/terms#legal-3", label: "使用规范", elderHide: true },
+  { to: "/guidelines", label: "使用规范", elderHide: true },
   { to: "/privacy", label: "隐私保护指引" },
   { to: "/copyright", label: "版权声明" },
 ];

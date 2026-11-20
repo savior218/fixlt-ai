@@ -29,7 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** 底部安全守护入口（两端共用） */
 export const SAFETY_ITEM: NavItem = {
-  to: "/settings",
+  to: "/safety",
   label: "安全守护",
   icon: ShieldCheck,
 };
