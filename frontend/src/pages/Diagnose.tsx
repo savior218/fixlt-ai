@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   Camera,
@@ -801,6 +801,13 @@ export default function Diagnose() {
                 )}
               </div>
             )}
+            <p className="mt-2 text-xs leading-relaxed text-stone-400">
+              照片仅用于本次故障诊断，不会用于广告投放或模型训练；请避免拍到人脸、证件等无关信息。详见
+              <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
+                《隐私政策》
+              </Link>
+              。
+            </p>
           </SectionCard>
 
           {/* 小贴士 */}

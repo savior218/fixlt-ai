@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, ClipboardCopy, ImagePlus, Loader2, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
@@ -467,6 +467,13 @@ export default function RepairAssistant() {
             )}
           </button>
         )}
+        <p className="mt-2 text-xs leading-relaxed text-stone-400">
+          照片会随报修说明上传，仅用于故障判断与工单展示，不会用于广告投放或模型训练。详见
+          <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
+            《隐私政策》
+          </Link>
+          。
+        </p>
       </fieldset>
     </>
   );
