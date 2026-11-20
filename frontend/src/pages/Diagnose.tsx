@@ -608,7 +608,8 @@ export default function Diagnose() {
   /* ================= 正常四步流程 ================= */
   return (
     <div className="space-y-5">
-      <div className="card-base p-4">
+      {/* 进度条：长辈模式下由下方大号文字引导取代，避免小字干扰 */}
+      <div data-elder="hide" className="card-base p-4">
         <DiagnosisStepper current={draft.step} />
       </div>
 

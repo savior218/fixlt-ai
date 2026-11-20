@@ -435,15 +435,17 @@ export default function Settings() {
         )}
       </SectionCard>
 
-      {/* B2. 消息通知：免打扰开关 */}
-      <SectionCard title="消息通知">
-        <SwitchControl
-          label="消息免打扰"
-          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
-          checked={prefs.doNotDisturb}
-          onChange={prefs.setDoNotDisturb}
-        />
-      </SectionCard>
+      {/* B2. 消息通知：免打扰开关（长辈模式隐藏，通知铃铛在长辈模式下也不显示） */}
+      <div data-elder="hide">
+        <SectionCard title="消息通知">
+          <SwitchControl
+            label="消息免打扰"
+            description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+            checked={prefs.doNotDisturb}
+            onChange={prefs.setDoNotDisturb}
+          />
+        </SectionCard>
+      </div>
 
       {/* B. 使用模式 */}
       <SectionCard title="使用模式">
@@ -603,9 +605,10 @@ export default function Settings() {
         </div>
       </SectionCard>
 
-      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示） */}
+      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示；长辈模式隐藏此高级操作） */}
       {authStatus === "authenticated" &&
         localCounts.diagnoses + localCounts.repairs > 0 && (
+          <div data-elder="hide">
           <SectionCard title="本机历史">
             <p className="text-sm leading-relaxed text-stone-600">
               检测到本机还有 <strong>{localCounts.diagnoses}</strong> 份诊断报告、{" "}
@@ -631,6 +634,7 @@ export default function Settings() {
               onCancel={() => setImportOpen(false)}
             />
           </SectionCard>
+          </div>
         )}
 
       {/* F. 隐私与数据 */}
@@ -738,7 +742,8 @@ export default function Settings() {
         {/* 隐私政策、用户协议与版权说明已升级为独立页面（页脚与上方按钮均可跳转） */}
       </SectionCard>
 
-      {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文） */}
+      {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文；长辈模式下面板本身即示例，隐藏此演示） */}
+      <div data-elder="hide">
       <SectionCard title="长辈关怀模式 · AI 回复对比">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -767,6 +772,7 @@ export default function Settings() {
           注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
         </p>
       </SectionCard>
+      </div>
 
       {/* 编辑昵称 */}
       <ModalDialog

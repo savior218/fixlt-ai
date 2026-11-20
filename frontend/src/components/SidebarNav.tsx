@@ -1,9 +1,12 @@
 ﻿﻿import { NavLink } from "react-router-dom";
 
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
+import { usePrefs } from "../stores/prefs";
 
 export default function SidebarNav() {
   const SafetyIcon = SAFETY_ITEM.icon;
+  /** 长辈模式：当前项改用实心高亮，并隐藏与「个人中心」重复的底部入口 */
+  const elder = usePrefs((s) => s.mode === "elder");
 
   return (
     <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-surface">
@@ -37,7 +40,9 @@ export default function SidebarNav() {
                     [
                       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-brand-100 text-brand-800"
+                        ? elder
+                          ? "bg-brand-600 font-bold text-white"
+                          : "bg-brand-100 text-brand-800"
                         : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
                     ].join(" ")
                   }
@@ -51,8 +56,8 @@ export default function SidebarNav() {
         </ul>
       </nav>
 
-      {/* 底部安全守护入口 */}
-      <div className="border-t border-stone-200 px-3 py-3">
+      {/* 底部安全守护入口（长辈模式与「个人中心」指向同一页，隐藏避免重复） */}
+      <div data-elder="hide" className="border-t border-stone-200 px-3 py-3">
         <NavLink
           to={SAFETY_ITEM.to}
           className={({ isActive }) =>

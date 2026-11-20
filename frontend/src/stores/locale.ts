@@ -1,8 +1,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/** 登录门户页可选语言：简体 / 繁体 / 英文 */
-export type Locale = "zh-Hans" | "zh-Hant" | "en";
+/** 登录门户页可选语言：简体 / 繁体 / 英文 / 日 / 韩 / 法 / 德 / 西 / 俄 */
+export type Locale =
+  | "zh-Hans"
+  | "zh-Hant"
+  | "en"
+  | "ja"
+  | "ko"
+  | "fr"
+  | "de"
+  | "es"
+  | "ru";
 
 interface LocaleState {
   locale: Locale;
