@@ -84,10 +84,33 @@ _MIGRATION_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("imported", "BOOLEAN DEFAULT FALSE"),
         ("updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
     ],
+    "repair_tickets": [
+        ("client_ref", "VARCHAR(64)"),
+        ("progress_status", "VARCHAR(32)"),
+        ("progress_history", "TEXT DEFAULT '[]'"),
+        ("progress_updated_by", "VARCHAR(64)"),
+        ("contact_target", "VARCHAR(128)"),
+        ("contacted_at", "VARCHAR(32)"),
+        ("appointment_at", "VARCHAR(32)"),
+        ("contact_note", "TEXT"),
+        ("repair_record_id", "INTEGER"),
+    ],
+    "interview_sessions": [
+        ("photo_observations", "TEXT DEFAULT '[]'"),
+        ("photo_limitations", "TEXT DEFAULT '[]'"),
+        ("known", "TEXT DEFAULT '[]'"),
+        ("current_question", "TEXT DEFAULT '{}'"),
+        ("recommendation", "TEXT DEFAULT '{}'"),
+        ("cannot_reason", "TEXT"),
+        ("cannot_next_step", "TEXT"),
+        ("model_calls", "INTEGER DEFAULT 0"),
+        ("model_latency_ms", "INTEGER DEFAULT 0"),
+    ],
 }
 
 # 同一用户下客户端记录 ID 唯一：重复提交不会产生多条记录
 _MIGRATION_INDEXES: list[tuple[str, str, str]] = [
     ("ux_diagnoses_user_client", "diagnoses", "user_id, client_ref"),
     ("ux_repair_records_user_client", "repair_records", "user_id, client_ref"),
+    ("ux_repair_tickets_user_client", "repair_tickets", "user_id, client_ref"),
 ]

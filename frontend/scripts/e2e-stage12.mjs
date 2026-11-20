@@ -58,7 +58,7 @@ async function login(page, username, password) {
 async function runTemplateDiagnosis(page) {
   await page.goto(`${BASE}/diagnose`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: /^空调/ }).first().click();
-  await page.getByRole("button", { name: /制冷效果变差/ }).first().click();
+  await page.getByRole("button", { name: /漏水/ }).first().click();
 
   const input = page.getByPlaceholder(/请输入您的问题|也可以打字/);
   for (let i = 0; i < 3; i += 1) {
@@ -166,31 +166,31 @@ try {
   await pageA2.goto(`${BASE}/records`, { waitUntil: "networkidle" });
   await pageA2.getByText(`诊断报告（1）`).waitFor({ timeout: 10_000 });
   await pageA2
-    .getByText(/制冷效果变差/)
+    .getByText(/漏水/)
     .first()
     .waitFor({ timeout: 10_000 });
   record("另一浏览器登录 A 可读取报告与维修记录", true);
 
   // 打开报告详情（跨浏览器可读）
   await pageA2.getByText(/诊断报告（1）/).scrollIntoViewIfNeeded();
-  await pageA2.getByRole("link", { name: /空调.*制冷效果变差|未关联设备.*制冷效果变差/ }).first().click();
+  await pageA2.getByRole("link", { name: /空调.*漏水|未关联设备.*漏水/ }).first().click();
   await pageA2.getByText("诊断报告").first().waitFor({ timeout: 10_000 });
   record("跨浏览器打开诊断报告详情", true);
 
   /* ---------- 更新维修验证结果并同步 ---------- */
   await pageA2.goto(`${BASE}/records`, { waitUntil: "networkidle" });
-  await pageA2.getByRole("button", { name: /制冷效果变差/ }).first().click();
+  await pageA2.getByRole("button", { name: /漏水/ }).first().click();
   await pageA2.getByRole("button", { name: "已恢复" }).click();
   await pageA2.getByText(/已更新验证结果：已恢复/).waitFor({ timeout: 10_000 });
   await pageA2.reload({ waitUntil: "networkidle" });
-  await pageA2.getByRole("button", { name: /制冷效果变差/ }).first().click();
+  await pageA2.getByRole("button", { name: /漏水/ }).first().click();
   record(
     "验证结果刷新后保留（已写入服务端）",
     (await pageA2.getByText(/验证：已恢复/).count()) > 0
   );
 
   await pageA.reload({ waitUntil: "networkidle" });
-  await pageA.getByRole("button", { name: /制冷效果变差/ }).first().click();
+  await pageA.getByRole("button", { name: /漏水/ }).first().click();
   record(
     "另一浏览器看到最新验证状态",
     (await pageA.getByText(/验证：已恢复/).count()) > 0

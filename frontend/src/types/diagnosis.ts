@@ -39,6 +39,10 @@ export interface QAPair {
   questionText: string;
   answer: string;
   unknown: boolean;
+  /** 回答输入方式：动态追问用于保留文字/语音/选项来源 */
+  inputSource?: "text" | "voice" | "option";
+  /** 选题来源：规则、模型或模型失败后的规则回退 */
+  selectionSource?: "rule" | "model" | "rule_fallback";
 }
 
 /** 单套文案的完整内容（标准版 / 长辈版共用同一结构与事实） */

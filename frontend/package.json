@@ -13,6 +13,7 @@
     "e2e:stage11": "node scripts/e2e-stage11.mjs",
     "e2e:stage12": "node scripts/e2e-stage12.mjs",
     "e2e:stage13": "node scripts/e2e-stage13.mjs",
+    "e2e:dynamic:ui-mock": "node scripts/e2e-interview-ui-mock.mjs",
     "preview": "node node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {

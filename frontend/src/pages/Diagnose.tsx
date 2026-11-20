@@ -825,7 +825,14 @@ export default function Diagnose() {
                 <button
                   key={s.title}
                   type="button"
-                  onClick={() => pickSymptom(s.title)}
+                  onClick={() => {
+                    // 空调“不制冷/制冷效果变差”进入动态追问；其他设备与现象保持原流程
+                    if (draft.category === "ac" && s.title.includes("制冷")) {
+                      navigate("/interview/ac");
+                    } else {
+                      pickSymptom(s.title);
+                    }
+                  }}
                   className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 px-4 py-3 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
                   <span className="min-w-0">
@@ -833,6 +840,11 @@ export default function Diagnose() {
                       {s.title}
                     </span>
                     <span className="ml-2 text-sm text-stone-400">({s.note})</span>
+                    {draft.category === "ac" && s.title.includes("制冷") && (
+                      <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-700">
+                        动态追问
+                      </span>
+                    )}
                   </span>
                   <span aria-hidden className="text-stone-300">›</span>
                 </button>
