@@ -11,25 +11,74 @@ export interface BrandHotline {
   brand: string;
   /** 官方售后电话 */
   phone: string;
+  /** 品牌英文名 / 别名，用于用户填写英文或简称时匹配 */
+  aliases?: string[];
+  /** 品牌覆盖的品类（用于同品牌多服务体系时按设备类型消歧） */
+  categories?: string[];
   /** 服务时间等备注 */
   note?: string;
 }
 
+/** 常见品牌官方售后电话簿（数据与后端官方电话目录保持一致，仅含可展示记录） */
 export const BRAND_HOTLINES: BrandHotline[] = [
-  { brand: "格力", phone: "95082", note: "格力官网当前专线；不再默认推荐历史 400 号码" },
-  { brand: "美的", phone: "4008899315", note: "美的集团官方服务热线" },
-  { brand: "海尔", phone: "95179", note: "海尔官网当前推荐；4006999999 为过渡并行号码，不作为首选" },
-  {
-    brand: "卡萨帝",
-    phone: "95179",
-    note: "海尔官方 FAQ 明确覆盖卡萨帝；与海尔共用服务热线",
-  },
-  { brand: "海信", phone: "4006111111", note: "海信官方服务热线" },
-  { brand: "容声", phone: "4008099999", note: "容声冰箱官方服务热线" },
-  { brand: "松下", phone: "4008811315", note: "松下电器官方服务热线" },
-  { brand: "TCL", phone: "4008123456", note: "TCL 官方服务热线" },
-  { brand: "创维", phone: "95105555", note: "创维官方服务热线" },
-  { brand: "奥克斯", phone: "4008268268", note: "奥克斯空调官方服务热线" },
+  { brand: "格力", phone: "95082", aliases: ["GREE"], categories: ["空调", "生活小电"], note: "格力官网当前专线；不再默认推荐历史 400 号码" },
+  { brand: "美的", phone: "4008899315", aliases: ["Midea"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "热水采暖", "厨房电器", "净水饮水", "生活小电"], note: "美的集团官方服务热线" },
+  { brand: "海尔", phone: "95179", aliases: ["Haier"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "电视影音", "热水采暖", "厨房电器", "净水饮水", "生活小电"], note: "海尔官网当前推荐；4006999999 为过渡并行号码，不作为首选" },
+  { brand: "卡萨帝", phone: "95179", aliases: ["Casarte"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "电视影音", "热水采暖", "厨房电器"], note: "海尔官方 FAQ 明确覆盖卡萨帝；与海尔共用服务热线" },
+  { brand: "Leader统帅", phone: "95179", aliases: ["统帅", "Leader"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "热水采暖", "厨房电器"] },
+  { brand: "海信", phone: "4006111111", aliases: ["Hisense"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "电视影音", "厨房电器"], note: "海信官方服务热线" },
+  { brand: "容声", phone: "4008099999", aliases: ["Ronshen"], categories: ["冰箱冷柜", "洗衣干衣"], note: "容声冰箱官方服务热线" },
+  { brand: "科龙", phone: "4008099999", aliases: ["Kelon"], categories: ["中央空调"] },
+  { brand: "TCL", phone: "4008123456", aliases: ["TCL"], categories: ["电视影音", "空调", "冰箱冷柜", "洗衣干衣"], note: "TCL 官方服务热线" },
+  { brand: "松下", phone: "4008811315", aliases: ["Panasonic"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "电视影音", "厨房电器", "个护电器"], note: "松下电器官方服务热线" },
+  { brand: "三星", phone: "4008105858", aliases: ["Samsung"], categories: ["电视影音", "冰箱冷柜", "洗衣干衣"] },
+  { brand: "LG", phone: "4008199999", aliases: ["乐金"], categories: ["电视影音", "冰箱冷柜", "洗衣干衣", "空调"] },
+  { brand: "索尼", phone: "4008109000", aliases: ["Sony", "BRAVIA"], categories: ["电视影音"] },
+  { brand: "方太", phone: "952315", aliases: ["FOTILE"], categories: ["厨房电器", "热水采暖", "净水饮水"] },
+  { brand: "老板", phone: "95105855", aliases: ["老板电器", "ROBAM"], categories: ["厨房电器", "热水采暖", "净水饮水", "冰箱冷柜"] },
+  { brand: "华帝", phone: "4008886288", aliases: ["Vatti"], categories: ["厨房电器", "热水采暖"] },
+  { brand: "万和", phone: "4008308383", aliases: ["Vanward"], categories: ["热水采暖", "厨房电器", "净水饮水"] },
+  { brand: "林内", phone: "4006990606", aliases: ["Rinnai"], categories: ["热水采暖", "厨房电器", "净水饮水"] },
+  { brand: "能率", phone: "4009881998", aliases: ["NORITZ"], categories: ["热水采暖", "厨房电器", "净水饮水"] },
+  { brand: "A.O.史密斯", phone: "4008288988", aliases: ["艾欧史密斯", "AOSmith"], categories: ["热水采暖", "净水饮水", "厨房电器", "空气处理"] },
+  { brand: "苏泊尔", phone: "4008899717", aliases: ["SUPOR"], categories: ["厨房电器", "生活小电"] },
+  { brand: "九阳", phone: "4006186999", aliases: ["Joyoung"], categories: ["厨房电器", "净水饮水", "生活小电"] },
+  { brand: "小熊", phone: "4006622580", aliases: ["Bear"], categories: ["厨房电器", "生活小电"] },
+  { brand: "格兰仕", phone: "4008300333", aliases: ["Galanz"], categories: ["厨房电器", "冰箱冷柜", "洗衣干衣", "空调"] },
+  { brand: "长虹", phone: "4008111666", aliases: ["CHANGHONG"], categories: ["电视影音", "空调", "冰箱冷柜", "洗衣干衣", "生活小电", "厨房电器"] },
+  { brand: "美菱", phone: "4008111666", aliases: ["Meiling"], categories: ["冰箱冷柜", "洗衣干衣", "空调", "厨房电器", "生活小电"] },
+  { brand: "奥克斯", phone: "4008268268", aliases: ["AUX"], categories: ["空调"], note: "奥克斯空调官方服务热线" },
+  { brand: "康佳", phone: "4008800016", aliases: ["KONKA"], categories: ["电视影音", "冰箱冷柜", "洗衣干衣", "空调", "厨房电器"] },
+  { brand: "创维", phone: "95105555", aliases: ["Skyworth"], categories: ["电视影音", "冰箱冷柜", "洗衣干衣", "空调"], note: "创维官方服务热线" },
+  { brand: "戴森", phone: "4009202808", aliases: ["Dyson"], categories: ["清洁电器", "个护电器", "空气处理"] },
+  { brand: "科沃斯", phone: "4008868888", aliases: ["ECOVACS", "地宝", "窗宝"], categories: ["清洁电器", "空气处理"] },
+  { brand: "石头", phone: "4009001755", aliases: ["石头科技", "Roborock", "小瓦"], categories: ["清洁电器"] },
+  { brand: "追觅", phone: "4001181111", aliases: ["Dreame"], categories: ["清洁电器", "个护电器"] },
+  { brand: "添可", phone: "4007794666", aliases: ["Tineco"], categories: ["清洁电器", "个护电器", "厨房电器"] },
+  { brand: "云鲸", phone: "4000800630", aliases: ["Narwal"], categories: ["清洁电器"] },
+  { brand: "美大", phone: "4008879882", aliases: ["MEIDA"], categories: ["厨房电器"] },
+  { brand: "火星人", phone: "4008888490", aliases: ["MARSSENGER"], categories: ["厨房电器"] },
+  { brand: "帅康", phone: "4007001111", aliases: ["Sacon"], categories: ["厨房电器", "热水采暖", "净水饮水"] },
+  { brand: "大金", phone: "4008201081", aliases: ["DAIKIN"], categories: ["空调", "中央空调"] },
+  { brand: "三菱重工空调", phone: "4006993030", aliases: ["Mitsubishi Heavy Industries"], categories: ["空调", "中央空调"] },
+  { brand: "日立中央空调", phone: "4008601111", aliases: ["Hitachi", "海信日立"], categories: ["中央空调"] },
+  { brand: "约克VRF", phone: "4006206607", aliases: ["YORK"], categories: ["中央空调"] },
+  { brand: "伊莱克斯", phone: "95105801", aliases: ["Electrolux"], categories: ["冰箱冷柜", "洗衣干衣", "厨房电器", "清洁电器"] },
+  { brand: "倍科", phone: "4008285353", aliases: ["Beko"], categories: ["冰箱冷柜", "洗衣干衣", "厨房电器"] },
+  { brand: "澳柯玛", phone: "4006187777", aliases: ["AUCMA"], categories: ["冰箱冷柜", "空调", "洗衣干衣", "厨房电器", "净水饮水", "生活小电"] },
+  { brand: "扬子空调", phone: "4008877000", aliases: ["YAIR"], categories: ["空调", "中央空调"] },
+  { brand: "安吉尔", phone: "4007003339", aliases: ["Angel"], categories: ["净水饮水"] },
+  { brand: "沁园", phone: "4001111222", aliases: ["Qinyuan"], categories: ["净水饮水"] },
+  { brand: "碧然德", phone: "4009218318", aliases: ["BRITA"], categories: ["净水饮水"] },
+  { brand: "德龙", phone: "4008271668", aliases: ["DeLonghi", "De’Longhi"], categories: ["咖啡电器", "厨房电器", "空气处理"] },
+  { brand: "博朗厨房小家电", phone: "4008271668", aliases: ["Braun Household", "博朗"], categories: ["厨房电器", "咖啡电器", "衣物护理"] },
+  { brand: "摩飞", phone: "4008820686", aliases: ["Morphy Richards"], categories: ["厨房电器", "生活小电"] },
+  { brand: "荣事达电子电器", phone: "4001100315", aliases: ["荣事达", "Royalstar"], categories: ["生活小电", "热水采暖", "厨房电器"] },
+  { brand: "小天鹅", phone: "4008228228", aliases: ["Little Swan"], categories: ["洗衣干衣", "冰箱冷柜", "空调"] },
+  { brand: "飞利浦家居电器", phone: "4008800008", aliases: ["Philips", "范颂尼", "Versuni"], categories: ["厨房电器", "清洁电器", "衣物护理", "空气处理"] },
+  { brand: "COLMO", phone: "4009699999", aliases: ["COLMO"], categories: ["空调", "冰箱冷柜", "洗衣干衣", "厨房电器", "净水饮水"] },
+  { brand: "东芝生活电器", phone: "4008229088", aliases: ["Toshiba", "东芝"], categories: ["冰箱冷柜", "洗衣干衣", "热水采暖", "厨房电器", "净水饮水", "清洁电器"] },
+  { brand: "东芝电视", phone: "4008567888", aliases: ["Toshiba", "东芝"], categories: ["电视影音"] },
 ];
 
 /**
@@ -37,16 +86,49 @@ export const BRAND_HOTLINES: BrandHotline[] = [
  * 号码来自 2026-11-20 官方页面核验资料，未实际拨测。
  */
 
-/** 按品牌名模糊查找官方售后电话（未填写或未收录时返回 null） */
-export function lookupHotline(brand?: string | null): BrandHotline | null {
+/** 报修页设备类型 → 售后电话簿品类，用于同品牌多服务体系消歧 */
+const CATEGORY_TAGS: Record<string, string[]> = {
+  ac: ["空调", "中央空调"],
+  fridge: ["冰箱冷柜"],
+  washer: ["洗衣干衣"],
+  tv: ["电视影音"],
+};
+
+function normalizeBrand(value: string): string {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
+/** 按品牌名（含英文名 / 别名）查找官方售后电话（未填写或未收录时返回 null） */
+export function lookupHotline(
+  brand?: string | null,
+  category?: string | null
+): BrandHotline | null {
   if (!brand) return null;
-  const kw = brand.trim().toLowerCase();
+  const kw = normalizeBrand(brand.trim());
   if (!kw) return null;
-  return (
-    BRAND_HOTLINES.find(
-      (h) => kw.includes(h.brand.toLowerCase()) || h.brand.toLowerCase().includes(kw)
-    ) ?? null
-  );
+
+  const namesOf = (h: BrandHotline) =>
+    [h.brand, ...(h.aliases ?? [])].map(normalizeBrand);
+
+  // 先精确匹配品牌名 / 别名；没有精确结果时再做包含匹配（如「格力空调」）
+  const exact = BRAND_HOTLINES.filter((h) => namesOf(h).includes(kw));
+  const candidates =
+    exact.length > 0
+      ? exact
+      : BRAND_HOTLINES.filter((h) =>
+          namesOf(h).some((name) => name.includes(kw) || kw.includes(name))
+        );
+  if (candidates.length === 0) return null;
+
+  // 同品牌有多个服务体系（如东芝电视 / 东芝生活电器）时，按设备类型选对应号码
+  const tags = category ? CATEGORY_TAGS[category] : undefined;
+  if (tags && tags.length > 0) {
+    const byCategory = candidates.find((h) =>
+      h.categories?.some((c) => tags.includes(c))
+    );
+    if (byCategory) return byCategory;
+  }
+  return candidates[0];
 }
 
 /** 品类标签（与智能报修的 REPAIR_CATEGORIES 保持一致） */
@@ -109,7 +191,7 @@ export function generateCallScript(input: ScriptInput): string {
   );
 
   return [
-    "【报修话术】拨打品牌官方售后电话时，可以参考下面的话说明情况：",
+    "拨打品牌官方售后电话时，可以参考下面的话说明情况：",
     "",
     sentences.join(""),
     "",
