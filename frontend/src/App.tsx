@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 
 import About from "./pages/About";
 import AppLayout from "./layouts/AppLayout";
+import PublicLayout from "./layouts/PublicLayout";
 import CopyrightInfo from "./pages/CopyrightInfo";
 import DataManagement from "./pages/DataManagement";
 import DeviceDetail from "./pages/DeviceDetail";
@@ -28,6 +29,14 @@ export default function App() {
       {/* 登录门户：独立整页（参考微信网页版），不套用应用外壳 */}
       <Route path="login" element={<Login />} />
 
+      {/* 公开信息页：无需登录即可查阅，登录前后都能点开协议与隐私政策 */}
+      <Route element={<PublicLayout />}>
+        <Route path="about" element={<About />} />
+        <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="terms" element={<TermsOfService />} />
+        <Route path="copyright" element={<CopyrightInfo />} />
+      </Route>
+
       <Route element={<AppLayout />}>
         {/* 首页 */}
         <Route index element={<Home />} />
@@ -49,11 +58,6 @@ export default function App() {
         <Route path="data" element={<DataManagement />} />
         {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
-        {/* 法律文档：关于我们 / 隐私政策 / 用户协议 / 版权说明 */}
-        <Route path="about" element={<About />} />
-        <Route path="privacy" element={<PrivacyPolicy />} />
-        <Route path="terms" element={<TermsOfService />} />
-        <Route path="copyright" element={<CopyrightInfo />} />
         <Route path="ui-kit" element={<UiKit />} />
         <Route path="*" element={<NotFound />} />
       </Route>
