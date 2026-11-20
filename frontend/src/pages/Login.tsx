@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ChevronDown, Globe, LogIn, UserPlus, Wrench } from "lucide-react";
+import { Check, ChevronDown, Globe, LogIn, UserPlus } from "lucide-react";
 
+import BrandMark from "../components/BrandMark";
 import Button from "../components/Button";
 import InputField from "../components/InputField";
 import Loading from "../components/Loading";
@@ -607,17 +608,8 @@ export default function Login() {
       />
 
       {/* 左上角品牌区 */}
-      <header className="relative z-10 flex items-center gap-2.5 px-5 pt-6 sm:px-10">
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm"
-          aria-hidden
-        >
-          <Wrench className="h-5 w-5" />
-        </span>
-        <span className="text-sm font-semibold text-stone-800">{t.brand}</span>
-        <span className="hidden text-xs text-stone-500 sm:inline">
-          · {t.brandSub}
-        </span>
+      <header className="relative z-10 flex items-center px-5 pt-6 sm:px-10">
+        <BrandMark />
       </header>
 
       {/* 中央登录卡片 */}
@@ -770,19 +762,7 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* 游客入口：与真实账号数据明确隔离 */}
-          <div className="mt-5 rounded-xl border border-dashed border-stone-300 bg-stone-50/70 px-4 py-3">
-            <p data-elder="hide" className="text-xs leading-relaxed text-stone-500">
-              {t.guestHint}
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate(returnTo, { replace: true })}
-              className="mt-2 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
-            >
-              {t.guestAction} ›
-            </button>
-          </div>
+
         </section>
       </main>
 
