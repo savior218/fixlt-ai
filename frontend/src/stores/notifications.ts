@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { shortId } from "../utils/format";
 
-/** 通知类型（模块⑤）：诊断完成 / 高风险告警 / 工单状态变化 */
-export type NotificationType = "diagnosis" | "risk" | "ticket";
+/** 通知类型（模块⑤）：诊断完成 / 高风险告警 / 报修流程变化 / 保养到期提醒 */
+export type NotificationType = "diagnosis" | "risk" | "ticket" | "maintenance";
 
 export interface AppNotification {
   id: string;

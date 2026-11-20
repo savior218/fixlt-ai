@@ -430,10 +430,10 @@ export type ProgressStatus =
 
 export const PROGRESS_STATUS_LABELS: Record<ProgressStatus, string> = {
   pending_contact: "待联系",
-  contacted: "已联系",
-  scheduled: "已预约",
-  completed: "已完成",
-  canceled: "已取消",
+  contacted: "已联系售后",
+  scheduled: "已预约上门",
+  completed: "已维修",
+  canceled: "未维修",
 };
 
 export const PROGRESS_STATUS_ORDER: ProgressStatus[] = [

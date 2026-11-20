@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Camera, CheckCircle2, ClipboardCopy, Loader2, Send, ShieldAlert, X } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCopy, Loader2, Phone, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -14,7 +14,12 @@ import { getDiagnosisById } from "../stores/diagnosisStore";
 import { useAuthStore } from "../stores/authStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useTicketStore } from "../stores/ticketStore";
-import { uploadDiagnosisPhoto } from "../services/api";
+import { PROGRESS_STATUS_LABELS, uploadDiagnosisPhoto } from "../services/api";
+import {
+  generateCallScript,
+  lookupHotline,
+  type BrandHotline,
+} from "../services/afterSalesService";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 import { formatDate } from "../utils/format";
 import { contentFor } from "../utils/diagnosis";
@@ -45,6 +50,7 @@ interface FormState {
   category: string;
   brand: string;
   model: string;
+  location: string;
   symptom: string;
   description: string;
   foundAt: string;
@@ -57,6 +63,7 @@ const EMPTY: FormState = {
   category: "",
   brand: "",
   model: "",
+  location: "",
   symptom: "",
   description: "",
   foundAt: "",
@@ -182,43 +189,46 @@ export default function RepairAssistant() {
       category: catMap[d.category] ?? "other",
       brand: d.brand ?? "",
       model: d.model ?? "",
+      location: d.location ?? "",
     });
   }
 
-  /** 基于表单组装结构化文本（不凭空增加故障事实） */
+  /** 当前品牌对应的官方售后电话（用于拨打卡片；未收录返回 null） */
+  const hotline: BrandHotline | null = lookupHotline(form.brand);
+
+  /** 基于表单生成报修话术：拨官方售后电话时说明「什么问题 + 做过什么 + 希望怎么解决」 */
   function generate() {
     if (!form.category) return notify("请先选择设备类型", "error");
     if (!form.symptom) return notify("请先选择故障现象", "error");
-    const catLabel = REPAIR_CATEGORIES.find((c) => c.value === form.category)?.label ?? "";
     const checks = [...form.checks];
     if (form.customCheck.trim()) checks.push(form.customCheck.trim());
-    const lines = [
-      "【报修说明】",
-      `设备类型：${catLabel}${form.brand || form.model ? `（${[form.brand, form.model].filter(Boolean).join(" ")}）` : ""}`,
-      `故障现象：${form.symptom}`,
-      form.description.trim() ? `故障描述：${form.description.trim()}` : "",
-      form.foundAt ? `发现时间：${form.foundAt}` : "",
-      photoId != null ? `故障照片：已附 1 张（上传编号 #${photoId}）` : "",
-      checks.length > 0 ? `已完成的检查：${checks.join("；")}` : "",
-      diagnosis && linkedContent
-        ? `关联诊断结论：${linkedContent.conclusion}`
-        : "",
-      diagnosis
-        ? `诊断内容来源：${
-            diagnosis.source === "ai"
-              ? `真实 AI${diagnosis.model ? `（${diagnosis.model}）` : ""}`
-              : diagnosis.source === "template"
-                ? "本地模板演示（非 AI）"
-                : "来源未记录"
-          }`
-        : "",
-      "",
-      `专业建议：${PRO_ADVICE}`,
-      `注意事项：${CAUTIONS.join("；")}。`,
-    ].filter((l) => l !== "");
-    setGenerated(lines.join("\n"));
+    const script = generateCallScript({
+      category: form.category,
+      brand: form.brand.trim() || null,
+      model: form.model.trim() || null,
+      location: form.location.trim() || null,
+      symptom: form.symptom,
+      description: form.description,
+      foundAt: form.foundAt || null,
+      checks,
+      diagnosisConclusion: diagnosis && linkedContent ? linkedContent.conclusion : null,
+    });
+    const sourceNote = diagnosis
+      ? `\n\n（附）诊断内容来源：${
+          diagnosis.source === "ai"
+            ? `真实 AI${diagnosis.model ? `（${diagnosis.model}）` : ""}`
+            : diagnosis.source === "template"
+              ? "本地模板演示（非 AI）"
+              : "来源未记录"
+        }`
+      : "";
+    const photoNote =
+      photoId != null
+        ? `\n（已上传故障照片编号 #${photoId}，如需要可向售后补充说明）`
+        : "";
+    setGenerated(`${script}${sourceNote}${photoNote}`);
     setEditing(null);
-    notify("报修说明已生成，可在右侧编辑", "success");
+    notify("报修话术已生成，可在右侧编辑", "success");
   }
 
   async function copy() {
@@ -226,7 +236,7 @@ export default function RepairAssistant() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      notify("报修内容已复制到剪贴板", "success");
+      notify("报修话术已复制到剪贴板", "success");
     } catch {
       notify("复制失败，请手动选择文本复制", "error");
     }
@@ -317,13 +327,13 @@ export default function RepairAssistant() {
       }`;
       addNotification({
         type: "ticket",
-        title: "报修事项已保存",
-        body: `${form.symptom} · 待联系。仅记录在你的账号中，不会自动通知维修人员。`,
+        title: "报修流程已存入维修档案",
+        body: `${form.symptom} · 待联系官方售后。平台不代您报修，拨打电话后可回这里更新进度。`,
       });
       notify(
         elder
-          ? "报修事项已保存好啦，可以点开查看详情"
-          : "报修事项已保存，可打开详情记录联系进度",
+          ? "已存入维修档案，拨打电话后记得回来更新进度哦"
+          : "报修流程已存入维修档案，可打开详情记录联系进度",
         "success"
       );
       return;
@@ -513,8 +523,21 @@ export default function RepairAssistant() {
     <div className="space-y-5">
       <PageHeader
         title="智能报修助手"
-        subtitle="整理故障信息，生成专业报修说明，帮助您更高效地联系维修服务"
+        subtitle="整理故障信息生成报修话术，并提供品牌官方售后电话，由您自行致电报修"
       />
+
+      {/* 流程说明：平台不代报修 */}
+      <div
+        role="note"
+        className="flex items-start gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-800"
+      >
+        <Phone aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
+        <p>
+          我们<span className="font-bold">不会替您一键报修</span>
+          ：生成话术后，请您拨打品牌官方售后电话，按话术说明故障和期望的处理方式；
+          整个报修流程会记录在维修档案中，方便您跟进到「已维修 / 未维修」。
+        </p>
+      </div>
 
       {/* 顶部安全提示条 */}
       <div
@@ -566,7 +589,7 @@ export default function RepairAssistant() {
                       上一步
                     </Button>
                     <Button size="lg" className="flex-1" onClick={generate}>
-                      生成报修说明
+                      生成报修话术
                     </Button>
                   </div>
                 )}
@@ -576,7 +599,7 @@ export default function RepairAssistant() {
                 {basicFields}
                 {detailFields}
                 <Button onClick={generate} className="w-full">
-                  生成报修说明
+                  生成报修话术
                 </Button>
               </>
             )}
@@ -585,7 +608,7 @@ export default function RepairAssistant() {
 
         {/* ---------- 右：预览 ---------- */}
         <SectionCard
-          title="报修说明预览"
+          title="报修话术预览"
           action={
             generated && (
               <button
@@ -602,7 +625,7 @@ export default function RepairAssistant() {
             <EmptyState
               icon="📝"
               title="尚未生成"
-              description="填写左侧表单并点击「生成报修说明」，此处会展示可复制的结构化内容。"
+              description="填写左侧表单并点击「生成报修话术」，此处会展示致电官方售后时可参考的话术。"
             />
           ) : editing != null ? (
             <div className="space-y-3">
@@ -619,6 +642,34 @@ export default function RepairAssistant() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* 官方售后电话：平台不代报修，由用户自行拨打 */}
+              <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-stone-800">
+                  <Phone aria-hidden className="h-4 w-4 text-brand-700" />
+                  {form.brand.trim() || "品牌"}官方售后电话
+                </p>
+                {hotline ? (
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-lg font-bold tracking-wide text-brand-800">
+                        {hotline.phone}
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        {hotline.note ?? ""} · 号码仅供参考，以品牌官方公布为准
+                      </p>
+                    </div>
+                    <a href={`tel:${hotline.phone.replace(/-/g, "")}`}>
+                      <Button size="sm">拨打官方售后</Button>
+                    </a>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-stone-500">
+                    暂未收录该品牌的官方电话，可查看设备保修卡、说明书或品牌官网；
+                    也可在左侧填写常见品牌（如格力、美的、海尔）后在此一键拨打。
+                  </p>
+                )}
+              </div>
+
               <pre className="whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">
                 {generated}
               </pre>
@@ -640,27 +691,19 @@ export default function RepairAssistant() {
               {submittedTicket && (
                 <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
                   <p className="text-sm font-semibold text-stone-800">
-                    报修事项已保存
+                    报修流程已存入维修档案
                   </p>
                   <p className="mt-1 text-xs text-stone-600">
                     编号 #{submittedTicket.id} · 当前进度：
                     {" "}
-                    {submittedTicket.progress_status === "pending_contact"
-                      ? "待联系"
-                      : submittedTicket.progress_status === "contacted"
-                        ? "已联系"
-                        : submittedTicket.progress_status === "scheduled"
-                          ? "已预约"
-                          : submittedTicket.progress_status === "completed"
-                            ? "已完成"
-                            : submittedTicket.progress_status === "canceled"
-                              ? "已取消"
-                              : "旧状态"}
-                    。仅记录在你的账号中，不会自动通知维修人员。
+                    {submittedTicket.progress_status
+                      ? PROGRESS_STATUS_LABELS[submittedTicket.progress_status]
+                      : "旧状态"}
+                    。平台不代您报修：请拨打官方售后电话，之后回维修档案更新「已维修 / 未维修」。
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Link to={`/tickets/${submittedTicket.id}`}>
-                      <Button size="sm">打开事项详情</Button>
+                      <Button size="sm">打开详情更新进度</Button>
                     </Link>
                     <Link to="/records">
                       <Button variant="secondary" size="sm">去维修档案</Button>
@@ -692,7 +735,7 @@ export default function RepairAssistant() {
 
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" onClick={copy}>
-                  <ClipboardCopy className="h-4 w-4" /> 复制报修说明（自行发给售后）
+                  <ClipboardCopy className="h-4 w-4" /> 复制报修话术
                 </Button>
                 <Button onClick={() => void submitTicket()} disabled={submitting || photoBusy}>
                   {submitting ? (
@@ -700,12 +743,12 @@ export default function RepairAssistant() {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  {submitting ? "保存中…" : elder ? "保存报修事项" : "保存报修事项"}
+                  {submitting ? "保存中…" : "存入维修档案"}
                 </Button>
               </div>
               <p className="text-xs text-stone-400">
-                这里只保存你个人的报修跟踪，不会自动通知维修人员。你可复制说明自行联系售后，
-                并在详情里记录联系对象、联系时间、预约时间和处理备注。
+                平台不代您报修：保存后可在维修档案跟进整个流程（待联系 → 已联系售后 → 已维修 / 未维修），
+                也可在详情中记录联系对象、联系时间、预约时间和处理备注。
               </p>
             </div>
           )}

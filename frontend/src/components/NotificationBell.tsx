@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bell,
+  CalendarClock,
   CheckCheck,
   ClipboardList,
   Stethoscope,
@@ -21,7 +22,8 @@ export const TYPE_META: Record<
 > = {
   diagnosis: { icon: Stethoscope, cls: "bg-brand-50 text-brand-700", label: "诊断" },
   risk: { icon: AlertTriangle, cls: "bg-risk-high-bg text-risk-high", label: "告警" },
-  ticket: { icon: ClipboardList, cls: "bg-stone-100 text-stone-600", label: "工单" },
+  ticket: { icon: ClipboardList, cls: "bg-stone-100 text-stone-600", label: "报修" },
+  maintenance: { icon: CalendarClock, cls: "bg-emerald-50 text-emerald-700", label: "保养" },
 };
 
 /** 通知中心铃铛（模块⑤）：未读徽标 + 下拉面板 + 全部已读 */
@@ -98,7 +100,7 @@ export default function NotificationBell() {
                 <Bell aria-hidden className="mx-auto h-8 w-8 text-stone-300" />
                 <p className="mt-2 text-sm text-stone-400">暂无通知</p>
                 <p className="mt-0.5 text-xs text-stone-300">
-                  诊断完成、高风险告警、工单状态变化时会在这里提醒您
+                  诊断完成、高风险告警、报修流程变化、保养到期时会在这里提醒您
                 </p>
               </div>
             ) : (

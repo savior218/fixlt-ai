@@ -12,7 +12,7 @@ const FOOTER_LINKS: { to: string; label: string; end?: boolean }[] = [
   { to: "/copyright", label: "版权声明" },
 ];
 
-/** 站点页脚：安全标语 + 法务链接 + 备案信息 + 版权声明。
+/** 站点页脚：安全标语 + 法务链接 + 版权声明。
     布局参考主流官网页脚（居中三行、小字号、分隔符），内容为修必达自有信息 */
 export default function SafetyBanner() {
   return (
@@ -43,8 +43,6 @@ export default function SafetyBanner() {
           </span>
         ))}
       </nav>
-
-      {/* 备案信息行：暂未取得备案号，取得后在此补充（链接 https://beian.miit.gov.cn/） */}
 
       {/* 版权行 */}
       <p className="px-6 pb-2 pt-1.5 text-center text-xs text-stone-400">
