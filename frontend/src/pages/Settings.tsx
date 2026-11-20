@@ -432,7 +432,7 @@ export default function Settings() {
       <SectionCard title="消息通知">
         <SwitchControl
           label="消息免打扰"
-          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
           checked={prefs.doNotDisturb}
           onChange={prefs.setDoNotDisturb}
         />
@@ -477,7 +477,7 @@ export default function Settings() {
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
-            <div className="flex w-56 items-center gap-2">
+            <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>

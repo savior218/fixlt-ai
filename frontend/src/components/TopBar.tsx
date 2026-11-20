@@ -74,7 +74,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         </button>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-stone-900">修必达</p>
-          <p className="hidden truncate text-xs text-stone-500 sm:block">
+          <p data-elder="hide" className="hidden truncate text-xs text-stone-500 sm:block">
             FixIt AI
           </p>
         </div>

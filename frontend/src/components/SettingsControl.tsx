@@ -21,7 +21,9 @@ export function SettingsRow({
       <span className="min-w-0">
         <span className="block text-sm font-medium text-stone-800">{label}</span>
         {description && (
-          <span className="block text-xs text-stone-500">{description}</span>
+          <span data-elder="hide" className="block text-xs text-stone-500">
+            {description}
+          </span>
         )}
       </span>
       {/* 移动端控件占满整行，桌面端靠右 */}

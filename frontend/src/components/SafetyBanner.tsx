@@ -5,11 +5,11 @@ import { ShieldCheck } from "lucide-react";
 const FOOTER_LINKS: { to: string; label: string; end?: boolean }[] = [
   { to: "/about", label: "关于修必达" },
   { to: "/settings", label: "安全守护" },
-  { to: "/terms", label: "服务协议" },
+  { to: "/terms", label: "软件许可及服务协议" },
   // 用户协议中的"三、用户行为规范"章节，直达使用规范内容
   { to: "/terms#legal-3", label: "使用规范" },
   { to: "/privacy", label: "隐私保护指引" },
-  { to: "/copyright", label: "版权说明" },
+  { to: "/copyright", label: "版权声明" },
 ];
 
 /** 站点页脚：安全标语 + 法务链接 + 备案信息 + 版权声明。
@@ -17,8 +17,11 @@ const FOOTER_LINKS: { to: string; label: string; end?: boolean }[] = [
 export default function SafetyBanner() {
   return (
     <footer className="app-safety-banner border-t border-stone-200 bg-white">
-      {/* 安全标语（品牌横幅） */}
-      <div className="flex items-center justify-center gap-2 border-b border-stone-100 bg-brand-50 px-6 py-2.5 text-sm text-brand-800">
+      {/* 安全标语（品牌横幅；长辈模式隐藏，只留法务与版权） */}
+      <div
+        data-elder="hide"
+        className="flex items-center justify-center gap-2 border-b border-stone-100 bg-brand-50 px-6 py-2.5 text-sm text-brand-800"
+      >
         <ShieldCheck className="h-4 w-4" aria-hidden />
         <span>安全守护·让家更安心</span>
       </div>
@@ -45,7 +48,7 @@ export default function SafetyBanner() {
 
       {/* 版权行 */}
       <p className="px-6 pb-2 pt-1.5 text-center text-xs text-stone-400">
-        Copyright © 2026 修必达 FixIt AI. All Rights Reserved.
+        Copyright © 2026 修必达 FixIt AI · ZengYingyi · ChenLin. All Rights Reserved.
       </p>
     </footer>
   );

@@ -22,6 +22,9 @@ import UiKit from "./pages/UiKit";
 export default function App() {
   return (
     <Routes>
+      {/* 登录门户：独立整页（参考微信网页版），不套用应用外壳 */}
+      <Route path="login" element={<Login />} />
+
       <Route element={<AppLayout />}>
         {/* 首页 */}
         <Route index element={<Home />} />
@@ -37,8 +40,6 @@ export default function App() {
         {/* P5 智能报修（?diagnosisId= 带入） / P4 维修档案 */}
         <Route path="repair" element={<RepairAssistant />} />
         <Route path="records" element={<Records />} />
-        {/* 登录 / 注册（保留游客入口） */}
-        <Route path="login" element={<Login />} />
         {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
         {/* 法律文档：关于我们 / 隐私政策 / 用户协议 / 版权说明 */}
