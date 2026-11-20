@@ -546,12 +546,12 @@ export const linkTicketRepairRecord = (id: number, repairRecordId: number | null
     body: JSON.stringify({ repair_record_id: repairRecordId }),
   });
 
-/* ---------- 动态追问（空调不制冷首版） ---------- */
+/* ---------- 动态追问（空调不制冷，大模型驱动） ---------- */
 
 export interface InterviewOption {
   id: string;
   label: string;
-  value: string;
+  unknown: boolean;
 }
 
 export interface InterviewQuestion {
@@ -561,12 +561,21 @@ export interface InterviewQuestion {
   options: InterviewOption[];
 }
 
-export interface InterviewFact {
-  key: string;
-  value: string;
-  label?: string;
-  evidence: string;
-  source: string;
+export interface InterviewCause {
+  title: string;
+  description: string;
+}
+
+export interface InterviewRecommendation {
+  summary: string;
+  possible_causes: InterviewCause[];
+  unknown_information: string[];
+  next_steps: string[];
+}
+
+export interface InterviewCannot {
+  reason: string;
+  next_step: string;
 }
 
 export interface InterviewQAPoint {
@@ -576,7 +585,7 @@ export interface InterviewQAPoint {
   option_id?: string | null;
   unknown: boolean;
   input_source: "text" | "voice" | "option";
-  selection_source?: "rule" | "model" | "rule_fallback" | null;
+  selection_source?: "model" | null;
   asked_at: string;
 }
 
@@ -589,13 +598,16 @@ export interface InterviewState {
   photo_id?: number | null;
   current_question: InterviewQuestion | null;
   qa: InterviewQAPoint[];
-  facts: InterviewFact[];
+  known_information: string[];
   unknown_information: string[];
-  conflicts: Array<{ key: string; values: string[]; evidence: string[] }>;
+  conflicts: string[];
   end_reason: string | null;
-  selection_source: "rule" | "model" | "rule_fallback" | null;
+  recommendation: InterviewRecommendation | null;
+  cannot: InterviewCannot | null;
+  selection_source: "model" | null;
   selection_note: string | null;
-  selection_latency_ms: number | null;
+  model_calls: number;
+  model_latency_ms: number;
   kb_version: string;
   safety_rules_version: string;
   can_finish: boolean;

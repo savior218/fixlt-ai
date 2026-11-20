@@ -1,6 +1,7 @@
-"""受控问题库、事实抽取、规则优先与模型受控选题。
+"""本地规则题库（参考与测试材料，不参与真实 AI 问诊）。
 
-模型只允许从 eligible_question_ids 中选一个；问题文本与选项始终来自本文件。
+真实问诊由 app/interview/ai_driver.py 驱动：模型生成问题、判断结束；
+本文件仅保留旧版规则分支，供规则演示/回归参考，API 不再调用。
 """
 from __future__ import annotations
 

@@ -47,10 +47,10 @@ function readInterviewDraft(key: string): InterviewDraft | null {
 }
 
 const END_REASON_LABELS: Record<string, string> = {
-  enough_info: "信息已足够，提前结束",
-  max_rounds: "已达到 4 轮上限",
+  model_recommend: "大模型判断信息已足够，结束追问",
+  model_cannot: "大模型认为目前无法继续判断",
+  max_rounds: "已达到 6 轮上限",
   user_finish: "你选择基于现有信息生成建议",
-  filter_actionable: "滤网明显脏且风量正常，先建议清洗",
   safety_interception: "高风险，已中止普通问诊",
 };
 
@@ -86,6 +86,7 @@ export default function DynamicInterview() {
   const restoreDoneRef = useRef(false);
   const persistReadyRef = useRef(false);
   const restoringRef = useRef(false);
+  const latestSessionIdRef = useRef<string | null>(null);
   const draftKey = userId != null ? draftKeyFor(userId) : null;
 
   // 刷新后恢复同一会话：会话不因刷新而重置，已答问题与当前问题都来自后端
@@ -101,9 +102,15 @@ export default function DynamicInterview() {
     void (async () => {
       try {
         const s = await getInterview(draft.sessionId!);
+        latestSessionIdRef.current = s.session_id;
         setSession(s);
         if (s.photo_id != null) setPhotoId(s.photo_id);
-        setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
+        if (s.status === "intercepted") {
+          setRiskText("此前检测到高风险描述，普通问诊已中止");
+          setPhase("error");
+        } else {
+          setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
+        }
       } catch (err) {
         // 会话过期或不属于当前账号：保留描述草稿，重新开始新会话
         if (err instanceof ApiError && [401, 403, 404, 410].includes(err.status)) {
@@ -241,6 +248,7 @@ export default function DynamicInterview() {
         description: description.trim(),
         photo_id: photoId,
       });
+      latestSessionIdRef.current = s.session_id;
       setSession(s);
       setPhase(s.status !== "active" || !s.current_question ? "done" : "active");
       setAnswerText("");
@@ -256,7 +264,7 @@ export default function DynamicInterview() {
 
   function chooseOption(option: InterviewOption) {
     setOptionId(option.id);
-    setAnswerText(option.value === "unknown" ? "不知道／没试过" : option.label);
+    setAnswerText(option.unknown ? "不知道／没试过" : option.label);
     setAnswerSource("option");
   }
 
@@ -270,6 +278,7 @@ export default function DynamicInterview() {
     setError(null);
     stopSpeech();
     if (voice.listening) voice.stop();
+    const answeredSessionId = session.session_id;
     try {
       const next = await answerInterview(session.session_id, {
         question_id: session.current_question.id,
@@ -279,6 +288,8 @@ export default function DynamicInterview() {
         request_id: requestIdRef.current,
         session_version: session.version,
       });
+      // 返回重开后，旧会话的迟到响应不能覆盖新会话
+      if (latestSessionIdRef.current !== answeredSessionId) return;
       setSession(next);
       setPhase(next.current_question ? "active" : "done");
       setAnswerText("");
@@ -363,6 +374,7 @@ export default function DynamicInterview() {
   function restart() {
     stopSpeech();
     if (draftKey) localStorage.removeItem(draftKey);
+    latestSessionIdRef.current = null;
     setSession(null);
     setPhase("describe");
     setAnswerText("");
@@ -392,7 +404,7 @@ export default function DynamicInterview() {
       </Link>
       <PageHeader
         title="空调不制冷 · 动态追问"
-        subtitle="系统根据你已说清的信息决定下一问；最多 4 轮，未知不会当成正常"
+        subtitle="由大模型根据完整对话决定下一问；最多 6 轮，未知不会当成正常"
       />
 
       {phase === "error" && riskText && (
@@ -502,17 +514,9 @@ export default function DynamicInterview() {
                   elder={elder}
                 />
               </div>
-              {session.selection_source === "rule_fallback" && (
-                <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-                  模型不可用，本题由规则选择，不是模型生成；可继续回答或稍后重试。
-                </p>
-              )}
-              {session.selection_source === "rule" && (
-                <p className="mt-2 text-xs text-stone-400">本题由确定性规则选择</p>
-              )}
               {session.selection_source === "model" && (
                 <p className="mt-2 text-xs text-stone-400">
-                  本题由模型在允许的问题中选择
+                  本题由大模型根据当前对话生成（第 {session.round + 1} 问）
                 </p>
               )}
 
@@ -574,8 +578,52 @@ export default function DynamicInterview() {
                 {session.end_reason ? END_REASON_LABELS[session.end_reason] ?? session.end_reason : "追问已结束"}
               </p>
               <p className="text-xs text-stone-500">
-                已问 {session.qa.length} 题；未知信息会如实写入报告，不会当作正常。
+                已问 {session.qa.length} 题；本会话实际调用大模型 {session.model_calls} 次，累计等待{" "}
+                {Math.round(session.model_latency_ms / 100) / 10} 秒。未知信息会如实写入报告，不会当作正常。
               </p>
+
+              {session.recommendation && (
+                <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-3 text-sm">
+                  <p className="font-medium text-brand-800">诊断方向（大模型生成，保留不确定性）</p>
+                  <p className="mt-1 text-stone-700">{session.recommendation.summary}</p>
+                  {session.recommendation.possible_causes.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-stone-600">
+                      {session.recommendation.possible_causes.map((c) => (
+                        <li key={c.title}>
+                          <span className="font-medium">{c.title}</span>
+                          {c.description ? `：${c.description}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {session.recommendation.next_steps.length > 0 && (
+                    <>
+                      <p className="mt-2 font-medium text-stone-700">下一步</p>
+                      <ul className="mt-1 list-disc space-y-1 pl-4 text-stone-600">
+                        {session.recommendation.next_steps.map((s) => <li key={s}>{s}</li>)}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {session.cannot && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-medium">目前无法继续判断</p>
+                  <p className="mt-1">{session.cannot.reason}</p>
+                  <p className="mt-1">建议：{session.cannot.next_step}</p>
+                </div>
+              )}
+
+              {session.conflicts.length > 0 && (
+                <div className="rounded-lg bg-stone-50 p-2 text-xs text-stone-600">
+                  <p className="font-medium">前后描述中仍有矛盾（未强行合并）</p>
+                  <ul className="mt-1 list-disc pl-4">
+                    {session.conflicts.map((c) => <li key={c}>{c}</li>)}
+                  </ul>
+                </div>
+              )}
+
               {session.unknown_information.length > 0 && (
                 <div className="rounded-lg bg-stone-50 p-2 text-xs text-stone-600">
                   <p className="font-medium">尚未确认</p>
@@ -585,13 +633,26 @@ export default function DynamicInterview() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => void generate()} disabled={session.qa.length === 0}>
-                  <Sparkles className="h-4 w-4" /> 生成建议
-                </Button>
+                {session.end_reason !== "model_cannot" && (
+                  <Button
+                    onClick={() => void generate()}
+                    disabled={session.recommendation == null && session.qa.length === 0}
+                  >
+                    <Sparkles className="h-4 w-4" /> 生成完整报告
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={() => setShowFacts((v) => !v)}>
                   {showFacts ? "收起问答记录" : "查看问答与来源"}
                 </Button>
+                {session.end_reason === "model_cannot" && (
+                  <Button variant="secondary" onClick={restart}>补充信息后重新开始</Button>
+                )}
               </div>
+              {session.known_information.length > 0 && (
+                <p className="text-xs text-stone-400">
+                  AI 整理已了解：{session.known_information.join("；")}（仅作对话摘要，最终依据仍来自原回答）
+                </p>
+              )}
               {showFacts && (
                 <div className="space-y-2">
                   {session.qa.map((a) => (
@@ -600,9 +661,7 @@ export default function DynamicInterview() {
                       <p className="mt-1 text-stone-600">回答：{a.answer}{a.unknown ? "（不知道）" : ""}</p>
                       <p className="mt-0.5 text-stone-400">
                         来源：{a.input_source === "voice" ? "语音" : a.input_source === "option" ? "选项" : "文字"}
-                        {a.selection_source
-                          ? ` · 选题：${a.selection_source === "model" ? "模型" : a.selection_source === "rule" ? "规则" : "规则回退"}`
-                          : ""}
+                        {a.selection_source === "model" ? " · 选题：大模型生成" : ""}
                       </p>
                     </div>
                   ))}

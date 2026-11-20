@@ -95,6 +95,17 @@ _MIGRATION_COLUMNS: dict[str, list[tuple[str, str]]] = {
         ("contact_note", "TEXT"),
         ("repair_record_id", "INTEGER"),
     ],
+    "interview_sessions": [
+        ("photo_observations", "TEXT DEFAULT '[]'"),
+        ("photo_limitations", "TEXT DEFAULT '[]'"),
+        ("known", "TEXT DEFAULT '[]'"),
+        ("current_question", "TEXT DEFAULT '{}'"),
+        ("recommendation", "TEXT DEFAULT '{}'"),
+        ("cannot_reason", "TEXT"),
+        ("cannot_next_step", "TEXT"),
+        ("model_calls", "INTEGER DEFAULT 0"),
+        ("model_latency_ms", "INTEGER DEFAULT 0"),
+    ],
 }
 
 # 同一用户下客户端记录 ID 唯一：重复提交不会产生多条记录
