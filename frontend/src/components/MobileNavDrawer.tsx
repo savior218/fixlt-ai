@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { ShieldCheck, X } from "lucide-react";
 
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
+import { usePrefs } from "../stores/prefs";
 
 /** 桌面侧栏断点（与 layout.css 的 1023px/1024px 保持一致） */
 export const DESKTOP_NAV_QUERY = "(min-width: 1024px)";
@@ -27,6 +28,8 @@ export default function MobileNavDrawer({
   onClose: () => void;
 }) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  /** 长辈模式：当前项改用实心高亮，隐藏重复的安全守护入口 */
+  const elder = usePrefs((s) => s.mode === "elder");
   /** 触发按钮：打开时记录，关闭时归还焦点 */
   const triggerRef = useRef<Element | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -95,7 +98,9 @@ export default function MobileNavDrawer({
     [
       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
       isActive
-        ? "bg-brand-100 text-brand-800"
+        ? elder
+          ? "bg-brand-600 font-bold text-white"
+          : "bg-brand-100 text-brand-800"
         : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
     ].join(" ");
 
@@ -169,8 +174,8 @@ export default function MobileNavDrawer({
           </ul>
         </nav>
 
-        {/* 底部安全守护（与桌面侧栏一致） */}
-        <div className="border-t border-stone-200 px-3 py-3">
+        {/* 底部安全守护（与桌面侧栏一致；长辈模式下隐藏，避免与个人中心重复） */}
+        <div data-elder="hide" className="border-t border-stone-200 px-3 py-3">
           <NavLink
             to={SAFETY_ITEM.to}
             onClick={onClose}

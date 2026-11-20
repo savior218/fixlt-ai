@@ -112,14 +112,18 @@ export default function TopBar({
               : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >
-          <span className="sm:hidden">{mode === "elder" ? "👵 长辈" : "长辈模式"}</span>
+          <span className="sm:hidden">
+            {mode === "elder" ? "退出长辈" : "长辈模式"}
+          </span>
           <span className="hidden sm:inline">
-            {mode === "elder" ? "👵 长辈模式" : "长辈关怀模式"}
+            {mode === "elder" ? "退出长辈模式" : "长辈关怀模式"}
           </span>
         </button>
 
-        {/* 通知中心（模块⑤：本地通知 + 未读徽标） */}
-        <NotificationBell />
+        {/* 通知中心（模块⑤：本地通知 + 未读徽标；长辈模式隐藏，减少干扰） */}
+        <div data-elder="hide" className="flex items-center">
+          <NotificationBell />
+        </div>
 
         {/* 账号入口：游客直接去登录，登录用户打开真实账户菜单 */}
         {status === "authenticated" && user ? (

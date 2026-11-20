@@ -1,25 +1,51 @@
 /* ============================================================
-   智修AI FixItAI · 长辈关怀模式（提示词 02 / PRD 第 8 章）
+   智修AI FixItAI · 长辈关怀模式（全站简化版式）
    ------------------------------------------------------------
-   关怀模式只调整：字体、控件尺寸、信息密度、表达载体。
+   设计原则（站在老年用户角度）：
+   1. 一眼可读 —— 正文整体放大一档，行距加宽，标题再抬一档
+   2. 一点即中 —— 所有可交互元素 ≥48px 触控目标
+   3. 只留核心 —— 次要说明与装饰元素一律隐藏（data-elder="hide"）
+   4. 版式简洁 —— 去掉阴影等柔和装饰，改用清晰描边与实心高亮
+   5. 节奏放缓 —— 动画过渡时间翻倍
    绝不改变：AI 风险判断、危险操作拦截、高风险告警、安全规则
-   （任务书 P9 特别安全要求）。
+   （任务书 P9 特别安全要求）
    ============================================================ */
 
 /* ---- 关怀模式语义变量（供组件按模式取值）---- */
 html[data-mode="elder"] {
-  --control-min-height: 2.75rem;
+  --control-min-height: 3rem;
   --chip-min-height: 3rem;
   --chip-font-size: 1rem;
 }
 
-/* ---- 增大点击区域与控件最小尺寸 ---- */
+/* ---- 1. 可读性：正文与标题整体放大，行距加宽 ---- */
+html[data-mode="elder"] h1 {
+  font-size: 1.75rem;
+}
+html[data-mode="elder"] h2 {
+  font-size: 1.375rem;
+}
+html[data-mode="elder"] h3 {
+  font-size: 1.1875rem;
+}
+html[data-mode="elder"] p {
+  line-height: 1.8;
+}
+html[data-mode="elder"] .text-sm {
+  font-size: 1rem;
+}
+html[data-mode="elder"] .text-xs {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ---- 2. 触控目标：所有可交互元素 ≥48px ---- */
 html[data-mode="elder"] button,
 html[data-mode="elder"] a,
 html[data-mode="elder"] input,
 html[data-mode="elder"] select,
 html[data-mode="elder"] textarea {
-  min-height: 2.75rem;
+  min-height: 3rem;
 }
 
 html[data-mode="elder"] .chip {
@@ -27,17 +53,47 @@ html[data-mode="elder"] .chip {
   font-size: 1rem;
 }
 
-/* ============================================================
-   关怀模式扩展（提示词 02）：四维度全面改变
-   ============================================================ */
+/* ---- 3. 导航：更大更醒目（当前页实心高亮由组件按模式输出）---- */
+html[data-mode="elder"] .app-nav-link {
+  min-height: 3.25rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
 
-/* ---- 1. 信息密度降低：卡片与区块间距增大 50% ---- */
+/* ---- 4. 版式简洁：去阴影，卡片改用清晰描边与更大圆角 ---- */
+html[data-mode="elder"] .shadow-card,
+html[data-mode="elder"] [class*="shadow-"] {
+  box-shadow: none !important;
+}
+html[data-mode="elder"] .card-base {
+  border-width: 1.5px;
+  border-color: #a8a29e; /* stone-400 */
+  border-radius: 1rem;
+}
+
+/* ---- 5. 信息密度降低：卡片与区块间距增大 ---- */
 html[data-mode="elder"] .card-base,
 html[data-mode="elder"] .mb-5 {
   margin-bottom: 1.5rem;
 }
 
-/* ---- 2. 动画节奏放缓：过渡时间翻倍 ----
+/* ---- 6. 输入框：更大更清楚 ---- */
+html[data-mode="elder"] input,
+html[data-mode="elder"] select,
+html[data-mode="elder"] textarea {
+  font-size: 1rem;
+  border-width: 1.5px;
+}
+
+/* ---- 7. 焦点可见性：加粗琥珀色描边，看清当前操作位置 ---- */
+html[data-mode="elder"] :focus-visible {
+  outline: 3px solid #d97706;
+  outline-offset: 2px;
+}
+
+/* ---- 8. 动画节奏放缓：过渡时间翻倍。
    注意：reduceMotion 模式（html.rm）下 transition:none!important 仍优先生效 */
 html[data-mode="elder"] *,
 html[data-mode="elder"] *::before,
@@ -45,41 +101,15 @@ html[data-mode="elder"] *::after {
   transition-duration: 0.4s;
 }
 
-/* ---- 3. 导航简化：增大菜单项间距与字号（桌面侧栏 + 移动抽屉共用 .app-nav-link）---- */
-html[data-mode="elder"] .app-nav-link {
-  padding-top: 0.875rem;
-  padding-bottom: 0.875rem;
-  font-size: 1rem;
-}
-
-/* ---- 4. 安全横幅增大 ---- */
+/* ---- 9. 安全横幅增大 ---- */
 html[data-mode="elder"] .app-safety-banner {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   font-size: 1rem;
 }
 
-/* ============================================================
-   关怀模式强化：只留核心信息（用户验收反馈）
-   - 次要说明文字统一加 data-elder="hide"，关怀模式下整体隐藏
-   - 标题与残留小字同步放大，保证「一眼可读」
-   ============================================================ */
-
-/* 次要信息：关怀模式下一律隐藏（错误提示、法律链接等关键小字不标注此属性，保留） */
+/* ---- 10. 只留核心：次要信息一律隐藏 ----
+   （错误提示、法律链接等关键小字不标注此属性，保留） */
 html[data-mode="elder"] [data-elder="hide"] {
   display: none !important;
-}
-
-/* 标题放大：正文由根字号 20px 承担，标题再抬一档 */
-html[data-mode="elder"] h1 {
-  font-size: 1.5rem;
-}
-html[data-mode="elder"] h2 {
-  font-size: 1.25rem;
-}
-
-/* 残留的小字（错误提示、法律声明等）不小于 14px，避免长辈看不清 */
-html[data-mode="elder"] .text-xs {
-  font-size: 0.875rem;
-  line-height: 1.5;
 }

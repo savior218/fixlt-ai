@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 
-/** 页脚法务链接（参考主流产品官网页脚的信息层级，内容基于修必达自身业务） */
-const FOOTER_LINKS: { to: string; label: string; end?: boolean }[] = [
-  { to: "/about", label: "关于修必达" },
-  { to: "/settings", label: "安全守护" },
+/** 页脚法务链接（参考主流产品官网页脚的信息层级，内容基于修必达自身业务）
+    elderHide：长辈模式隐藏的次要/重复入口（法定必备的隐私、协议、版权始终保留） */
+const FOOTER_LINKS: { to: string; label: string; elderHide?: boolean }[] = [
+  { to: "/about", label: "关于修必达", elderHide: true },
+  { to: "/settings", label: "安全守护", elderHide: true },
   { to: "/terms", label: "软件许可及服务协议" },
   // 用户协议中的"三、用户行为规范"章节，直达使用规范内容
-  { to: "/terms#legal-3", label: "使用规范" },
+  { to: "/terms#legal-3", label: "使用规范", elderHide: true },
   { to: "/privacy", label: "隐私保护指引" },
   { to: "/copyright", label: "版权声明" },
 ];
@@ -32,7 +33,11 @@ export default function SafetyBanner() {
         className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 px-6 pt-4 text-xs text-stone-500"
       >
         {FOOTER_LINKS.map((item, i) => (
-          <span key={item.label} className="flex items-center">
+          <span
+            key={item.label}
+            className="flex items-center"
+            {...(item.elderHide ? { "data-elder": "hide" } : {})}
+          >
             {i > 0 && <span aria-hidden className="mx-2.5 h-3 w-px bg-stone-300" />}
             <Link
               to={item.to}

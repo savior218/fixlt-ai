@@ -70,31 +70,50 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* 顶部：问候 + 主操作（干净的纸面卡，不再用大色块横幅） */}
+      {/* 顶部：问候 + 主操作（长辈模式去掉装饰图与问候语，只留一个大按钮区） */}
       <section className="card-base relative overflow-hidden p-6 sm:p-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
-        >
-          <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
-        </div>
+        {!elder && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
+          >
+            <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
+          </div>
+        )}
 
-        <p data-elder="hide" className="text-sm text-stone-500">{greetingByHour()}</p>
+        {!elder && (
+          <p className="text-sm text-stone-500">{greetingByHour()}</p>
+        )}
         <h1
-          className={`mt-2 font-semibold leading-snug text-stone-900 ${
-            elder ? "text-2xl" : "text-[26px] sm:text-3xl"
+          className={`font-semibold leading-snug text-stone-900 ${
+            elder ? "text-3xl leading-relaxed" : "mt-2 text-[26px] sm:text-3xl"
           }`}
         >
           家电坏了？
           <span className="text-brand-700">一步步帮你找到原因</span>
         </h1>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button size="lg" onClick={() => navigate("/diagnose")}>
+        <div
+          className={
+            elder
+              ? "mt-7 flex flex-col gap-3"
+              : "mt-6 flex flex-wrap gap-3"
+          }
+        >
+          <Button
+            size="lg"
+            className={elder ? "w-full text-lg" : ""}
+            onClick={() => navigate("/diagnose")}
+          >
             开始智能诊断
             <ArrowRight aria-hidden className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="lg" onClick={() => navigate("/repair")}>
+          <Button
+            variant="outline"
+            size="lg"
+            className={elder ? "w-full text-lg" : ""}
+            onClick={() => navigate("/repair")}
+          >
             <ClipboardList aria-hidden className="h-4 w-4" />
             已找师傅，直接报修
           </Button>
@@ -134,7 +153,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 最近诊断记录 */}
+      {/* 最近诊断记录（长辈模式隐藏，只留核心入口；历史仍可从「维修档案」查看） */}
+      <div data-elder="hide">
       <SectionCard
         title="最近诊断记录"
         action={<MoreLink to="/records" label="查看全部" />}
@@ -169,6 +189,7 @@ export default function Home() {
           </ul>
         )}
       </SectionCard>
+      </div>
 
       {/* 常见问题（elder 模式隐藏，降低信息密度） */}
       {!elder && (
