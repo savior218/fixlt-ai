@@ -73,7 +73,7 @@ export default function Home() {
         {!elder && (
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
+            className="pointer-events-none absolute -right-8 -top-10 hidden h-44 w-44 items-center justify-center rounded-full bg-brand-50 min-[400px]:flex"
           >
             <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
           </div>
@@ -83,12 +83,16 @@ export default function Home() {
           <p className="text-sm text-stone-500">{greetingByHour()}</p>
         )}
         <h1
-          className={`font-semibold leading-snug text-stone-900 ${
-            elder ? "text-3xl leading-relaxed" : "mt-2 text-[26px] sm:text-3xl"
+          className={`font-semibold leading-snug text-balance text-stone-900 ${
+            elder
+              ? "text-3xl leading-relaxed"
+              : "mt-2 text-[22px] min-[380px]:text-[26px] sm:text-3xl"
           }`}
         >
           家电坏了？
-          <span className="text-brand-700">一步步帮你找到原因</span>
+          <span className="block text-brand-700 min-[380px]:inline">
+            一步步帮你找到原因
+          </span>
         </h1>
 
         <div

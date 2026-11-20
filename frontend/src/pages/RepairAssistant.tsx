@@ -22,6 +22,7 @@ import {
   type BrandHotline,
 } from "../services/afterSalesService";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
+import { copyText } from "../utils/clipboard";
 import { formatDate } from "../utils/format";
 import { contentFor } from "../utils/diagnosis";
 import { usePrefs } from "../stores/prefs";
@@ -75,7 +76,7 @@ const EMPTY: FormState = {
 /** P5 智能报修助手：左表单 / 右预览，生成结构化报修说明 */
 export default function RepairAssistant() {
   const { notify } = useToast();
-  const { mode } = usePrefs();
+  const { mode, reduceMotion } = usePrefs();
   const elder = mode === "elder";
   const [params] = useSearchParams();
 
@@ -107,6 +108,8 @@ export default function RepairAssistant() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  /** 预览区：窄屏上下堆叠时，生成后滚动到这里 */
+  const previewRef = useRef<HTMLDivElement>(null);
   /** 访问照片前先弹窗征得用户同意 */
   const requestPermission = useMediaPermission();
   const authStatus = useAuthStore((s) => s.status);
@@ -231,16 +234,24 @@ export default function RepairAssistant() {
         : "";
     setGenerated(`${script}${sourceNote}${photoNote}`);
     setEditing(null);
-    notify("报修话术已生成，可在右侧编辑", "success");
+    // 手机 / 平板上下堆叠时，预览在表单下方；生成后滚动到预览，避免以为没生成
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      window.setTimeout(() => {
+        previewRef.current?.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
+      }, 50);
+    }
+    notify("报修话术已生成，可编辑后复制", "success");
   }
 
   async function copy() {
     const text = editing ?? generated;
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       notify("报修话术已复制到剪贴板", "success");
-    } catch {
+    } else {
       notify("复制失败，请手动选择文本复制", "error");
     }
   }
@@ -603,7 +614,8 @@ export default function RepairAssistant() {
           </div>
         </SectionCard>
 
-        {/* ---------- 右：预览 ---------- */}
+        {/* ---------- 右：预览（窄屏堆叠在表单下方，生成后自动滚到这里） ---------- */}
+        <div ref={previewRef} className="scroll-mt-24">
         <SectionCard
           title="报修话术预览"
           action={
@@ -750,6 +762,7 @@ export default function RepairAssistant() {
             </div>
           )}
         </SectionCard>
+        </div>
       </div>
     </div>
   );
