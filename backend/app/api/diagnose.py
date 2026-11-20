@@ -16,7 +16,7 @@ POST /api/diagnose/complete
 
 POST /api/diagnose/photo（模块③ AI 看图）
 - multipart 上传故障照片（JPG/PNG，≤10MB），base64 存库后返回 ID
-- 诊断请求携带 photo_id 时自动切换视觉模型（glm-4v-flash）看图诊断
+- 诊断请求携带 photo_id 时自动切换视觉模型（glm-4v）看图诊断
 """
 from __future__ import annotations
 
@@ -581,6 +581,29 @@ async def chat_diagnosis(
         )
     finally:
         await limiter.release()
+
+
+@router.get("/photo/{photo_id}")
+def read_photo(
+    photo_id: int,
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+) -> Response:
+    """仅上传者本人可读取照片；不返回他人照片，也不暴露 base64 之外的元数据。"""
+    photo = db.get(DiagnosisPhoto, photo_id)
+    if photo is None or photo.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="照片不存在")
+    try:
+        raw = base64.b64decode(photo.image_base64, validate=True)
+    except (binascii.Error, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="照片数据损坏"
+        ) from e
+    return Response(
+        content=raw,
+        media_type=photo.mime,
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 @router.post("/photo", response_model=PhotoOut, status_code=status.HTTP_201_CREATED)

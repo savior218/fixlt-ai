@@ -16,6 +16,7 @@ import {
 
 import AIMessageBubble from "../components/AIMessageBubble";
 import Button from "../components/Button";
+import { useMediaPermission } from "../components/MediaPermission";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
 import SpeakButton from "../components/SpeakButton";
@@ -668,7 +669,7 @@ export default function Diagnose() {
           <div className="flex items-end gap-2">
             <Button
               variant="secondary"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => requestPermission("photo", () => fileInputRef.current?.click())}
               disabled={uploading || generating}
               aria-label="上传故障照片"
               title="上传故障照片（可选）"
