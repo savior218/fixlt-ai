@@ -12,9 +12,14 @@ export default function SidebarNav() {
         className="flex items-center gap-2 border-b border-stone-200 px-5"
         style={{ height: "var(--topbar-height)" }}
       >
-        <span className="text-xl" aria-hidden>
-          🔧
-        </span>
+        <img
+          src="/brand-icon.png"
+          alt=""
+          width={30}
+          height={30}
+          className="h-[30px] w-[30px] shrink-0"
+          aria-hidden
+        />
         <span className="text-base font-bold text-stone-900">修必达</span>
       </div>
 
