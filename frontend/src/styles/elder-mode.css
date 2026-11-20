@@ -58,3 +58,28 @@ html[data-mode="elder"] .app-safety-banner {
   padding-bottom: 0.75rem;
   font-size: 1rem;
 }
+
+/* ============================================================
+   关怀模式强化：只留核心信息（用户验收反馈）
+   - 次要说明文字统一加 data-elder="hide"，关怀模式下整体隐藏
+   - 标题与残留小字同步放大，保证「一眼可读」
+   ============================================================ */
+
+/* 次要信息：关怀模式下一律隐藏（错误提示、法律链接等关键小字不标注此属性，保留） */
+html[data-mode="elder"] [data-elder="hide"] {
+  display: none !important;
+}
+
+/* 标题放大：正文由根字号 20px 承担，标题再抬一档 */
+html[data-mode="elder"] h1 {
+  font-size: 1.5rem;
+}
+html[data-mode="elder"] h2 {
+  font-size: 1.25rem;
+}
+
+/* 残留的小字（错误提示、法律声明等）不小于 14px，避免长辈看不清 */
+html[data-mode="elder"] .text-xs {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}

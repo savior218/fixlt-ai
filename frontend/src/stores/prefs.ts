@@ -25,7 +25,7 @@ interface PrefsState {
   speechRate: number;
   /** 指定音色标识；null 表示自动优先自然/中文音色 */
   speechVoiceURI: string | null;
-  /** 消息免打扰：开启后新通知不再弹窗，仅保留未读小红点 */
+  /** 消息免打扰：开启后新通知不弹窗、不播放提示音，仅保留未读小红点 */
   doNotDisturb: boolean;
   reduceMotion: boolean;
   setMode: (mode: InteractionMode) => void;

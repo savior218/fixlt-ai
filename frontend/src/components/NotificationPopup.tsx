@@ -1,17 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 import { TYPE_META } from "./NotificationBell";
 import { useNotificationStore } from "../stores/notifications";
 import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
+import { playNotificationSound } from "../utils/notificationSound";
 
 const AUTO_CLOSE_MS = 4500;
 const MAX_VISIBLE = 3;
 
 /**
- * 新消息弹窗提醒（右下角）：通知入列即弹出，自动消失。
- * 免打扰开启时不弹窗（队列静默清空），仅保留铃铛未读小红点。
+ * 新消息弹窗 + 声音提醒（右下角）：通知入列即弹出并播放提示音，自动消失。
+ * 免打扰开启时不弹窗、不出声（队列静默清空），仅保留铃铛未读小红点。
  */
 export default function NotificationPopup() {
   const queue = useNotificationStore((s) => s.popupQueue);
@@ -20,6 +21,14 @@ export default function NotificationPopup() {
   const doNotDisturb = usePrefs((s) => s.doNotDisturb);
 
   const visible = queue.slice(-MAX_VISIBLE);
+
+  /* 新通知入列且未开免打扰 → 播放提示音 */
+  const prevCountRef = useRef(queue.length);
+  useEffect(() => {
+    const grew = queue.length > prevCountRef.current;
+    prevCountRef.current = queue.length;
+    if (grew && !doNotDisturb) playNotificationSound();
+  }, [queue, doNotDisturb]);
 
   /* 自动消失；免打扰开启时静默清空队列 */
   useEffect(() => {

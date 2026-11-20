@@ -41,11 +41,11 @@
   padding: var(--content-padding);
 }
 
-/* ---- 主内容最大宽度：超宽屏居中，不拉伸表单 ---- */
+/* ---- 主内容：占满外壳剩余宽度（不再限制 1440px 居中）---- */
 .app-content-inner {
   margin: 0 auto;
   width: 100%;
-  max-width: 1440px;
+  max-width: none;
 }
 
 /* ---- 跳转链接：平时隐藏，键盘聚焦时可见 ---- */

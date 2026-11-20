@@ -32,6 +32,22 @@ const FAQ_ITEMS = [
   { q: "什么情况必须立即停机？", to: "/diagnose" },
 ];
 
+/** 卡片标题右侧的"查看全部"胶囊按钮 */
+function MoreLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="group inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50/60 px-3 py-1 text-xs font-medium text-stone-500 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+    >
+      {label}
+      <ChevronRight
+        aria-hidden
+        className="h-3.5 w-3.5 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500"
+      />
+    </Link>
+  );
+}
+
 function greetingByHour(): string {
   const h = new Date().getHours();
   if (h < 6) return "夜深了";
@@ -63,7 +79,7 @@ export default function Home() {
           <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
         </div>
 
-        <p className="text-sm text-stone-500">{greetingByHour()}</p>
+        <p data-elder="hide" className="text-sm text-stone-500">{greetingByHour()}</p>
         <h1
           className={`mt-2 font-semibold leading-snug text-stone-900 ${
             elder ? "text-2xl" : "text-[26px] sm:text-3xl"
@@ -106,7 +122,7 @@ export default function Home() {
                   <span className={`block font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
                     {e.title}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
+                  <span data-elder="hide" className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
                 </span>
                 <ChevronRight
                   aria-hidden
@@ -121,11 +137,7 @@ export default function Home() {
       {/* 最近诊断记录 */}
       <SectionCard
         title="最近诊断记录"
-        action={
-          <Link to="/records" className="text-xs text-brand-700 hover:underline">
-            查看全部 ›
-          </Link>
-        }
+        action={<MoreLink to="/records" label="查看全部" />}
         padding="sm"
       >
         {recent.length === 0 ? (
@@ -140,13 +152,15 @@ export default function Home() {
               <li key={d.id}>
                 <Link
                   to={`/diagnosis/${d.id}/result`}
-                  className="flex items-center justify-between gap-3 px-1 py-3 transition-colors hover:bg-stone-50"
+                  className="group flex items-center gap-3 px-1 py-3.5 transition-colors hover:bg-stone-50"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-stone-800">
-                      {d.deviceName ?? "未关联设备"} · {d.symptom}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-stone-800 transition-colors group-hover:text-brand-700">
+                      {d.symptom}
                     </span>
-                    <span className="block text-xs text-stone-400">{relativeTime(d.createdAt)}</span>
+                    <span data-elder="hide" className="mt-0.5 block truncate text-xs text-stone-400">
+                      {d.deviceName ?? "未关联设备"} · {relativeTime(d.createdAt)}
+                    </span>
                   </span>
                   <RiskBadge level={d.riskLevel} />
                 </Link>
@@ -160,11 +174,7 @@ export default function Home() {
       {!elder && (
         <SectionCard
           title="常见问题"
-          action={
-            <Link to="/diagnose" className="text-xs text-brand-700 hover:underline">
-              更多帮助 ›
-            </Link>
-          }
+          action={<MoreLink to="/diagnose" label="更多帮助" />}
           padding="sm"
         >
           <ul>

@@ -94,3 +94,24 @@ html.rm *::after {
 .toast-item {
   animation: toast-in 0.2s ease-out;
 }
+
+/* ---- 通知铃铛摆动（悬停 / 新消息到达；reduceMotion 时由上方规则关闭）---- */
+@keyframes bell-swing {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+}
+.bell-swing {
+  transform-origin: 50% 10%;
+}
+/* 悬停按钮时铃铛摆一下 */
+.bell-swing-trigger:hover .bell-swing {
+  animation: bell-swing 0.7s ease-in-out;
+}
+/* 新通知到达时铃铛连摆两轮 */
+.bell-ringing .bell-swing {
+  animation: bell-swing 0.7s ease-in-out 2;
+}

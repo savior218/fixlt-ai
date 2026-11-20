@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ClipboardCopy, ImageIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, ClipboardCopy, ImageIcon, Loader2, Phone } from "lucide-react";
 
 import Button from "../components/Button";
 import InputField from "../components/InputField";
@@ -21,6 +21,7 @@ import {
   type RepairTicket,
   type CloudRepairRecord,
 } from "../services/api";
+import { lookupHotline } from "../services/afterSalesService";
 
 /** 报修事项详情：用户自报联系进度，不虚构维修方受理 */
 export default function TicketDetail() {
@@ -55,7 +56,11 @@ export default function TicketDetail() {
         if (!alive) return;
         setTicket(data);
         setProgress(data.progress_status ?? "pending_contact");
-        setContactTarget(data.contact_target ?? "");
+        // 联系对象默认填品牌官方售后（平台不代报修，仅便于用户自行联系时登记）
+        setContactTarget(
+          data.contact_target ??
+            (lookupHotline(data.brand) ? `${data.brand}官方售后` : "")
+        );
         setContactedAt(data.contacted_at ?? "");
         setAppointmentAt(data.appointment_at ?? "");
         setContactNote(data.contact_note ?? "");
@@ -126,7 +131,7 @@ export default function TicketDetail() {
     if (!ticket) return;
     try {
       await navigator.clipboard.writeText(ticket.content);
-      notify("报修说明已复制", "success");
+      notify("报修话术已复制，可致电官方售后时参考", "success");
     } catch {
       notify("复制失败，请手动选择文本复制", "error");
     }
@@ -169,6 +174,31 @@ export default function TicketDetail() {
           {[ticket.brand, ticket.model].filter(Boolean).join(" ") || "未填写品牌型号"}
           {ticket.found_at ? ` · 发现于 ${ticket.found_at}` : ""}
         </p>
+        {/* 官方售后电话：平台不代报修，由用户自行拨打 */}
+        {(() => {
+          const hotline = lookupHotline(ticket.brand);
+          if (!hotline) return null;
+          return (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+              <p className="text-sm">
+                <span className="font-semibold text-stone-800">
+                  {hotline.brand}官方售后
+                </span>
+                <span className="ml-2 text-lg font-bold tracking-wide text-brand-800">
+                  {hotline.phone}
+                </span>
+                <span className="mt-0.5 block text-xs text-stone-500">
+                  号码仅供参考，以品牌官方公布为准
+                </span>
+              </p>
+              <a href={`tel:${hotline.phone.replace(/-/g, "")}`}>
+                <Button size="sm">
+                  <Phone aria-hidden className="h-4 w-4" /> 拨打官方售后
+                </Button>
+              </a>
+            </div>
+          );
+        })()}
         {legacyOnly && (
           <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
             旧记录状态：{LEGACY_STATUS_LABELS[ticket.status]}。该状态来自旧版本，
@@ -179,7 +209,7 @@ export default function TicketDetail() {
           {ticket.content}
         </pre>
         <Button variant="secondary" size="sm" className="mt-3" onClick={() => void copyContent()}>
-          <ClipboardCopy className="h-4 w-4" /> 复制报修说明
+          <ClipboardCopy className="h-4 w-4" /> 复制报修话术
         </Button>
       </SectionCard>
 

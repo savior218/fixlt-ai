@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bell,
+  CalendarClock,
   CheckCheck,
   ClipboardList,
   Stethoscope,
@@ -12,6 +13,7 @@ import {
   useNotificationStore,
   type NotificationType,
 } from "../stores/notifications";
+import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
 
 /** 通知类型 → 图标 / 配色 / 标签（通知面板与弹窗共用） */
@@ -21,7 +23,8 @@ export const TYPE_META: Record<
 > = {
   diagnosis: { icon: Stethoscope, cls: "bg-brand-50 text-brand-700", label: "诊断" },
   risk: { icon: AlertTriangle, cls: "bg-risk-high-bg text-risk-high", label: "告警" },
-  ticket: { icon: ClipboardList, cls: "bg-stone-100 text-stone-600", label: "工单" },
+  ticket: { icon: ClipboardList, cls: "bg-stone-100 text-stone-600", label: "报修" },
+  maintenance: { icon: CalendarClock, cls: "bg-emerald-50 text-emerald-700", label: "保养" },
 };
 
 /** 通知中心铃铛（模块⑤）：未读徽标 + 下拉面板 + 全部已读 */
@@ -29,10 +32,23 @@ export default function NotificationBell() {
   const items = useNotificationStore((s) => s.items);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
   const markRead = useNotificationStore((s) => s.markRead);
+  const doNotDisturb = usePrefs((s) => s.doNotDisturb);
 
   const [open, setOpen] = useState(false);
+  const [ringing, setRinging] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const unread = unreadCount(items);
+
+  /* 新通知到达 → 铃铛摆动两轮（免打扰 / 面板打开时不摆） */
+  const prevCountRef = useRef(items.length);
+  useEffect(() => {
+    const arrived = items.length > prevCountRef.current;
+    prevCountRef.current = items.length;
+    if (!arrived || doNotDisturb) return;
+    setRinging(true);
+    const t = window.setTimeout(() => setRinging(false), 1400);
+    return () => window.clearTimeout(t);
+  }, [items, doNotDisturb]);
 
   // 点击面板外 / Esc 关闭
   useEffect(() => {
@@ -60,9 +76,14 @@ export default function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "关闭通知面板" : "打开通知面板"}
         aria-expanded={open}
-        className="relative rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700"
+        className={[
+          "bell-swing-trigger relative rounded-lg p-2 transition-colors",
+          "text-stone-500 hover:bg-brand-50 hover:text-brand-700",
+          open ? "bg-brand-50 text-brand-700" : "",
+          ringing ? "bell-ringing" : "",
+        ].join(" ")}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="bell-swing h-5 w-5" />
         {unread > 0 && (
           <span
             aria-hidden
@@ -98,7 +119,7 @@ export default function NotificationBell() {
                 <Bell aria-hidden className="mx-auto h-8 w-8 text-stone-300" />
                 <p className="mt-2 text-sm text-stone-400">暂无通知</p>
                 <p className="mt-0.5 text-xs text-stone-300">
-                  诊断完成、高风险告警、工单状态变化时会在这里提醒您
+                  诊断完成、高风险告警、报修流程变化、保养到期时会在这里提醒您
                 </p>
               </div>
             ) : (

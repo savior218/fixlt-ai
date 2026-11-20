@@ -29,6 +29,7 @@ import { useAvatarStore } from "../stores/avatarStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import {
@@ -77,9 +78,15 @@ const LOCAL_DATA_GROUPS = [
   },
   {
     key: "fixitai-tickets",
-    label: "本机工单缓存",
-    desc: "报修工单在本机的缓存副本",
+    label: "本机报修流程缓存",
+    desc: "报修流程记录在本机的缓存副本",
     clear: () => useTicketStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-maintenance",
+    label: "保养提醒记录",
+    desc: "本机保存的设备保养记录与到期提醒进度",
+    clear: () => useMaintenanceStore.getState().clearAll(),
   },
 ] as const;
 
@@ -432,7 +439,7 @@ export default function Settings() {
       <SectionCard title="消息通知">
         <SwitchControl
           label="消息免打扰"
-          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
           checked={prefs.doNotDisturb}
           onChange={prefs.setDoNotDisturb}
         />
@@ -477,7 +484,7 @@ export default function Settings() {
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
-            <div className="flex w-56 items-center gap-2">
+            <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>
@@ -662,11 +669,13 @@ export default function Settings() {
             useRepairStore.getState().clearAll();
             useNotificationStore.getState().clearAll();
             useTicketStore.getState().clearAll();
+            useMaintenanceStore.getState().clearAll();
             useAvatarStore.setState({ avatars: {} });
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
             localStorage.removeItem("fixitai-notifications");
             localStorage.removeItem("fixitai-tickets");
+            localStorage.removeItem("fixitai-maintenance");
             localStorage.removeItem("fixitai-avatars");
             setClearOpen(false);
             notify("本机数据已清除", "success");

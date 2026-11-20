@@ -11,6 +11,7 @@ import TopBar from "../components/TopBar";
 import { ToastProvider } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
 import { initSpeech, stopSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
@@ -31,6 +32,11 @@ export default function AppLayout() {
   // 初始化浏览器语音合成（只绑定一次；不支持时页面照常使用）
   useEffect(() => {
     initSpeech();
+  }, []);
+
+  // 保养到期提醒：打开应用时检查一次；同一到期周期只提醒一次
+  useEffect(() => {
+    useMaintenanceStore.getState().dispatchDueReminders();
   }, []);
 
   // 账号切换 / 退出登录时清空上一账号的报修事项缓存（旧本地草稿单独保留）
