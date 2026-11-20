@@ -38,6 +38,7 @@ import {
 import { questionsFor } from "../services/questionScript";
 import type { Diagnosis, QAPair } from "../types/diagnosis";
 import { isUnknownAnswer } from "../utils/risk";
+import { DEVICE_IMAGES, deviceImage } from "../utils/deviceImages";
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useDiagnosisStore, diagnosesForOwner } from "../stores/diagnosisStore";
@@ -52,12 +53,20 @@ import {
 } from "../utils/image";
 
 /** 设备类型卡片（P1 步骤一） */
-const CATEGORY_CARDS: { key: DiagnoseCategory; emoji: string; title: string; hint: string }[] = [
-  { key: "ac", emoji: "❄️", title: "空调", hint: "制冷 / 制热异常、漏水" },
-  { key: "fridge", emoji: "🧊", title: "冰箱", hint: "不制冷、噪音大" },
-  { key: "washer", emoji: "🫧", title: "洗衣机", hint: "无法启动、漏水" },
-  { key: "other", emoji: "📺", title: "其他家电", hint: "手动选择并描述" },
+const CATEGORY_CARDS: { key: DiagnoseCategory; title: string; hint: string }[] = [
+  { key: "ac", title: "空调", hint: "制冷 / 制热异常、漏水" },
+  { key: "fridge", title: "冰箱", hint: "不制冷、噪音大" },
+  { key: "washer", title: "洗衣机", hint: "无法启动、漏水" },
+  { key: "other", title: "其他家电", hint: "手动选择并描述" },
 ];
+
+/** 选择卡片图片区域宽度：空调较宽给足横向空间，其余按竖长外形收窄 */
+const CATEGORY_IMAGE_WIDTH: Record<DiagnoseCategory, string> = {
+  ac: "max-w-[152px]",
+  fridge: "max-w-[92px]",
+  washer: "max-w-[92px]",
+  other: "max-w-[112px]",
+};
 
 /** elder 模式分步引导文案 */
 const ELDER_GUIDES = [
@@ -630,7 +639,13 @@ export default function Diagnose() {
                   onClick={() => pickCategory(c.key)}
                   className="rounded-xl border border-stone-200 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
                 >
-                  <span aria-hidden className="text-3xl">{c.emoji}</span>
+                  <span className="flex h-20 w-full items-center justify-center">
+                    <img
+                      src={DEVICE_IMAGES[c.key].src}
+                      alt={DEVICE_IMAGES[c.key].alt}
+                      className={`h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.18)] ${CATEGORY_IMAGE_WIDTH[c.key]}`}
+                    />
+                  </span>
                   <p className={`mt-2 font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>{c.title}</p>
                   <p className="mt-0.5 text-xs text-stone-500">{c.hint}</p>
                 </button>
@@ -680,8 +695,12 @@ export default function Diagnose() {
           {(selectedDevice || draft.category) && (
             <div className="card-base flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="flex min-w-0 items-center gap-3">
-                <span aria-hidden className="text-2xl">
-                  {draft.category === "ac" ? "❄️" : draft.category === "fridge" ? "🧊" : draft.category === "washer" ? "🫧" : "📺"}
+                <span className="flex h-14 w-[72px] shrink-0 items-center justify-center">
+                  <img
+                    src={deviceImage(draft.category).src}
+                    alt={deviceImage(draft.category).alt}
+                    className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.18)]"
+                  />
                 </span>
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-2 font-semibold text-stone-900">

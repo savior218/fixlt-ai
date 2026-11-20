@@ -1,19 +1,10 @@
 ﻿﻿import { Wrench } from "lucide-react";
 
-import type { DeviceCategory } from "../services/api";
 import { CATEGORY_LABELS } from "../services/api";
 import type { Device } from "../types/device";
 import StatusBadge, { type Status } from "./StatusBadge";
 import { usePrefs } from "../stores/prefs";
-
-export const CATEGORY_ICONS: Record<
-  DeviceCategory,
-  { emoji: string; alt: string }
-> = {
-  ac: { emoji: "❄️", alt: "空调" },
-  fridge: { emoji: "🧊", alt: "冰箱" },
-  washer: { emoji: "🫧", alt: "洗衣机" },
-};
+import { DEVICE_IMAGES } from "../utils/deviceImages";
 
 /** 设备卡片（TASK-10）：图片/名称/品牌/型号/位置/状态/维修次数；长辈模式精简信息 */
 export default function DeviceCard({
@@ -32,7 +23,7 @@ export default function DeviceCard({
 }) {
   const { mode } = usePrefs();
   const elder = mode === "elder";
-  const icon = CATEGORY_ICONS[device.category];
+  const image = DEVICE_IMAGES[device.category];
 
   return (
     <button
@@ -41,19 +32,24 @@ export default function DeviceCard({
       className="w-full rounded-2xl border border-stone-200 bg-surface p-4 text-left shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
     >
       <div className="flex items-start gap-3">
-        {/* 设备图标（图片 URL 缺省时按类型回退） */}
+        {/* 设备图片：用户上传图优先；否则使用本地实物透明 PNG（不拉伸、不裁切） */}
         {device.imageUrl ? (
           <img
             src={device.imageUrl}
             alt={device.name}
-            className={`shrink-0 rounded-xl object-cover ${elder ? "h-16 w-16" : "h-14 w-14"}`}
+            className="h-20 w-20 shrink-0 rounded-xl object-cover"
           />
         ) : (
           <span
-            aria-hidden
-            className={`flex shrink-0 items-center justify-center rounded-xl bg-brand-50 ${elder ? "h-16 w-16 text-3xl" : "h-14 w-14 text-2xl"}`}
+            className={`flex shrink-0 items-center justify-center ${
+              device.category === "ac" ? "h-20 w-[88px] sm:w-[112px]" : "h-20 w-20"
+            }`}
           >
-            {icon.emoji}
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.18)]"
+            />
           </span>
         )}
 
