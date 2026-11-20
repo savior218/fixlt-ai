@@ -102,6 +102,32 @@
 }
 
 /* ============================================================
+   法律文档整页（《服务协议》《隐私政策》《使用规范》《版权说明》）
+   独立于应用外壳，按官方文档排版；打印时自动去掉导航与装饰
+   ============================================================ */
+.legal-page {
+  min-height: 100vh;
+}
+
+@media print {
+  .legal-topbar,
+  .legal-docnav,
+  .legal-toc,
+  .legal-toc-mobile,
+  .legal-footer {
+    display: none !important;
+  }
+  .legal-page {
+    background: #fff;
+  }
+  .legal-article {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
+/* ============================================================
    响应式断点（CSS px，与 Tailwind sm/md/lg 一致）
    ============================================================ */
 
