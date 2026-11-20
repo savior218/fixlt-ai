@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Menu, Settings, User } from "lucide-react";
 
+import BrandMark from "./BrandMark";
 import NotificationBell from "./NotificationBell";
 import SidebarToggle from "./SidebarToggle";
 import { useToast } from "./Toast";
@@ -71,7 +72,7 @@ export default function TopBar({
 
   return (
     <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
-      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
+      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌字标 + 产品定位（窄屏收起定位文案） */}
       <div className="flex min-w-0 items-center gap-1">
         {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
         {!sidebarOpen && (
@@ -89,12 +90,18 @@ export default function TopBar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-stone-900">修必达</p>
-          <p data-elder="hide" className="hidden truncate text-xs text-stone-500 sm:block">
-            FixIt AI
-          </p>
-        </div>
+        <BrandMark layout="inline" className="app-topbar-brand shrink-0" />
+        <span
+          data-elder="hide"
+          aria-hidden
+          className="hidden h-7 w-px shrink-0 bg-gradient-to-b from-transparent via-stone-300 to-transparent lg:block"
+        />
+        <p
+          data-elder="hide"
+          className="hidden truncate text-xs tracking-wide text-stone-500 lg:block"
+        >
+          AI 家电故障分诊 · 维修决策助手
+        </p>
       </div>
 
       {/* 右：操作区（长辈模式文案窄屏缩短） */}

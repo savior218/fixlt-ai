@@ -330,12 +330,6 @@ export default function RepairAssistant() {
         title: "报修流程已存入维修档案",
         body: `${form.symptom} · 待联系官方售后。平台不代您报修，拨打电话后可回这里更新进度。`,
       });
-      notify(
-        elder
-          ? "已存入维修档案，拨打电话后记得回来更新进度哦"
-          : "报修流程已存入维修档案，可打开详情记录联系进度",
-        "success"
-      );
       return;
     }
 

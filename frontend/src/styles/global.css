@@ -46,6 +46,154 @@ button:disabled {
 }
 
 /* ============================================================
+   品牌标识（BrandMark：侧栏 / 顶栏 / 抽屉共用）
+   中文名用衬线 + 字距，英文用大字距小字号，形成「宋体 + 字距」的
+   品牌字标质感；图标方块加内高光与暖色投影，避免扁平。
+   ============================================================ */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  text-decoration: none;
+  border-radius: 0.75rem;
+}
+
+.brand-mark-tile {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0 0 1px rgba(111, 50, 28, 0.12),
+    0 3px 10px -3px rgba(111, 50, 28, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.brand-mark-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 斜向高光：给陶土色块一层玻璃质感 */
+.brand-mark-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0) 48%
+  );
+  pointer-events: none;
+}
+.brand-mark:hover .brand-mark-tile {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px rgba(111, 50, 28, 0.18),
+    0 6px 16px -4px rgba(111, 50, 28, 0.5);
+}
+
+.brand-mark-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  line-height: 1;
+}
+
+.brand-mark-name {
+  font-family: var(--font-family-heading);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--color-brand-900);
+  white-space: nowrap;
+}
+
+.brand-mark-en {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-disabled);
+  white-space: nowrap;
+}
+/* 英文前的渐隐短横线，替代单调的纯文字 */
+.brand-mark-en::before {
+  content: "";
+  width: 0.75rem;
+  height: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, var(--color-brand-400), transparent);
+}
+
+/* 横向字标（顶栏）：中文与英文同行，与侧栏竖排字标形成区分 */
+.brand-mark--inline .brand-mark-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.brand-mark--inline .brand-mark-en {
+  letter-spacing: 0.24em;
+}
+.brand-mark--inline .brand-mark-en::before {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-brand-400);
+}
+
+/* 顶部栏中的品牌：紧凑一档，与侧栏主字标形成主次层次 */
+.app-topbar-brand .brand-mark-tile {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+}
+.app-topbar-brand .brand-mark-name {
+  font-size: 0.9375rem;
+  letter-spacing: 0.12em;
+}
+/* 窄屏空间有限：顶栏只留图标，完整字标在抽屉内呈现 */
+@media (max-width: 639px) {
+  .app-topbar-brand .brand-mark-text {
+    display: none;
+  }
+  .app-topbar-brand {
+    gap: 0;
+  }
+}
+/* 320px 级超窄屏：连图标一并隐藏，避免与右侧操作区重叠 */
+@media (max-width: 359px) {
+  .app-topbar-brand {
+    display: none;
+  }
+}
+
+/* 长辈模式：字标整体放大一档，装饰阴影让位于清晰描边 */
+html[data-mode="elder"] .brand-mark-name {
+  font-size: 1.25rem;
+}
+html[data-mode="elder"] .brand-mark-en {
+  font-size: 0.6875rem;
+}
+html[data-mode="elder"] .brand-mark-tile {
+  box-shadow: 0 0 0 1.5px var(--color-brand-700);
+}
+
+/* ============================================================
    无障碍基线（PRD 第 8 章）
    ============================================================ */
 

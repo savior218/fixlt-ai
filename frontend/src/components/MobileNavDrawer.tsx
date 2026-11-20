@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ShieldCheck, X } from "lucide-react";
 
+import BrandMark from "./BrandMark";
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
 import { usePrefs } from "../stores/prefs";
 
@@ -131,17 +132,7 @@ export default function MobileNavDrawer({
       >
         {/* 头部：品牌 + 关闭 */}
         <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">
-          <span className="flex items-center gap-2 text-base font-bold text-stone-900">
-            <img
-              src="/brand-icon.png"
-              alt=""
-              width={30}
-              height={30}
-              className="h-[30px] w-[30px] shrink-0"
-              aria-hidden
-            />
-            修必达
-          </span>
+          <BrandMark />
           <button
             type="button"
             aria-label="关闭导航菜单"
