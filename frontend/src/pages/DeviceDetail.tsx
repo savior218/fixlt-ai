@@ -17,6 +17,7 @@ import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { recordsForOwner, recordsOfDevice, useRepairStore } from "../stores/repairStore";
 import { usePrefs } from "../stores/prefs";
 import { formatDate, relativeTime } from "../utils/format";
+import { DEVICE_IMAGES } from "../utils/deviceImages";
 import { REPAIR_STATUS_LABELS, VERIFICATION_LABELS } from "../types/repair";
 
 /** 按设备类型的常见问题 */
@@ -108,7 +109,13 @@ export default function DeviceDetail() {
       <PageHeader
         title={device.name}
         subtitle={`${CATEGORY_LABELS[device.category]}${device.location ? ` · ${device.location}` : ""}`}
-        icon={<span aria-hidden className="text-xl">{device.category === "ac" ? "❄️" : device.category === "fridge" ? "🧊" : "🫧"}</span>}
+        icon={
+          <img
+            src={DEVICE_IMAGES[device.category].src}
+            alt={DEVICE_IMAGES[device.category].alt}
+            className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.18)]"
+          />
+        }
         actions={
           <>
             <Link to={`/diagnose?deviceId=${device.id}`} className={buttonClass("primary", "md")}>

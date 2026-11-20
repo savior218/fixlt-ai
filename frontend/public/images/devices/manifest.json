@@ -1,0 +1,72 @@
+[
+  {
+    "name": "air-conditioner",
+    "label": "空调",
+    "file": "air-conditioner.png",
+    "source": "https://pngimg.com/images/electronics/air_conditioner",
+    "original_url": "https://pngimg.com/uploads/air_conditioner/air_conditioner_PNG76.png",
+    "size": [
+      860,
+      300
+    ],
+    "mode": "RGBA",
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_pixels": 73583
+  },
+  {
+    "name": "refrigerator",
+    "label": "双门冰箱",
+    "file": "refrigerator.png",
+    "source": "https://pngimg.com/images/electronics/refrigerator",
+    "original_url": "https://pngimg.com/uploads/refrigerator/refrigerator_PNG101556.png",
+    "size": [
+      441,
+      512
+    ],
+    "mode": "RGBA",
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_pixels": 99346
+  },
+  {
+    "name": "washing-machine",
+    "label": "滚筒洗衣机",
+    "file": "washing-machine.png",
+    "source": "https://pngimg.com/image/101471",
+    "original_url": "https://pngimg.com/uploads/washing_machine/washing_machine_PNG101471.png",
+    "size": [
+      418,
+      512
+    ],
+    "mode": "P",
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_pixels": 57483
+  },
+  {
+    "name": "television",
+    "label": "电视（其他家电）",
+    "file": "television.png",
+    "source": "https://pngimg.com/images/electronics/tv",
+    "original_url": "https://pngimg.com/uploads/tv/tv_PNG477.png",
+    "size": [
+      1474,
+      1067
+    ],
+    "mode": "RGBA",
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_pixels": 347023,
+    "edited": true,
+    "edit": "Built-in image_gen: restore an opaque black screen; preserve transparent outside silhouette"
+  }
+]
