@@ -13,6 +13,7 @@ import {
   useNotificationStore,
   type NotificationType,
 } from "../stores/notifications";
+import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
 
 /** 通知类型 → 图标 / 配色 / 标签（通知面板与弹窗共用） */
@@ -31,10 +32,23 @@ export default function NotificationBell() {
   const items = useNotificationStore((s) => s.items);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
   const markRead = useNotificationStore((s) => s.markRead);
+  const doNotDisturb = usePrefs((s) => s.doNotDisturb);
 
   const [open, setOpen] = useState(false);
+  const [ringing, setRinging] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const unread = unreadCount(items);
+
+  /* 新通知到达 → 铃铛摆动两轮（免打扰 / 面板打开时不摆） */
+  const prevCountRef = useRef(items.length);
+  useEffect(() => {
+    const arrived = items.length > prevCountRef.current;
+    prevCountRef.current = items.length;
+    if (!arrived || doNotDisturb) return;
+    setRinging(true);
+    const t = window.setTimeout(() => setRinging(false), 1400);
+    return () => window.clearTimeout(t);
+  }, [items, doNotDisturb]);
 
   // 点击面板外 / Esc 关闭
   useEffect(() => {
@@ -62,9 +76,14 @@ export default function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "关闭通知面板" : "打开通知面板"}
         aria-expanded={open}
-        className="relative rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-700"
+        className={[
+          "bell-swing-trigger relative rounded-lg p-2 transition-colors",
+          "text-stone-500 hover:bg-brand-50 hover:text-brand-700",
+          open ? "bg-brand-50 text-brand-700" : "",
+          ringing ? "bell-ringing" : "",
+        ].join(" ")}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="bell-swing h-5 w-5" />
         {unread > 0 && (
           <span
             aria-hidden
