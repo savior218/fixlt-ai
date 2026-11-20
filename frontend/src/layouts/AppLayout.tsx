@@ -3,6 +3,7 @@ import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
 import Loading from "../components/Loading";
+import { MediaPermissionProvider } from "../components/MediaPermission";
 import MobileNavDrawer, { DESKTOP_NAV_QUERY } from "../components/MobileNavDrawer";
 import NotificationPopup from "../components/NotificationPopup";
 import SafetyBanner from "../components/SafetyBanner";
@@ -97,65 +98,67 @@ export default function AppLayout() {
 
   return (
     <ToastProvider>
-      <div className="app-shell flex min-h-screen">
-        <a
-          href="#main-content"
-          className="skip-link rounded-lg bg-brand-700 px-4 py-2 text-sm text-white"
-        >
-          跳到主要内容
-        </a>
+      <MediaPermissionProvider>
+        <div className="app-shell flex min-h-screen">
+          <a
+            href="#main-content"
+            className="skip-link rounded-lg bg-brand-700 px-4 py-2 text-sm text-white"
+          >
+            跳到主要内容
+          </a>
 
-        {/* 桌面（≥1024px）：左侧固定导航栏 240px，可由顶栏三角形按钮折叠；窄屏由 CSS 隐藏 */}
-        <SidebarNav
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen((v) => !v)}
-        />
-
-        {/* 移动/平板（<1024px）：汉堡按钮 + 抽屉导航，入口与桌面一致 */}
-        <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
-
-        {/* 右侧：顶栏 + 主内容 + 底部安全横幅 */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar
-            onMenuClick={() => setNavOpen(true)}
-            sidebarOpen={sidebarOpen}
-            onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          {/* 桌面（≥1024px）：左侧固定导航栏 240px，可由顶栏三角形按钮折叠；窄屏由 CSS 隐藏 */}
+          <SidebarNav
+            open={sidebarOpen}
+            onToggle={() => setSidebarOpen((v) => !v)}
           />
-          <main id="main-content" className="app-content flex-1" tabIndex={-1}>
-            {authError && (
-              <div className="mx-4 mt-4 flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:mx-6">
-                <span className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {authError}
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <Link
-                    to={loginHref(`${location.pathname}${location.search}`)}
-                    className="font-medium underline"
-                  >
-                    重新登录
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={clearAuthError}
-                    className="text-xs text-amber-700 underline"
-                  >
-                    知道了
-                  </button>
-                </span>
-              </div>
-            )}
-            {/* 账号切换 / 退出 / 失效时重新挂载页面，清空上一账号的页面内存状态 */}
-            <div key={`${location.pathname}-${epoch}`}>
-              <Outlet />
-            </div>
-          </main>
-          <SafetyBanner />
-        </div>
 
-        {/* 新消息弹窗提醒（右下角；免打扰开启时不弹） */}
-        <NotificationPopup />
-      </div>
+          {/* 移动/平板（<1024px）：汉堡按钮 + 抽屉导航，入口与桌面一致 */}
+          <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+
+          {/* 右侧：顶栏 + 主内容 + 底部安全横幅 */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar
+              onMenuClick={() => setNavOpen(true)}
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={() => setSidebarOpen((v) => !v)}
+            />
+            <main id="main-content" className="app-content flex-1" tabIndex={-1}>
+              {authError && (
+                <div className="mx-4 mt-4 flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:mx-6">
+                  <span className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {authError}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <Link
+                      to={loginHref(`${location.pathname}${location.search}`)}
+                      className="font-medium underline"
+                    >
+                      重新登录
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={clearAuthError}
+                      className="text-xs text-amber-700 underline"
+                    >
+                      知道了
+                    </button>
+                  </span>
+                </div>
+              )}
+              {/* 账号切换 / 退出 / 失效时重新挂载页面，清空上一账号的页面内存状态 */}
+              <div key={`${location.pathname}-${epoch}`}>
+                <Outlet />
+              </div>
+            </main>
+            <SafetyBanner />
+          </div>
+
+          {/* 新消息弹窗提醒（右下角；免打扰开启时不弹） */}
+          <NotificationPopup />
+        </div>
+      </MediaPermissionProvider>
     </ToastProvider>
   );
 }

@@ -62,6 +62,41 @@ def ensure_schema_migrations(db_engine=None) -> None:
                 )
             )
 
+    _make_photo_owner_nullable(target, tables)
+
+
+def _make_photo_owner_nullable(target, tables: set[str]) -> None:
+    """游客照片允许 user_id 为空：旧库该列是 NOT NULL，需要增量放宽。"""
+    if "diagnosis_photos" not in tables:
+        return
+    columns = {col["name"]: col for col in inspect(target).get_columns("diagnosis_photos")}
+    if columns.get("user_id", {}).get("nullable", True):
+        return
+
+    if target.dialect.name == "postgresql":
+        with target.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE diagnosis_photos ALTER COLUMN user_id DROP NOT NULL")
+            )
+        return
+
+    if target.dialect.name == "sqlite":
+        # SQLite 不支持直接修改列约束：重建表并按原数据拷贝
+        photo_table = Base.metadata.tables["diagnosis_photos"]
+        with target.begin() as conn:
+            conn.execute(text("DROP INDEX IF EXISTS ix_diagnosis_photos_user_id"))
+            conn.execute(text("ALTER TABLE diagnosis_photos RENAME TO diagnosis_photos_old"))
+            photo_table.create(bind=conn)
+            conn.execute(
+                text(
+                    "INSERT INTO diagnosis_photos "
+                    "(id, user_id, mime, image_base64, created_at) "
+                    "SELECT id, user_id, mime, image_base64, created_at "
+                    "FROM diagnosis_photos_old"
+                )
+            )
+            conn.execute(text("DROP TABLE diagnosis_photos_old"))
+
 
 # 增量列定义（SQLite / PostgreSQL 通用类型）
 _MIGRATION_COLUMNS: dict[str, list[tuple[str, str]]] = {

@@ -17,7 +17,10 @@ services:
       - key: FIXITAI_AI_API_KEY
         sync: false
       - key: FIXITAI_AI_TEXT_MODEL
-        value: glm-4-flash
+        value: glm-4-air
+      # 看图问诊：glm-4v-flash 对截图类图片会返回固定拒答，使用 glm-4v
+      - key: FIXITAI_AI_VISION_MODEL
+        value: glm-4v
       # 生产会话密钥：由 Render 随机生成，禁止在代码中硬编码
       - key: FIXITAI_SESSION_SECRET
         generateValue: true

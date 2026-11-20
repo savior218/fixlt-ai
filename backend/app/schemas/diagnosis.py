@@ -26,6 +26,31 @@ class QAItem(BaseModel):
     selection_source: Literal["rule", "model", "rule_fallback"] | None = None
 
 
+class ChatTurn(BaseModel):
+    """自由问答中的一条对话消息（用户 / 助手）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=600)
+
+
+class DiagnoseChatRequest(BaseModel):
+    """自由聊天式问诊的一轮请求：携带完整对话历史与设备上下文。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    category: Category
+    symptom: str | None = Field(default=None, max_length=80)
+    description: str = Field(default="", max_length=500)
+    messages: list[ChatTurn] = Field(default_factory=list, max_length=12)
+    device_name: str | None = Field(default=None, max_length=64)
+    device_brand: str | None = Field(default=None, max_length=64)
+    device_model: str | None = Field(default=None, max_length=64)
+    photo_id: int | None = None
+    tone: Literal["standard", "elder"] = "standard"
+
+
 class DiagnoseRequest(BaseModel):
     """问诊上下文（严格约束字段长度、类别与问答数量）。"""
 
@@ -34,7 +59,9 @@ class DiagnoseRequest(BaseModel):
     category: Category
     symptom: str | None = Field(default=None, max_length=80)
     description: str = Field(default="", max_length=500)
-    qa: list[QAItem] = Field(default_factory=list, max_length=4)
+    qa: list[QAItem] = Field(default_factory=list, max_length=12)
+    # 自由聊天的完整对话：模型据此理解上下文，qa 仅作为可追溯的问答摘要
+    conversation: list[ChatTurn] = Field(default_factory=list, max_length=12)
     device_name: str | None = Field(default=None, max_length=64)
     device_brand: str | None = Field(default=None, max_length=64)
     device_model: str | None = Field(default=None, max_length=64)
@@ -94,6 +121,25 @@ class DiagnoseResponse(BaseModel):
     safety_rules_version: str
     # 登录用户的保存回执：保存报告时服务端据此确认“真实 AI 来源”
     receipt: str | None = None
+
+
+class ModelChatReply(BaseModel):
+    """对话模型输出：本轮回复 + 信息是否足够 + 快捷回答选项。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    reply: str = Field(min_length=5, max_length=800)
+    ready: bool = False
+    suggestions: list[str] = Field(default_factory=list, max_length=4)
+
+
+class DiagnoseChatResponse(BaseModel):
+    source: Literal["ai"] = "ai"
+    model: str
+    reply: str
+    ready: bool
+    suggestions: list[str] = Field(default_factory=list)
+    safety_rules_version: str
 
 
 class PhotoOut(BaseModel):

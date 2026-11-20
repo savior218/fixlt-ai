@@ -19,10 +19,12 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Records from "./pages/Records";
 import RepairAssistant from "./pages/RepairAssistant";
 import RepairHistory from "./pages/RepairHistory";
+import SafetyGuard from "./pages/SafetyGuard";
 import Settings from "./pages/Settings";
 import TermsOfService from "./pages/TermsOfService";
 import TicketDetail from "./pages/TicketDetail";
 import UiKit from "./pages/UiKit";
+import UsageGuidelines from "./pages/UsageGuidelines";
 
 export default function App() {
   return (
@@ -30,13 +32,16 @@ export default function App() {
       {/* 登录门户：独立整页（参考微信网页版），不套用应用外壳 */}
       <Route path="login" element={<Login />} />
 
-      {/* 公开信息页：无需登录即可查阅，登录前后都能点开协议与隐私政策 */}
+      {/* 公开信息页：无需登录即可查阅 */}
       <Route element={<PublicLayout />}>
         <Route path="about" element={<About />} />
-        <Route path="privacy" element={<PrivacyPolicy />} />
-        <Route path="terms" element={<TermsOfService />} />
-        <Route path="copyright" element={<CopyrightInfo />} />
       </Route>
+
+      {/* 法律文档：独立整页（自带文档顶栏、目录与页脚），不套用侧栏与顶栏 */}
+      <Route path="privacy" element={<PrivacyPolicy />} />
+      <Route path="terms" element={<TermsOfService />} />
+      <Route path="guidelines" element={<UsageGuidelines />} />
+      <Route path="copyright" element={<CopyrightInfo />} />
 
       <Route element={<AppLayout />}>
         {/* 首页 */}
@@ -60,6 +65,8 @@ export default function App() {
         <Route path="data" element={<DataManagement />} />
         {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
+        {/* 安全守护（产品说明页，保留应用外壳） */}
+        <Route path="safety" element={<SafetyGuard />} />
         <Route path="ui-kit" element={<UiKit />} />
         <Route path="*" element={<NotFound />} />
       </Route>

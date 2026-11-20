@@ -56,13 +56,25 @@
    不固定单行高度：长辈模式放大字号时允许顶栏增高 */
 .app-topbar {
   min-height: var(--topbar-height);
-  padding-top: 0.5rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
   padding-bottom: 0.5rem;
+  /* 刘海屏横屏时左右不再被圆角遮挡 */
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+  /* 不透明底色：滚动时内容不会透过顶栏（部分安卓内核不支持 backdrop-filter） */
+  background-color: var(--color-surface);
   background-image: radial-gradient(
     70% 220% at 0% 0%,
     rgba(201, 100, 66, 0.08) 0%,
     rgba(201, 100, 66, 0) 55%
   );
+}
+
+@media (min-width: 640px) {
+  .app-topbar {
+    padding-left: calc(1.5rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(1.5rem + env(safe-area-inset-right, 0px));
+  }
 }
 
 /* ---- 中央内容容器 ---- */
@@ -99,6 +111,32 @@
 .app-content {
   padding-left: calc(var(--content-padding) + env(safe-area-inset-left, 0px));
   padding-right: calc(var(--content-padding) + env(safe-area-inset-right, 0px));
+}
+
+/* ============================================================
+   法律文档整页（《服务协议》《隐私政策》《使用规范》《版权说明》）
+   独立于应用外壳，按官方文档排版；打印时自动去掉导航与装饰
+   ============================================================ */
+.legal-page {
+  min-height: 100vh;
+}
+
+@media print {
+  .legal-topbar,
+  .legal-docnav,
+  .legal-toc,
+  .legal-toc-mobile,
+  .legal-footer {
+    display: none !important;
+  }
+  .legal-page {
+    background: #fff;
+  }
+  .legal-article {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
 }
 
 /* ============================================================
@@ -171,7 +209,8 @@
 
 /* ---- 兼容保留：底部弹层/抽屉的安全区工具类（ModalDialog 等使用） ---- */
 .safe-pad-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* 1rem 基础内边距 + 底部安全区，避免弹窗按钮贴住屏幕底边 */
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---- 兼容保留：抽屉入场动画（旧组件类名，避免样式缺失） ---- */

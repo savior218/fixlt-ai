@@ -279,16 +279,57 @@ export interface AIDiagnoseResponse {
   receipt?: string | null;
 }
 
+export interface AIChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AIChatPayload {
+  category: string;
+  symptom: string | null;
+  description: string;
+  messages: AIChatMessage[];
+  device_name?: string | null;
+  device_brand?: string | null;
+  device_model?: string | null;
+  photo_id?: number | null;
+  tone?: "standard" | "elder";
+}
+
+export interface AIChatResponse {
+  source: "ai";
+  model: string;
+  reply: string;
+  /** AI 认为信息已足够，可生成完整诊断报告 */
+  ready: boolean;
+  suggestions: string[];
+  safety_rules_version: string;
+}
+
 export interface AIDiagnosePayload {
   category: string;
   symptom: string | null;
   description: string;
   qa: AIQAItem[];
+  /** 自由聊天的完整对话，供模型理解上下文 */
+  conversation?: AIChatMessage[];
   device_name?: string | null;
   device_brand?: string | null;
   device_model?: string | null;
   photo_id?: number | null;
 }
+
+/** 自由聊天式问诊：每轮调用真实 AI，失败抛 ApiError，由调用方保留对话并允许重试 */
+export const requestAIChat = (p: AIChatPayload, signal?: AbortSignal) =>
+  request<AIChatResponse>(
+    "/diagnose/chat",
+    {
+      method: "POST",
+      body: JSON.stringify(p),
+      signal,
+    },
+    35_000
+  );
 
 /** 真实 AI 诊断：失败抛 ApiError，由调用方明确提示并允许重试（不自动回退模板） */
 export const requestAIDiagnosis = (p: AIDiagnosePayload, signal?: AbortSignal) =>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Mic, MicOff, Send, Sparkles } from "lucide-react";
 
 import Button from "../components/Button";
+import { useMediaPermission } from "../components/MediaPermission";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import SpeakButton from "../components/SpeakButton";
@@ -82,6 +83,8 @@ export default function DynamicInterview() {
   const requestIdRef = useRef(`ans-${Date.now()}-${Math.random()}`);
   const autoSpokenRef = useRef<string | null>(null);
   const voice = useSpeechRecognition();
+  /** 访问照片 / 麦克风前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
   const restoreDoneRef = useRef(false);
   const persistReadyRef = useRef(false);
   const restoringRef = useRef(false);
@@ -170,8 +173,11 @@ export default function DynamicInterview() {
       notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
       return;
     }
-    stopSpeech(); // 录音期间暂停页面朗读，避免把系统声音识别成回答
-    if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+    // 先征求意见：允许后才真正开启麦克风
+    requestPermission("microphone", () => {
+      stopSpeech(); // 录音期间暂停页面朗读，避免把系统声音识别成回答
+      if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+    });
   }
 
   /** 故障照片：沿用现有上传与看图能力；仅描述阶段可换图 */
@@ -456,7 +462,11 @@ export default function DynamicInterview() {
                 variant="secondary"
                 size="sm"
                 disabled={photoBusy}
-                onClick={() => document.getElementById("dynamic-photo-input")?.click()}
+                onClick={() =>
+                  requestPermission("photo", () =>
+                    document.getElementById("dynamic-photo-input")?.click()
+                  )
+                }
               >
                 {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {photoBusy ? "正在上传…" : "上传故障照片（可选）"}

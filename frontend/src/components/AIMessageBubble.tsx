@@ -1,6 +1,4 @@
-﻿﻿import { Bot } from "lucide-react";
-
-import Chip from "./Chip";
+﻿﻿import Chip from "./Chip";
 import SpeakButton from "./SpeakButton";
 
 /** AI 问诊对话气泡（TASK-11）：AI 消息 / 用户消息 / 加载中 / 建议选项 */
@@ -13,9 +11,12 @@ export default function AIMessageBubble({
   onSuggestion,
   tone = "standard",
   speakKey,
+  photoPreview,
 }: {
   role: "ai" | "user";
   content?: string;
+  /** 用户随消息发送的照片（展示在气泡内） */
+  photoPreview?: string;
   /** 消息时间（如 14:32） */
   time?: string;
   /** AI 正在输入时显示加载动画 */
@@ -36,6 +37,13 @@ export default function AIMessageBubble({
         <div
           className={`max-w-[85%] break-words rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="随消息发送的照片"
+              className="mb-2 max-h-60 w-full rounded-lg object-cover"
+            />
+          )}
           {content}
         </div>
         {time && <span className="pr-1 text-xs text-stone-400">{time}</span>}
@@ -46,13 +54,13 @@ export default function AIMessageBubble({
   return (
     <div className="flex flex-col items-start gap-1">
       <div className="flex items-start gap-2.5">
-        {/* AI 头像 */}
-        <span
+        {/* AI 头像：品牌 Logo */}
+        <img
+          src="/logo-mark.png"
+          alt=""
           aria-hidden
-          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white"
-        >
-          <Bot className="h-5 w-5" />
-        </span>
+          className="mt-0.5 h-8 w-8 shrink-0 rounded-lg object-cover"
+        />
 
         <div
           className={`min-w-0 max-w-[85%] break-words rounded-2xl rounded-tl-md bg-surface text-stone-800 shadow-sm ring-1 ring-stone-200 ${elder ? "px-4 py-3 text-lg leading-loose" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}

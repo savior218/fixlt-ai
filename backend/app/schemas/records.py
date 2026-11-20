@@ -81,7 +81,7 @@ class DiagnosisSave(BaseModel):
     ai_model: str | None = Field(default=None, max_length=64)
     risk_level: RiskLevel | None = None
     risk_rules_version: str | None = Field(default=None, max_length=32)
-    qa: list[QAItem] = Field(default_factory=list, max_length=4)
+    qa: list[QAItem] = Field(default_factory=list, max_length=12)
     content: ContentPair
     receipt: str | None = Field(default=None, max_length=2048)
     created_at: datetime | None = None

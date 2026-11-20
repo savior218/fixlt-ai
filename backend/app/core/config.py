@@ -47,15 +47,18 @@ class Settings(BaseSettings):
 
     # AI 服务（智谱 GLM，OpenAI 兼容协议）
     ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
-    ai_text_model: str = "glm-4-flash"
+    ai_text_model: str = "glm-4-air"
     # 视觉模型（模块③ AI 看图）：glm-4v-flash 免费、支持视觉；留空则回退文本模型
-    ai_vision_model: str = "glm-4v-flash"
+    ai_vision_model: str = "glm-4v"
     ai_api_key: str = ""
     ai_timeout_seconds: float = 60.0
     ai_max_output_tokens: int = 1500
 
     # 模型接口保护（单实例内存限流；多实例部署需改用 Redis 等共享存储）
     ai_rate_limit_per_minute: int = 8
+    # 自由聊天每轮调用一次模型，额度单独计算，避免对话被 8 次/分钟误伤
+    ai_chat_rate_limit_per_minute: int = 30
+    guest_ai_chat_rate_limit_per_minute: int = 10
     ai_max_concurrent: int = 2
     ai_max_request_bytes: int = 16 * 1024
     # 动态问诊每轮调用模型，额度比单次诊断更宽；仍由后端限流
