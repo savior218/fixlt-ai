@@ -9,6 +9,7 @@ from app.models.repair import RepairRecord, RepairTicket
 from app.models.interview import InterviewSession
 from app.models.photo import DiagnosisPhoto, RepairTicketPhoto
 from app.models.knowledge import KnowledgeDocument
+from app.models.hotline import HotlineDirectory
 
 __all__ = [
     "User",
@@ -23,4 +24,5 @@ __all__ = [
     "DiagnosisPhoto",
     "RepairTicketPhoto",
     "KnowledgeDocument",
+    "HotlineDirectory",
 ]

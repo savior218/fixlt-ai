@@ -136,6 +136,52 @@ export const CATEGORY_LABELS: Record<DeviceCategory, string> = {
 
 export const getHealth = () => request<HealthInfo>("/health");
 export const listDevices = () => request<Device[]>("/devices");
+/* ---------- 官方售后电话目录（只读，不代用户报修） ---------- */
+
+export interface HotlineRecord {
+  id: string;
+  brand_id: string;
+  brand: string;
+  brand_group: string;
+  aliases: string[];
+  phone: string;
+  /** 已带 tel: 前缀，原样用于拨号，不由前端改写号码 */
+  phone_uri: string;
+  region: string | null;
+  categories: string[];
+  category_mapping_basis: string | null;
+  source_url: string | null;
+  source_type: string | null;
+  web_status: string;
+  web_checked_on: string;
+  phone_test_status: string;
+  phone_tested_at: string | null;
+  hours: string | null;
+  notes: string | null;
+  next_review_on: string;
+  display_enabled: boolean;
+  evidence_level: string | null;
+  /** 已超过建议复核日期 */
+  review_due: boolean;
+  status_label: string;
+}
+
+export interface HotlineReviewBrand {
+  brand: string;
+  reason: string | null;
+}
+
+export interface HotlineDirectory {
+  as_of: string | null;
+  region: string | null;
+  verification_limit: string | null;
+  records: HotlineRecord[];
+  /** 待复核品牌，只有名称与原因，不含候选号码 */
+  review_brands: HotlineReviewBrand[];
+}
+
+export const listHotlines = () => request<HotlineDirectory>("/hotlines");
+
 export const createDevice = (d: DeviceInput) =>
   request<Device>("/devices", { method: "POST", body: JSON.stringify(d) });
 export const updateDevice = (id: number, d: Partial<DeviceInput>) =>

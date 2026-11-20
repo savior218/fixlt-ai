@@ -8,8 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, data, demo, devices, diagnose, health, interview, records, repairs
+from app.api import auth, data, demo, devices, diagnose, health, hotlines, interview, records, repairs
 from app.core.config import ensure_deployment_config, settings
+from app.database.hotline_seed import seed_hotline_directory
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
 from app.services.auth import ensure_auth_ready
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_demo_data(db)
+        seed_hotline_directory(db)
     finally:
         db.close()
 
@@ -108,6 +110,7 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(demo.router)
 app.include_router(devices.router)
+app.include_router(hotlines.router)
 app.include_router(diagnose.router)
 app.include_router(records.router)
 app.include_router(repairs.router)

@@ -11,6 +11,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 按页面需要让标题使用正文字体，避免衬线标题与正文观感割裂 */
+.font-body {
+  font-family: var(--font-family);
+}
+
 /* ---- 统一标题字号与衬线字体（Claude 暖纸风：标题衬线，像书名一样沉稳）---- */
 h1 {
   font-family: var(--font-family-heading);
