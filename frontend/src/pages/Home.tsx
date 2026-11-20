@@ -1,11 +1,8 @@
 ﻿﻿import { Link, useNavigate } from "react-router-dom";
 import {
-  AirVent,
   ArrowRight,
   ClipboardList,
-  Refrigerator,
   Wrench,
-  WashingMachine,
   ChevronRight,
   AlertTriangle,
 } from "lucide-react";
@@ -17,12 +14,13 @@ import SectionCard from "../components/SectionCard";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
+import { DEVICE_IMAGES } from "../utils/deviceImages";
 
 /** 快速入口（点击直接进入对应类型诊断） */
 const QUICK_ENTRIES = [
-  { category: "ac", icon: AirVent, title: "空调", hint: "不制冷、不制热、漏水" },
-  { category: "fridge", icon: Refrigerator, title: "冰箱", hint: "不制冷、噪音大、结冰" },
-  { category: "washer", icon: WashingMachine, title: "洗衣机", hint: "不启动、不脱水、漏水" },
+  { category: "ac", title: "空调", hint: "不制冷、不制热、漏水" },
+  { category: "fridge", title: "冰箱", hint: "不制冷、噪音大、结冰" },
+  { category: "washer", title: "洗衣机", hint: "不启动、不脱水、漏水" },
 ] as const;
 
 const FAQ_ITEMS = [
@@ -127,15 +125,22 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {QUICK_ENTRIES.map((e) => {
-            const Icon = e.icon;
             return (
               <Link
                 key={e.category}
                 to={`/diagnose?category=${e.category}`}
                 className="card-base group flex items-center gap-3.5 p-4 transition-colors hover:border-brand-300"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-100">
-                  <Icon aria-hidden className="h-5 w-5" />
+                <span
+                  className={`flex shrink-0 items-center justify-center ${
+                    e.category === "ac" ? "h-14 w-[84px]" : "h-14 w-14"
+                  }`}
+                >
+                  <img
+                    src={DEVICE_IMAGES[e.category].src}
+                    alt={DEVICE_IMAGES[e.category].alt}
+                    className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.22)]"
+                  />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
