@@ -22,6 +22,7 @@ import {
   type CloudRepairRecord,
 } from "../services/api";
 import { lookupHotline } from "../services/afterSalesService";
+import { copyText } from "../utils/clipboard";
 
 /** 报修事项详情：用户自报联系进度，不虚构维修方受理 */
 export default function TicketDetail() {
@@ -129,10 +130,9 @@ export default function TicketDetail() {
 
   async function copyContent() {
     if (!ticket) return;
-    try {
-      await navigator.clipboard.writeText(ticket.content);
+    if (await copyText(ticket.content)) {
       notify("报修话术已复制，可致电官方售后时参考", "success");
-    } catch {
+    } else {
       notify("复制失败，请手动选择文本复制", "error");
     }
   }

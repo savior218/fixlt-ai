@@ -662,6 +662,9 @@ export default function Settings() {
           <Link to="/copyright" className={buttonClass("secondary", "md")}>
             版权说明
           </Link>
+          <Link to="/data" className={buttonClass("secondary", "md")}>
+            账号数据管理
+          </Link>
           <Button variant="secondary" onClick={() => setDataOpen(true)}>
             管理本机数据
           </Button>

@@ -71,7 +71,7 @@ export default function TopBar({
   }
 
   return (
-    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
+    <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface px-4 sm:px-6">
       {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌补位 */}
       <div className="flex min-w-0 items-center gap-1">
         {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
