@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { LogIn, UserPlus, Wrench } from "lucide-react";
+import { Check, ChevronDown, Globe, LogIn, UserPlus, Wrench } from "lucide-react";
 
 import Button from "../components/Button";
 import InputField from "../components/InputField";
@@ -61,6 +61,7 @@ interface PortalText {
   privacy: string;
   terms: string;
   copyrightLink: string;
+  languageSetting: string;
   copyright: string;
   loading: string;
 }
@@ -107,7 +108,8 @@ const TEXT: Record<Locale, PortalText> = {
     privacy: "隐私保护指引",
     terms: "软件许可及服务协议",
     copyrightLink: "版权声明",
-    copyright: "Copyright © 2026 修必达 FixIt AI. All Rights Reserved.",
+    languageSetting: "语言设置",
+    copyright: "Copyright © 2026 修必达 FixIt AI · ZengYingyi · ChenLin. All Rights Reserved.",
     loading: "正在恢复登录状态…",
   },
   "zh-Hant": {
@@ -150,7 +152,8 @@ const TEXT: Record<Locale, PortalText> = {
     privacy: "隱私保護指引",
     terms: "軟體許可及服務協議",
     copyrightLink: "版權聲明",
-    copyright: "Copyright © 2026 修必達 FixIt AI. 版權所有。",
+    languageSetting: "語言設定",
+    copyright: "Copyright © 2026 修必達 FixIt AI · ZengYingyi · ChenLin. All Rights Reserved.",
     loading: "正在還原登入狀態…",
   },
   en: {
@@ -193,14 +196,15 @@ const TEXT: Record<Locale, PortalText> = {
     privacy: "Privacy Policy",
     terms: "Software License & Terms of Service",
     copyrightLink: "Copyright Notice",
-    copyright: "Copyright © 2026 FixIt AI. All Rights Reserved.",
+    languageSetting: "Language",
+    copyright: "Copyright © 2026 FixIt AI · ZengYingyi · ChenLin. All Rights Reserved.",
     loading: "Restoring your session…",
   },
 };
 
 const LANGUAGES: { value: Locale; label: string }[] = [
-  { value: "zh-Hans", label: "中文" },
-  { value: "zh-Hant", label: "繁体" },
+  { value: "zh-Hans", label: "中文（简体）" },
+  { value: "zh-Hant", label: "中文（繁體）" },
   { value: "en", label: "English" },
 ];
 
@@ -231,6 +235,27 @@ export default function Login() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** 页脚语言菜单开合状态 */
+  const [langOpen, setLangOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // 点击语言菜单外部或按 Esc 关闭菜单。
+  // 不能用 fixed 遮罩：footer 带 backdrop-blur，会创建 containing block 使 fixed 失效。
+  useEffect(() => {
+    if (!langOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!langMenuRef.current?.contains(e.target as Node)) setLangOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setLangOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [langOpen]);
 
   // 登录页已脱离 AppLayout，需要自行恢复服务端会话
   useEffect(() => {
@@ -498,20 +523,58 @@ export default function Login() {
             aria-label="页脚导航"
             className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1"
           >
-            {LANGUAGES.map((lang) => (
+            {/* 语言设置：单入口，展开选择语言 */}
+            <div className="relative" ref={langMenuRef}>
               <button
-                key={lang.value}
                 type="button"
-                onClick={() => setLocale(lang.value)}
-                aria-pressed={locale === lang.value}
-                className={[
-                  "transition-colors hover:text-brand-700 hover:underline",
-                  locale === lang.value ? "font-semibold text-brand-700" : "",
-                ].join(" ")}
+                onClick={() => setLangOpen((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={langOpen}
+                className="inline-flex items-center gap-1 transition-colors hover:text-brand-700 hover:underline"
               >
-                {lang.label}
+                <Globe className="h-3.5 w-3.5" aria-hidden />
+                {t.languageSetting}
+                <ChevronDown
+                  className={[
+                    "h-3 w-3 transition-transform",
+                    langOpen ? "rotate-180" : "",
+                  ].join(" ")}
+                  aria-hidden
+                />
               </button>
-            ))}
+
+              {langOpen && (
+                <div
+                  role="listbox"
+                    aria-label={t.languageSetting}
+                    className="absolute bottom-full left-0 z-20 mb-2 w-40 overflow-hidden rounded-xl border border-stone-200 bg-surface py-1 shadow-card"
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.value}
+                        type="button"
+                        role="option"
+                        aria-selected={locale === lang.value}
+                        onClick={() => {
+                          setLocale(lang.value);
+                          setLangOpen(false);
+                        }}
+                        className={[
+                          "flex w-full items-center justify-between px-3 py-2 text-left text-xs transition-colors",
+                          locale === lang.value
+                            ? "font-semibold text-brand-700"
+                            : "text-stone-600 hover:bg-stone-50",
+                        ].join(" ")}
+                      >
+                        {lang.label}
+                        {locale === lang.value && (
+                          <Check className="h-3.5 w-3.5" aria-hidden />
+                        )}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
 
             <span aria-hidden className="h-3 w-px bg-stone-300" />
 
