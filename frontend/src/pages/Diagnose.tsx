@@ -666,7 +666,7 @@ export default function Diagnose() {
               e.target.value = "";
             }}
           />
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="secondary"
               onClick={() => requestPermission("photo", () => fileInputRef.current?.click())}
@@ -687,7 +687,7 @@ export default function Diagnose() {
               {voice.listening ? "停止" : ""}
             </Button>
             <textarea
-              rows={2}
+              rows={1}
               value={input}
               maxLength={500}
               onChange={(e) => setInput(e.target.value)}
@@ -706,7 +706,7 @@ export default function Diagnose() {
                   ? "想到什么就说什么，比如：空调不凉了…"
                   : "输入你的问题，比如：空调开了半小时还是不凉，出风口只有自然风…"
               }
-              className="min-h-[52px] min-w-0 flex-1 resize-none rounded-xl border border-stone-300 px-3 py-2.5 text-sm leading-relaxed focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
+              className="min-h-11 min-w-0 flex-1 resize-none rounded-xl border border-stone-300 px-3 py-2.5 text-sm leading-relaxed focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
             />
             <Button
               onClick={handleSend}
