@@ -72,7 +72,7 @@ export default function TopBar({
 
   return (
     <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
-      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌字标 + 产品定位（窄屏收起定位文案） */}
+      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌图标（文字只在侧栏出现，避免重复） */}
       <div className="flex min-w-0 items-center gap-1">
         {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
         {!sidebarOpen && (
@@ -90,18 +90,7 @@ export default function TopBar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <BrandMark layout="inline" className="app-topbar-brand shrink-0" />
-        <span
-          data-elder="hide"
-          aria-hidden
-          className="hidden h-7 w-px shrink-0 bg-gradient-to-b from-transparent via-stone-300 to-transparent lg:block"
-        />
-        <p
-          data-elder="hide"
-          className="hidden truncate text-xs tracking-wide text-stone-500 lg:block"
-        >
-          AI 家电故障分诊 · 维修决策助手
-        </p>
+        <BrandMark markOnly className="app-topbar-brand ml-1 shrink-0" />
       </div>
 
       {/* 右：操作区（长辈模式文案窄屏缩短） */}

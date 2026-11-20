@@ -46,9 +46,9 @@ button:disabled {
 }
 
 /* ============================================================
-   品牌标识（BrandMark：侧栏 / 顶栏 / 抽屉共用）
-   中文名用衬线 + 字距，英文用大字距小字号，形成「宋体 + 字距」的
-   品牌字标质感；图标方块加内高光与暖色投影，避免扁平。
+   品牌标识（BrandMark）
+   图标方块加内高光与暖色投影；中文名用衬线 + 字距。
+   品牌文字只在侧栏出现一次，顶栏仅保留图标，避免重复。
    ============================================================ */
 .brand-mark {
   display: inline-flex;
@@ -100,15 +100,6 @@ button:disabled {
     0 6px 16px -4px rgba(111, 50, 28, 0.5);
 }
 
-.brand-mark-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.25rem;
-  min-width: 0;
-  line-height: 1;
-}
-
 .brand-mark-name {
   font-family: var(--font-family-heading);
   font-size: 1.0625rem;
@@ -119,75 +110,16 @@ button:disabled {
   white-space: nowrap;
 }
 
-.brand-mark-en {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.5625rem;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--color-disabled);
-  white-space: nowrap;
-}
-/* 英文前的渐隐短横线，替代单调的纯文字 */
-.brand-mark-en::before {
-  content: "";
-  width: 0.75rem;
-  height: 1px;
-  flex-shrink: 0;
-  background: linear-gradient(90deg, var(--color-brand-400), transparent);
-}
-
-/* 横向字标（顶栏）：中文与英文同行，与侧栏竖排字标形成区分 */
-.brand-mark--inline .brand-mark-text {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-.brand-mark--inline .brand-mark-en {
-  letter-spacing: 0.24em;
-}
-.brand-mark--inline .brand-mark-en::before {
-  width: 3px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--color-brand-400);
-}
-
-/* 顶部栏中的品牌：紧凑一档，与侧栏主字标形成主次层次 */
-.app-topbar-brand .brand-mark-tile {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-}
-.app-topbar-brand .brand-mark-name {
-  font-size: 0.9375rem;
-  letter-spacing: 0.12em;
-}
-/* 窄屏空间有限：顶栏只留图标，完整字标在抽屉内呈现 */
-@media (max-width: 639px) {
-  .app-topbar-brand .brand-mark-text {
-    display: none;
-  }
-  .app-topbar-brand {
-    gap: 0;
-  }
-}
-/* 320px 级超窄屏：连图标一并隐藏，避免与右侧操作区重叠 */
+/* 320px 级超窄屏：顶栏只留图标也放不下，直接让位给操作区 */
 @media (max-width: 359px) {
   .app-topbar-brand {
     display: none;
   }
 }
 
-/* 长辈模式：字标整体放大一档，装饰阴影让位于清晰描边 */
+/* 长辈模式：品牌名放大一档，装饰阴影让位于清晰描边 */
 html[data-mode="elder"] .brand-mark-name {
   font-size: 1.25rem;
-}
-html[data-mode="elder"] .brand-mark-en {
-  font-size: 0.6875rem;
 }
 html[data-mode="elder"] .brand-mark-tile {
   box-shadow: 0 0 0 1.5px var(--color-brand-700);
