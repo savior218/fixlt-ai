@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   Camera,
   FileText,
-  FlaskConical,
   Loader2,
   Mic,
   PhoneCall,
@@ -18,7 +17,6 @@ import AIMessageBubble from "../components/AIMessageBubble";
 import Button from "../components/Button";
 import { useMediaPermission } from "../components/MediaPermission";
 import SectionCard from "../components/SectionCard";
-import SourceBadge from "../components/SourceBadge";
 import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
 import { normalizeSpeechText, shouldAutoRead, speak, stopSpeech, useSpeech } from "../services/speech";
@@ -26,7 +24,6 @@ import { uploadDiagnosisPhoto } from "../services/api";
 import type { DiagnoseCategory } from "../services/diagnosisService";
 import {
   buildQAFromChat,
-  buildTemplateDiagnosis,
   chatWithAI,
   generateAIDiagnosis,
   type AskContext,
@@ -344,12 +341,8 @@ export default function Diagnose() {
     return makeCtx(draft.category, qa, draft.chat, draft.description);
   }
 
-  /**
-   * 生成诊断结果。
-   * mode=ai：调用真实 AI，失败保留对话并提示重试（不静默回退模板）
-   * mode=template：用户主动选择的模板演示，来源恒为 template
-   */
-  async function generateResult(ctx: AskContext, mode: "ai" | "template" = "ai") {
+  /** 用真实 AI 生成诊断结果；失败保留对话并提示重试，不静默回退模板 */
+  async function generateResult(ctx: AskContext) {
     if (busyRef.current) return;
     busyRef.current = true;
     const token = ++generationRef.current;
@@ -357,16 +350,6 @@ export default function Diagnose() {
     const controller = new AbortController();
     abortRef.current = controller;
     setDraft({ aiError: null, qa: ctx.qa });
-
-    if (mode === "template") {
-      const diagnosis = buildTemplateDiagnosis(ctx);
-      if (token === generationRef.current && mountedRef.current) {
-        finishDiagnosis(diagnosis);
-      }
-      busyRef.current = false;
-      abortRef.current = null;
-      return;
-    }
 
     setGenerating(true);
     const tone = elder ? "elder" : "standard";
@@ -736,18 +719,10 @@ export default function Diagnose() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
-              onClick={() => void generateResult(reportCtx(), "ai")}
+              onClick={() => void generateResult(reportCtx())}
               disabled={thinking || generating || busyRef.current}
             >
               <FileText className="h-4 w-4" /> 生成诊断报告
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => void generateResult(reportCtx(), "template")}
-              disabled={thinking || generating || busyRef.current}
-              title="模板演示由本地固定模板生成，不是真实 AI"
-            >
-              <FlaskConical className="h-4 w-4" /> 模板演示（非 AI）
             </Button>
           </div>
         </section>
@@ -766,7 +741,7 @@ export default function Diagnose() {
               <p className="mt-1 text-xs text-amber-800">
                 {errorPhase === "chat"
                   ? "您已输入的内容都保留在对话里，可以重试继续和 AI 聊天。"
-                  : "您的对话已保留。可以重试真实 AI，或主动选择模板演示。"}
+                  : "您的对话已保留，可以重试真实 AI。"}
               </p>
               {draft.aiError.code === "ai_not_configured" && (
                 <p className="mt-1 text-xs text-amber-800">
@@ -781,18 +756,10 @@ export default function Diagnose() {
                 ) : (
                   <>
                     <Button
-                      onClick={() => void generateResult(reportCtx(), "ai")}
+                      onClick={() => void generateResult(reportCtx())}
                       disabled={generating || busyRef.current}
                     >
                       <RefreshCw className="h-4 w-4" /> 重试真实 AI
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => void generateResult(reportCtx(), "template")}
-                      disabled={generating || busyRef.current}
-                      title="模板演示由本地固定模板生成，不是真实 AI"
-                    >
-                      <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
                     </Button>
                   </>
                 )}
@@ -800,12 +767,7 @@ export default function Diagnose() {
                   重新开始
                 </Button>
               </div>
-              {errorPhase === "generate" && (
-                <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-800">
-                  模板演示来源标识：
-                  <SourceBadge source="template" />
-                </p>
-              )}
+
             </div>
           </div>
         </section>
