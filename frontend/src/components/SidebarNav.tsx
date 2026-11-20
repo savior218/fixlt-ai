@@ -1,26 +1,43 @@
-﻿﻿import { NavLink } from "react-router-dom";
+﻿﻿﻿﻿﻿﻿import { NavLink } from "react-router-dom";
 
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
+import SidebarToggle from "./SidebarToggle";
 
-export default function SidebarNav() {
+export default function SidebarNav({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
   const SafetyIcon = SAFETY_ITEM.icon;
 
   return (
-    <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-surface">
-      {/* Logo 区：高度与 TopBar 对齐 */}
+    <aside
+      id="app-sidebar"
+      aria-hidden={!open}
+      className={[
+        "app-sidebar sticky top-0 flex h-screen flex-col border-r border-stone-200 bg-surface",
+        open ? "" : "app-sidebar-collapsed",
+      ].join(" ")}
+    >
+      {/* Logo 区：高度与 TopBar 对齐；右侧为收起按钮（收起后按钮移交顶栏） */}
       <div
-        className="flex items-center gap-2 border-b border-stone-200 px-5"
+        className="flex items-center justify-between gap-2 border-b border-stone-200 pl-5 pr-3"
         style={{ height: "var(--topbar-height)" }}
       >
-        <img
-          src="/brand-icon.png"
-          alt=""
-          width={30}
-          height={30}
-          className="h-[30px] w-[30px] shrink-0"
-          aria-hidden
-        />
-        <span className="text-base font-bold text-stone-900">修必达</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <img
+            src="/brand-icon.png"
+            alt=""
+            width={30}
+            height={30}
+            className="h-[30px] w-[30px] shrink-0"
+            aria-hidden
+          />
+          <span className="text-base font-bold text-stone-900">修必达</span>
+        </span>
+        <SidebarToggle open={open} onToggle={onToggle} className="inline-flex" />
       </div>
 
       {/* 导航菜单（与 MobileNavDrawer 共用 NAV_ITEMS） */}

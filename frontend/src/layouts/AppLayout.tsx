@@ -20,6 +20,8 @@ export default function AppLayout() {
   const location = useLocation();
   /** 移动端导航抽屉（<1024px 由 TopBar 汉堡按钮触发） */
   const [navOpen, setNavOpen] = useState(false);
+  /** 桌面左侧导航栏展开状态（≥1024px 由 TopBar 三角形按钮切换） */
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const status = useAuthStore((s) => s.status);
   const epoch = useAuthStore((s) => s.epoch);
   const authError = useAuthStore((s) => s.error);
@@ -82,15 +84,22 @@ export default function AppLayout() {
           跳到主要内容
         </a>
 
-        {/* 桌面（≥1024px）：左侧固定导航栏 240px；窄屏由 CSS 隐藏 */}
-        <SidebarNav />
+        {/* 桌面（≥1024px）：左侧固定导航栏 240px，可由顶栏三角形按钮折叠；窄屏由 CSS 隐藏 */}
+        <SidebarNav
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen((v) => !v)}
+        />
 
         {/* 移动/平板（<1024px）：汉堡按钮 + 抽屉导航，入口与桌面一致 */}
         <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
 
         {/* 右侧：顶栏 + 主内容 + 底部安全横幅 */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar onMenuClick={() => setNavOpen(true)} />
+          <TopBar
+            onMenuClick={() => setNavOpen(true)}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          />
           <main id="main-content" className="app-content flex-1" tabIndex={-1}>
             {authError && (
               <div className="mx-4 mt-4 flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:mx-6">

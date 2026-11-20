@@ -16,6 +16,16 @@
 .app-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
+  transition: margin-left 0.22s ease;
+}
+
+/* 顶栏三角形按钮折叠后的状态：整栏滑出视口、不占布局宽度
+   （visibility 延迟到动画结束后生效，避免滑出过程中内容闪烁；
+   隐藏后导航链接同时退出 Tab 顺序） */
+.app-sidebar-collapsed {
+  margin-left: calc(var(--sidebar-width) * -1);
+  visibility: hidden;
+  transition: margin-left 0.22s ease, visibility 0s linear 0.22s;
 }
 
 /* ---- 顶部栏 ----

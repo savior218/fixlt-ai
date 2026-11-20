@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Menu, Settings, User } from "lucide-react";
 
 import NotificationBell from "./NotificationBell";
+import SidebarToggle from "./SidebarToggle";
 import { useToast } from "./Toast";
 import { useAuthStore } from "../stores/authStore";
 import { useAvatarStore } from "../stores/avatarStore";
@@ -12,9 +13,17 @@ import { loginHref } from "../utils/redirect";
 interface TopBarProps {
   /** 移动端（<1024px）汉堡按钮点击：打开导航抽屉 */
   onMenuClick?: () => void;
+  /** 桌面（≥1024px）左侧导航栏当前是否展开 */
+  sidebarOpen: boolean;
+  /** 桌面（≥1024px）三角形按钮点击：折叠 / 展开左侧导航栏 */
+  onToggleSidebar: () => void;
 }
 
-export default function TopBar({ onMenuClick }: TopBarProps) {
+export default function TopBar({
+  onMenuClick,
+  sidebarOpen,
+  onToggleSidebar,
+}: TopBarProps) {
   const { mode, setMode } = usePrefs();
   const { notify } = useToast();
   const navigate = useNavigate();
@@ -62,8 +71,16 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
   return (
     <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
-      {/* 左：移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
+      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
       <div className="flex min-w-0 items-center gap-1">
+        {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
+        {!sidebarOpen && (
+          <SidebarToggle
+            open={sidebarOpen}
+            onToggle={onToggleSidebar}
+            className="hidden lg:inline-flex"
+          />
+        )}
         <button
           type="button"
           onClick={onMenuClick}
