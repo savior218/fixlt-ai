@@ -38,13 +38,7 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { usePrefs } from "../stores/prefs";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 
-/** 设备类别快捷选择（只作为 AI 上下文，不阻塞聊天） */
-const CATEGORY_CHIPS: { key: DiagnoseCategory; label: string }[] = [
-  { key: "ac", label: "空调" },
-  { key: "fridge", label: "冰箱" },
-  { key: "washer", label: "洗衣机" },
-  { key: "other", label: "其他家电" },
-];
+/** 设备类别由用户描述自动推断；不再要求手动选择 */
 
 /** 根据用户第一句话推断设备类别，用户已手动选择时以手动为准 */
 function inferCategory(text: string, current: DiagnoseCategory | null): DiagnoseCategory {
@@ -92,6 +86,8 @@ export default function Diagnose() {
   const chatSeqRef = useRef(0);
   const chatAbortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(false);
+  /** 照片是否已随某一轮对话发给 AI（上传/重传后重置） */
+  const photoSentRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -144,6 +140,7 @@ export default function Diagnose() {
       const preview = await fileToDataUrl(compressed);
       try {
         const res = await uploadDiagnosisPhoto(compressed);
+        photoSentRef.current = false;
         setDraft({ photoId: res.id, photoPreview: preview });
         notify("照片已上传，AI 会结合照片分析", "success");
       } catch {
@@ -158,6 +155,7 @@ export default function Diagnose() {
   }
 
   function removePhoto() {
+    photoSentRef.current = false;
     setDraft({ photoId: null, photoPreview: null });
   }
 
@@ -244,11 +242,10 @@ export default function Diagnose() {
     setThinking(true);
     setDraft({ aiError: null });
 
-    // 照片只在首轮随消息发送，后续轮次无需重复上传
-    const userTurns = history.filter((m) => m.role === "user").length;
+    // 照片在“上传后的下一轮”发送一次；AI 看过之后保留在上下文里，不重复上传
     const callCtx: AskContext = {
       ...ctx,
-      photoId: userTurns <= 1 ? ctx.photoId ?? null : null,
+      photoId: ctx.photoId != null && !photoSentRef.current ? ctx.photoId : null,
     };
     const tone = elder ? "elder" : "standard";
     const result = await chatWithAI(callCtx, history, tone, controller.signal);
@@ -274,6 +271,7 @@ export default function Diagnose() {
       return;
     }
 
+    if (callCtx.photoId != null) photoSentRef.current = true;
     appendMessage({
       role: "ai",
       content: result.reply,
@@ -423,6 +421,7 @@ export default function Diagnose() {
     cancelGeneration();
     setAiReady(false);
     setErrorPhase("chat");
+    photoSentRef.current = false;
     resetDraft();
     setDraft({ step: 2 });
     setInput("");
@@ -565,37 +564,6 @@ export default function Diagnose() {
   /* ================= 聊天式 AI 问诊 ================= */
   return (
     <div className="space-y-4">
-      {/* 顶部上下文：设备类型（可选，不阻塞聊天） */}
-      <div className="card-base flex flex-wrap items-center justify-between gap-3 p-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-stone-500">设备</span>
-          <div className="flex flex-wrap gap-1.5">
-            {CATEGORY_CHIPS.map((c) => {
-              const active = (draft.category ?? "other") === c.key;
-              return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => setDraft({ category: c.key })}
-                  aria-pressed={active}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                    active
-                      ? "bg-brand-600 text-white"
-                      : "bg-stone-100 text-stone-600 hover:bg-brand-50 hover:text-brand-700",
-                  ].join(" ")}
-                >
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {selectedDevice && (
-          <span className="truncate text-xs text-stone-500">已关联：{selectedDevice.name}</span>
-        )}
-      </div>
-
       <SectionCard padding="none">
         <div
           ref={chatScrollRef}
@@ -738,13 +706,6 @@ export default function Diagnose() {
               发送
             </Button>
           </div>
-          <p className="mt-1.5 text-xs text-stone-400">
-            Enter 发送，Shift+Enter 换行；对话由真实 AI 生成，仅供参考。照片仅用于本次诊断，详见
-            <a href="#/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
-              《隐私政策》
-            </a>
-            。
-          </p>
         </div>
       </SectionCard>
 
@@ -761,11 +722,6 @@ export default function Diagnose() {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-stone-800">
               {aiReady ? "AI 认为信息已经足够" : "随时可以生成诊断报告"}
-            </p>
-            <p className="mt-1 text-xs text-stone-500">
-              {aiReady
-                ? "也可以继续补充情况；生成时会基于当前完整对话整理原因与安全建议。"
-                : "生成会基于当前完整对话调用真实 AI，通常需要 10–60 秒；也可以继续和 AI 聊。"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
