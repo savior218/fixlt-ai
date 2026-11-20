@@ -131,7 +131,7 @@ export default function MobileNavDrawer({
       >
         {/* 头部：品牌 + 关闭 */}
         <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">
-          <span className="flex items-center gap-2 text-base font-bold text-stone-900">
+          <span className="flex items-center gap-2">
             <img
               src="/brand-icon.png"
               alt=""
@@ -140,7 +140,7 @@ export default function MobileNavDrawer({
               className="h-[30px] w-[30px] shrink-0"
               aria-hidden
             />
-            修必达
+            <span className="brand-wordmark text-stone-900">修必达</span>
           </span>
           <button
             type="button"

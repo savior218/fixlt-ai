@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
 import Loading from "../components/Loading";
@@ -77,6 +77,16 @@ export default function AppLayout() {
       <div className="flex min-h-screen items-center justify-center bg-stone-50">
         <Loading label="正在恢复登录状态…" />
       </div>
+    );
+  }
+
+  // 未登录（或会话已过期）先进入登录页，登录后按有效期（服务端 7 天）免登录
+  if (status === "guest") {
+    return (
+      <Navigate
+        to={loginHref(`${location.pathname}${location.search}`)}
+        replace
+      />
     );
   }
 

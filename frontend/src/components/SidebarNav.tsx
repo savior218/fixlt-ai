@@ -38,7 +38,7 @@ export default function SidebarNav({
             className="h-[30px] w-[30px] shrink-0"
             aria-hidden
           />
-          <span className="text-base font-bold text-stone-900">修必达</span>
+          <span className="brand-wordmark text-stone-900">修必达</span>
         </span>
         <SidebarToggle open={open} onToggle={onToggle} className="inline-flex" />
       </div>
