@@ -82,7 +82,6 @@ export default function DynamicInterview() {
   const requestIdRef = useRef(`ans-${Date.now()}-${Math.random()}`);
   const autoSpokenRef = useRef<string | null>(null);
   const voice = useSpeechRecognition();
-  const voiceConsumedRef = useRef("");
   const restoreDoneRef = useRef(false);
   const persistReadyRef = useRef(false);
   const restoringRef = useRef(false);
@@ -136,17 +135,18 @@ export default function DynamicInterview() {
   }, [draftKey, phase, description, session?.session_id]);
 
   // 语音转写只填入可编辑输入框，必须由用户确认后才提交
+  const voiceConsumedSeqRef = useRef(0);
   useEffect(() => {
-    if (!voice.finalText || voice.finalText === voiceConsumedRef.current) return;
-    voiceConsumedRef.current = voice.finalText;
+    // finalText 为增量文本，finalSeq 单调递增防止同一增量被消费两次
+    if (!voice.finalText || voice.finalSeq === voiceConsumedSeqRef.current) return;
+    voiceConsumedSeqRef.current = voice.finalSeq;
     if (phase === "describe") {
       setDescription((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
     } else if (phase === "active") {
       setAnswerText((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
       setAnswerSource("voice");
     }
-    voice.clear();
-  }, [voice.finalText, voice.clear, phase]);
+  }, [voice.finalText, voice.finalSeq, phase]);
 
   useEffect(() => {
     if (voice.error) notify(voice.error, "error");
@@ -422,12 +422,21 @@ export default function DynamicInterview() {
           例如：开的是制冷模式、温度调到 22 度、过滤网刚洗过、风量正常。已经说清的内容不会再问。
         </p>
         <textarea
-          value={description}
+          value={description + (voice.listening ? voice.interimText : "")}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           disabled={phase !== "describe"}
-          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm"
-          placeholder="用一两句话描述空调的情况，也可以点麦克风说"
+          className={[
+            "w-full rounded-xl border px-3 py-2 text-sm",
+            voice.listening
+              ? "border-red-300 bg-red-50/40"
+              : "border-stone-300",
+          ].join(" ")}
+          placeholder={
+            voice.listening
+              ? "正在聆听…说完点「停止语音输入」"
+              : "用一两句话描述空调的情况，也可以点麦克风说"
+          }
         />
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <input
@@ -477,7 +486,7 @@ export default function DynamicInterview() {
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {phase === "describe" && (
             <>
-              <Button variant="secondary" size="sm" onClick={toggleVoice}>
+              <Button variant={voice.listening ? "danger" : "secondary"} size="sm" onClick={toggleVoice}>
                 {voice.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 {voice.listening ? "停止语音输入" : "语音描述"}
               </Button>
@@ -491,9 +500,6 @@ export default function DynamicInterview() {
             <Button variant="secondary" size="sm" onClick={restart}>重新描述</Button>
           )}
         </div>
-        {(voice.listening || voice.interimText) && (
-          <p className="mt-2 text-xs text-stone-500">识别中：{voice.interimText || "请开始说话…"}</p>
-        )}
       </SectionCard>
       )}
 
@@ -542,17 +548,22 @@ export default function DynamicInterview() {
                 <label className="min-w-[240px] flex-1 text-sm">
                   <span className="mb-1 block text-stone-700">回答（可修改语音转写）</span>
                   <input
-                    value={answerText}
+                    value={answerText + (voice.listening ? voice.interimText : "")}
                     onChange={(e) => {
                       setAnswerText(e.target.value);
                       // 修改语音转写仍算语音来源；从选项改为文字输入则记为文字
                       setAnswerSource((prev) => (prev === "voice" ? "voice" : "text"));
                     }}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                    placeholder="点选项或直接输入；不知道也可以"
+                    className={[
+                      "w-full rounded-lg border px-3 py-2 text-sm",
+                      voice.listening
+                        ? "border-red-300 bg-red-50/40"
+                        : "border-stone-300",
+                    ].join(" ")}
+                    placeholder={voice.listening ? "正在聆听…说完点「停止录音」" : "点选项或直接输入；不知道也可以"}
                   />
                 </label>
-                <Button variant="secondary" onClick={toggleVoice}>
+                <Button variant={voice.listening ? "danger" : "secondary"} onClick={toggleVoice}>
                   {voice.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   {voice.listening ? "停止录音" : "语音回答"}
                 </Button>
@@ -561,11 +572,6 @@ export default function DynamicInterview() {
                   提交回答
                 </Button>
               </div>
-              {(voice.listening || voice.interimText) && (
-                <p className="mt-2 text-xs text-stone-500">
-                  识别中：{voice.interimText || "请开始说话…"}（识别结果需确认后再提交）
-                </p>
-              )}
               <div className="mt-3">
                 <Button variant="ghost" size="sm" onClick={() => void finishEarly()} disabled={busy || session.round === 0}>
                   基于现有信息生成建议（可能信息不足）

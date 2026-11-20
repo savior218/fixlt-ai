@@ -125,14 +125,13 @@ export default function Diagnose() {
 
   /* ---------- 语音听写输入：再点一次停止，最终文字并入输入框 ---------- */
   const voice = useSpeechRecognition();
-  const voiceConsumedRef = useRef("");
+  const voiceConsumedSeqRef = useRef(0);
   useEffect(() => {
-    if (voice.finalText && voice.finalText !== voiceConsumedRef.current) {
-      voiceConsumedRef.current = voice.finalText;
-      setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
-      voice.clear();
-    }
-  }, [voice.finalText, voice.clear]);
+    // finalText 为增量文本，finalSeq 单调递增防止同一增量被消费两次
+    if (!voice.finalText || voice.finalSeq === voiceConsumedSeqRef.current) return;
+    voiceConsumedSeqRef.current = voice.finalSeq;
+    setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
+  }, [voice.finalText, voice.finalSeq]);
   useEffect(() => {
     if (voice.error) notify(voice.error, "error");
   }, [voice.error, notify]);
@@ -951,7 +950,7 @@ export default function Diagnose() {
             <div className="flex items-center gap-2 border-t border-stone-100 p-3">
               <input
                 type="text"
-                value={input}
+                value={input + (voice.listening ? voice.interimText : "")}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   // 输入法组合状态（如中文选字）下 Enter 不发送；keyCode 229 兼容部分安卓输入法
@@ -963,8 +962,20 @@ export default function Diagnose() {
                 enterKeyHint="send"
                 autoComplete="off"
                 disabled={generating}
-                placeholder={elder ? "也可以打字告诉我…" : "请输入您的问题，比如：空调不制冷了…"}
-                className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
+                placeholder={
+                  voice.listening
+                    ? "正在聆听…说完点「停止」"
+                    : elder
+                      ? "也可以打字告诉我…"
+                      : "请输入您的问题，比如：空调不制冷了…"
+                }
+                aria-label={voice.listening ? "语音输入中，内容实时转写" : "回答输入框"}
+                className={[
+                  "min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none disabled:bg-stone-50",
+                  voice.listening
+                    ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                    : "border-stone-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
+                ].join(" ")}
               />
               <Button
                 variant={voice.listening ? "danger" : "secondary"}
