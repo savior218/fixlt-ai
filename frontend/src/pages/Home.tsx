@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 
 import Button from "../components/Button";
-import EmptyState from "../components/EmptyState";
 import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
@@ -177,11 +176,9 @@ export default function Home() {
         padding="sm"
       >
         {recent.length === 0 ? (
-          <EmptyState
-            icon="🗂️"
-            title="暂无诊断记录"
-            description="完成首次诊断后，记录会自动展示在这里。"
-          />
+          <div className="rounded-2xl border border-dashed border-stone-300 bg-surface px-4 py-10 text-center">
+            <p className="text-sm text-stone-400">暂无诊断记录</p>
+          </div>
         ) : (
           <ul className="divide-y divide-stone-100">
             {recent.map((d) => (

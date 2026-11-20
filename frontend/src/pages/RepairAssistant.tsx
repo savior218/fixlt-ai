@@ -200,7 +200,7 @@ export default function RepairAssistant() {
   }
 
   /** 当前品牌对应的官方售后电话（用于拨打卡片；未收录返回 null） */
-  const hotline: BrandHotline | null = lookupHotline(form.brand);
+  const hotline: BrandHotline | null = lookupHotline(form.brand, form.category);
 
   /** 基于表单生成报修话术：拨官方售后电话时说明「什么问题 + 做过什么 + 希望怎么解决」 */
   function generate() {
@@ -617,7 +617,7 @@ export default function RepairAssistant() {
         {/* ---------- 右：预览（窄屏堆叠在表单下方，生成后自动滚到这里） ---------- */}
         <div ref={previewRef} className="scroll-mt-24">
         <SectionCard
-          title="报修话术预览"
+          title="报修话术"
           action={
             generated && (
               <button
@@ -659,14 +659,9 @@ export default function RepairAssistant() {
                 </p>
                 {hotline ? (
                   <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-lg font-bold tracking-wide text-brand-800">
-                        {hotline.phone}
-                      </p>
-                      <p className="text-xs text-stone-500">
-                        {hotline.note ?? ""} · 号码仅供参考，以品牌官方公布为准
-                      </p>
-                    </div>
+                    <p className="text-lg font-bold tracking-wide text-brand-800">
+                      {hotline.phone}
+                    </p>
                     <a href={`tel:${hotline.phone.replace(/-/g, "")}`}>
                       <Button size="sm">拨打官方售后</Button>
                     </a>
