@@ -70,11 +70,24 @@ class Settings(BaseSettings):
     @classmethod
     def _normalize_database_url(cls, value: str) -> str:
         """兼容 Render / 云厂商常见的 postgres:// 连接串，统一使用 psycopg 驱动。"""
-        if value.startswith("postgres://"):
-            return "postgresql+psycopg://" + value[len("postgres://") :]
-        if value.startswith("postgresql://"):
-            return "postgresql+psycopg://" + value[len("postgresql://") :]
-        return value
+        # 从控制台复制时经常带上首尾空格、换行或引号，先清理再校验
+        cleaned = value.strip().strip("\"'").strip()
+        if any(ch in cleaned for ch in "\r\n\t"):
+            raise ValueError(
+                "FIXITAI_DATABASE_URL 中含换行或制表符，请重新粘贴为单行连接串"
+            )
+        if "://" not in cleaned:
+            raise ValueError(
+                "FIXITAI_DATABASE_URL 不是合法的连接串（缺少 '://'），"
+                f"当前值长度 {len(cleaned)}。"
+                "请在 Render 的 fixitai-db → Connections 中复制 Internal Database URL"
+                "（以 postgres:// 开头），确认整串粘贴完整、无空格无引号。"
+            )
+        if cleaned.startswith("postgres://"):
+            return "postgresql+psycopg://" + cleaned[len("postgres://") :]
+        if cleaned.startswith("postgresql://"):
+            return "postgresql+psycopg://" + cleaned[len("postgresql://") :]
+        return cleaned
 
     @property
     def effective_cookie_secure(self) -> bool:
