@@ -209,8 +209,8 @@
 
 /* ---- 兼容保留：底部弹层/抽屉的安全区工具类（ModalDialog 等使用） ---- */
 .safe-pad-bottom {
-  /* 1rem 基础内边距 + 底部安全区，避免弹窗按钮贴住屏幕底边 */
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  /* 1.25rem 基础内边距 + 底部安全区，避免弹窗按钮贴住屏幕底边 */
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---- 兼容保留：抽屉入场动画（旧组件类名，避免样式缺失） ---- */

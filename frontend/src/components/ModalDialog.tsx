@@ -127,7 +127,7 @@ export default function ModalDialog({
           </div>
         )}
         {footer && (
-          <div className="safe-pad-bottom flex shrink-0 flex-wrap justify-end gap-2 border-t border-stone-100 p-4">
+          <div className="safe-pad-bottom flex shrink-0 flex-wrap justify-end gap-3 border-t border-stone-100 p-5">
             {footer}
           </div>
         )}
