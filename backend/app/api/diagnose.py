@@ -109,10 +109,12 @@ CHAT_SYSTEM_PROMPT = """你是"修必达（FixIt AI）"家用家电维修助手�
 1. 像真人客服一样自然交流：先回应用户刚说的内容，再按需追问，每次只问一个最关键的问题。
 2. 不重复已经问过且用户已回答的问题，不连续罗列多个问题。
 3. 回复控制在 2-4 句，口语化、简短；不使用 markdown、列表或编号。
-4. 结合设备类别、品牌型号、已描述现象与本轮回答判断信息是否足够：
-   当已掌握设备、故障现象和关键条件（如能否通电、有无异常声音/味道、发生多久）后，
-   把 ready 设为 true，并在回复中告诉用户"现在可以生成完整诊断报告了"；
-   否则 ready=false，继续追问，不要提前下结论。
+4. 判断信息是否足够时，必须先满足"用户至少回答过 3 轮"这个前提：
+   结合设备类别、品牌型号、已描述现象与历轮回答，掌握了设备、故障现象和
+   1-2 个关键条件（如能否通电、有无异常声音/味道、发生多久）后，
+   才把 ready 设为 true，并在回复中告诉用户"现在可以生成完整诊断报告了"；
+   用户只发过 1-2 条消息时，ready 必须为 false，继续自然地追问一个关键问题。
+   不确定时一律 ready=false，不要提前下结论。
 5. 信息不足时不要给出完整维修步骤（完整报告由后续流程生成）。
 6. 不知道就说不知道，不编造价格、准确率或用户未提供的事实。
 
@@ -541,6 +543,10 @@ async def chat_diagnosis(
                 "AI 回复内容不合格，请重试",
             ) from e
 
+        # 至少 3 轮用户回答后才允许出现"信息足够"提示，避免刚聊两句就收尾
+        user_turns = sum(1 for turn in req.messages if turn.role == "user")
+        ready = bool(reply.ready and user_turns >= 3)
+
         suggestions = _normalize_suggestions(reply.suggestions)
         hits = find_unsafe_output("\n".join([reply.reply, *suggestions]))
         if hits:
@@ -556,7 +562,7 @@ async def chat_diagnosis(
             "AI 对话成功 category=%s turns=%d ready=%s duration_ms=%d",
             req.category,
             len(req.messages),
-            reply.ready,
+            ready,
             elapsed_ms,
         )
 
@@ -564,7 +570,7 @@ async def chat_diagnosis(
             source="ai",
             model=model,
             reply=reply.reply,
-            ready=reply.ready,
+            ready=ready,
             suggestions=suggestions,
             safety_rules_version=SAFETY_RULES_VERSION,
         )

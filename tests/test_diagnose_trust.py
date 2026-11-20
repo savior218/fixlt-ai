@@ -420,3 +420,35 @@ def test_chat_requires_at_least_one_message():
     resp = client.post("/api/diagnose/chat", json=make_chat_payload(messages=[]))
     assert resp.status_code == 400
     assert resp.json()["detail"]["code"] == "empty_conversation"
+
+
+def test_chat_ready_requires_three_user_turns(monkeypatch):
+    async def _premature(system, messages, **kwargs):
+        return {
+            "reply": "情况我基本了解了，现在可以生成诊断报告了。",
+            "ready": True,
+            "suggestions": [],
+        }
+
+    monkeypatch.setattr(glm_client, "is_configured", lambda: True)
+    monkeypatch.setattr(glm_client, "chat_json_messages", _premature)
+
+    two_turns = make_chat_payload(
+        messages=[
+            {"role": "user", "content": "空调不凉"},
+            {"role": "assistant", "content": "请问有风吗？"},
+            {"role": "user", "content": "有风但不凉"},
+        ]
+    )
+    assert client.post("/api/diagnose/chat", json=two_turns).json()["ready"] is False
+
+    three_turns = make_chat_payload(
+        messages=[
+            {"role": "user", "content": "空调不凉"},
+            {"role": "assistant", "content": "请问有风吗？"},
+            {"role": "user", "content": "有风但不凉"},
+            {"role": "assistant", "content": "持续多久了？"},
+            {"role": "user", "content": "今天开始的"},
+        ]
+    )
+    assert client.post("/api/diagnose/chat", json=three_turns).json()["ready"] is True
