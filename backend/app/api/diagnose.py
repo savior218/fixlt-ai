@@ -529,7 +529,7 @@ async def chat_diagnosis(
             else settings.ai_text_model
         )
         try:
-            raw = await glm_client.chat_json_messages(
+            raw = await glm_client.chat_reply_messages(
                 CHAT_SYSTEM_PROMPT + _chat_context(req),
                 messages,
                 image=image,

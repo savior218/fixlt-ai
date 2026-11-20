@@ -116,19 +116,15 @@ def _attach_image(messages: list[dict], image: dict) -> list[dict]:
     return out
 
 
-async def chat_json_messages(
+async def _request_content(
     system: str,
     messages: list[dict],
     image: dict | None = None,
     model: str | None = None,
     max_tokens: int | None = None,
-) -> dict:
-    """多轮对话调用：messages 为 [{"role": "user"|"assistant", "content": str}]。
-
-    image（可选）：{"mime": "image/jpeg", "base64": "..."}，传入时以
-    OpenAI 兼容的 image_url 消息格式附在最近一条用户消息上（模块③ AI 看图）。
-    model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
-    """
+    json_mode: bool = True,
+) -> str:
+    """调用 GLM chat/completions，返回 assistant 的原始文本内容。"""
     if not is_configured():
         raise GLMError("not_configured", "GLM API key 未配置（FIXITAI_AI_API_KEY）")
 
@@ -141,8 +137,9 @@ async def chat_json_messages(
         "messages": [{"role": "system", "content": system}, *history],
         "temperature": 0.4,
         "max_tokens": max_tokens or settings.ai_max_output_tokens,
-        "response_format": {"type": "json_object"},
     }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
     url = settings.ai_base_url.rstrip("/") + CHAT_COMPLETIONS_PATH
     headers = {"Authorization": f"Bearer {settings.ai_api_key}"}
 
@@ -177,5 +174,65 @@ async def chat_json_messages(
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
         raise GLMError("bad_response", f"GLM 响应结构异常：{e}") from e
+    if not isinstance(content, str):
+        raise GLMError("bad_response", "GLM 响应内容不是文本")
+    return content
 
+
+async def chat_json_messages(
+    system: str,
+    messages: list[dict],
+    image: dict | None = None,
+    model: str | None = None,
+    max_tokens: int | None = None,
+) -> dict:
+    """多轮对话调用：messages 为 [{"role": "user"|"assistant", "content": str}]。
+
+    image（可选）：{"mime": "image/jpeg", "base64": "..."}，传入时以
+    OpenAI 兼容的 image_url 消息格式附在最近一条用户消息上（模块③ AI 看图）。
+    model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
+    """
+    content = await _request_content(
+        system,
+        messages,
+        image=image,
+        model=model,
+        max_tokens=max_tokens,
+        json_mode=True,
+    )
     return parse_json_object(content)
+
+
+async def chat_reply_messages(
+    system: str,
+    messages: list[dict],
+    image: dict | None = None,
+    model: str | None = None,
+    max_tokens: int | None = None,
+) -> dict:
+    """自由聊天专用：优先按 JSON 解析；模型不支持 JSON 时回退为纯文本回复。
+
+    部分轻量模型（如 glm-4-flash）会忽略 response_format 直接返回自然语言。
+    对话场景可直接把这段文字作为 reply，避免整轮对话失败。
+    """
+    content = await _request_content(
+        system,
+        messages,
+        image=image,
+        model=model,
+        max_tokens=max_tokens,
+        json_mode=True,
+    )
+    try:
+        obj = parse_json_object(content)
+    except GLMError as e:
+        if e.code not in {"bad_json", "invalid_shape", "oversize_output"}:
+            raise
+        text = content.strip()
+        if not text:
+            raise GLMError("empty_output", "模型返回空内容") from e
+        return {"reply": text[:800], "ready": False, "suggestions": []}
+
+    if not isinstance(obj.get("reply"), str) or not obj["reply"].strip():
+        raise GLMError("invalid_shape", "对话 JSON 缺少 reply 字段")
+    return obj

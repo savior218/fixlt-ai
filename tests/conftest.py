@@ -13,6 +13,8 @@ os.environ["FIXITAI_DATABASE_URL"] = f"sqlite:///{_TEST_DB.as_posix()}"
 # 测试中放开认证限流，避免同一 TestClient IP 触发 429；限流另有专门用例覆盖
 os.environ["FIXITAI_AUTH_LOGIN_RATE_LIMIT_PER_MINUTE"] = "1000"
 os.environ["FIXITAI_AUTH_REGISTER_RATE_LIMIT_PER_MINUTE"] = "1000"
+# 测试必须与开发者的 backend/.env 隔离，避免本地真实密钥影响“未配置”用例
+os.environ["FIXITAI_AI_API_KEY"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
