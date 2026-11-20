@@ -5,6 +5,7 @@ import { Camera, CheckCircle2, ClipboardCopy, Loader2, Phone, Send, ShieldAlert,
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import InputField from "../components/InputField";
+import { useMediaPermission } from "../components/MediaPermission";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
@@ -106,6 +107,8 @@ export default function RepairAssistant() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  /** 访问照片前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
   const authStatus = useAuthStore((s) => s.status);
 
   const tickets = useTicketStore((s) => s.tickets);
@@ -478,7 +481,7 @@ export default function RepairAssistant() {
             variant="secondary"
             size="sm"
             className="mt-2"
-            onClick={() => photoInputRef.current?.click()}
+            onClick={() => requestPermission("photo", () => photoInputRef.current?.click())}
             disabled={photoBusy}
           >
             {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}

@@ -6,6 +6,7 @@ import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
 import ConfirmDialog from "../components/ConfirmDialog";
 import InputField from "../components/InputField";
+import { useMediaPermission } from "../components/MediaPermission";
 import ModalDialog from "../components/ModalDialog";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
@@ -114,6 +115,9 @@ export default function Settings() {
   const avatarUrl = useAvatarStore((s) =>
     user ? (s.avatars[user.id] ?? null) : null,
   );
+  /** 访问照片前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   /** 选择头像图片 → 校验 → 方形压缩 128px → 按账号保存（本地） */
   async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
@@ -352,31 +356,40 @@ export default function Settings() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* 可点击更换的头像（方形压缩后按账号本地存储） */}
-              <label
-                className="group relative block h-12 w-12 cursor-pointer"
-                title="点击更换头像"
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="用户头像"
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                    {user.nickname.slice(0, 1)}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    requestPermission("photo", () =>
+                      avatarInputRef.current?.click()
+                    )
+                  }
+                  className="group relative block h-12 w-12 cursor-pointer rounded-full"
+                  title="点击更换头像"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="用户头像"
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+                      {user.nickname.slice(0, 1)}
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    <Camera aria-hidden className="h-4 w-4" />
                   </span>
-                )}
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  <Camera aria-hidden className="h-4 w-4" />
-                </span>
+                </button>
                 <input
+                  ref={avatarInputRef}
                   type="file"
                   accept="image/jpeg,image/png"
                   className="hidden"
                   onChange={handleAvatarChange}
                 />
-              </label>
+              </div>
               <div>
                 <p className="text-sm font-semibold text-stone-900">
                   {user.nickname}

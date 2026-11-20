@@ -19,6 +19,7 @@ import DeviceCard from "../components/DeviceCard";
 import DiagnosisStepper from "../components/DiagnosisStepper";
 import InputField from "../components/InputField";
 import AIMessageBubble from "../components/AIMessageBubble";
+import { useMediaPermission } from "../components/MediaPermission";
 import SectionCard from "../components/SectionCard";
 import SourceBadge from "../components/SourceBadge";
 import SpeakButton from "../components/SpeakButton";
@@ -134,6 +135,8 @@ export default function Diagnose() {
 
   /* ---------- 语音听写输入：再点一次停止，最终文字并入输入框 ---------- */
   const voice = useSpeechRecognition();
+  /** 访问照片 / 麦克风前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
   const voiceConsumedSeqRef = useRef(0);
   useEffect(() => {
     // finalText 为增量文本，finalSeq 单调递增防止同一增量被消费两次
@@ -149,8 +152,11 @@ export default function Diagnose() {
       voice.stop();
     } else if (!voice.supported) {
       notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
-    } else if (!voice.start()) {
-      notify("语音识别启动失败，请稍后再试", "error");
+    } else {
+      // 先征求意见：允许后才真正开启麦克风
+      requestPermission("microphone", () => {
+        if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+      });
     }
   }
 
@@ -760,7 +766,7 @@ export default function Diagnose() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => requestPermission("photo", () => fileInputRef.current?.click())}
                       disabled={uploading}
                     >
                       重新选择
@@ -777,11 +783,11 @@ export default function Diagnose() {
                 role="button"
                 tabIndex={0}
                 aria-label="上传故障照片"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => requestPermission("photo", () => fileInputRef.current?.click())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    fileInputRef.current?.click();
+                    requestPermission("photo", () => fileInputRef.current?.click());
                   }
                 }}
                 onDragOver={(e) => {
