@@ -36,6 +36,16 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { usePrefs } from "../stores/prefs";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 
+/** 等待报告生成时轮换的短句，缓解等待焦虑，不虚构进度 */
+const WAITING_LINES = [
+  "正在把您的情况讲给维修师傅听…",
+  "正在翻维修笔记，找相似的故障…",
+  "先别急着拆机器，正在核对安全建议…",
+  "正在把专业术语翻译成人话…",
+  "正在排查最可能的几个原因…",
+  "快好了，正在做最后校对…",
+];
+
 /** 设备类别由用户描述自动推断；不再要求手动选择 */
 
 /** 根据用户第一句话推断设备类别，用户已手动选择时以手动为准 */
@@ -65,6 +75,7 @@ export default function Diagnose() {
   const [thinking, setThinking] = useState(false);
   /** 最终诊断生成中 */
   const [generating, setGenerating] = useState(false);
+  const [waitingIndex, setWaitingIndex] = useState(0);
   /** AI 认为信息已足够，可以生成完整报告 */
   const [aiReady, setAiReady] = useState(false);
   /** 最近一次失败发生在对话中，还是最终生成时 */
@@ -98,6 +109,16 @@ export default function Diagnose() {
       busyRef.current = false;
     };
   }, []);
+
+  // 生成报告期间每 3 秒换一句等待文案
+  useEffect(() => {
+    if (!generating) return;
+    setWaitingIndex(0);
+    const timer = window.setInterval(() => {
+      setWaitingIndex((i) => (i + 1) % WAITING_LINES.length);
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [generating]);
 
   /* ---------- 故障照片 ---------- */
   const [uploading, setUploading] = useState(false);
@@ -599,19 +620,24 @@ export default function Diagnose() {
             </>
           )}
 
-          {/* 最终报告生成中 */}
+          {/* 最终报告生成中：动态图标 + 轮换短句 */}
           {generating && (
-            <div role="status" aria-live="polite" className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900">
-              <p className="flex items-center gap-2 font-semibold">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600" aria-hidden />
-                正在基于完整对话生成诊断报告…
-              </p>
-              <p className="mt-1 text-brand-800">
-                通常需要 10–60 秒，实际耗时取决于模型服务；这里不显示虚构进度。
-              </p>
-              <Button variant="secondary" size="sm" className="mt-2" onClick={cancelGeneration}>
-                取消本次等待
-              </Button>
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand-600" aria-hidden />
+                <p className="text-sm text-stone-700">{WAITING_LINES[waitingIndex]}</p>
+              </div>
+              <button
+                type="button"
+                onClick={cancelGeneration}
+                className="text-xs text-stone-400 underline-offset-2 hover:text-stone-600 hover:underline"
+              >
+                取消等待
+              </button>
             </div>
           )}
           <div ref={chatEndRef} />
