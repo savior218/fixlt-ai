@@ -16,6 +16,40 @@
 .app-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
+  transition: margin-left 0.22s ease;
+}
+
+/* 顶栏三角形按钮折叠后的状态：整栏滑出视口、不占布局宽度
+   （visibility 延迟到动画结束后生效，避免滑出过程中内容闪烁；
+   隐藏后导航链接同时退出 Tab 顺序） */
+.app-sidebar-collapsed {
+  margin-left: calc(var(--sidebar-width) * -1);
+  visibility: hidden;
+  transition: margin-left 0.22s ease, visibility 0s linear 0.22s;
+}
+
+/* ---- 侧栏品牌区：左上角暖陶土氛围，底部渐隐细线收边 ---- */
+.app-sidebar-brand {
+  position: relative;
+  background: radial-gradient(
+    150% 180% at 0% 0%,
+    rgba(201, 100, 66, 0.12) 0%,
+    rgba(201, 100, 66, 0) 62%
+  );
+}
+.app-sidebar-brand::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-300) 0%,
+    rgba(227, 155, 127, 0) 78%
+  );
+  pointer-events: none;
 }
 
 /* ---- 顶部栏 ----
@@ -24,6 +58,11 @@
   min-height: var(--topbar-height);
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+  background-image: radial-gradient(
+    70% 220% at 0% 0%,
+    rgba(201, 100, 66, 0.08) 0%,
+    rgba(201, 100, 66, 0) 55%
+  );
 }
 
 /* ---- 中央内容容器 ---- */
@@ -31,11 +70,11 @@
   padding: var(--content-padding);
 }
 
-/* ---- 主内容最大宽度：超宽屏居中，不拉伸表单 ---- */
+/* ---- 主内容：占满外壳剩余宽度（不再限制 1440px 居中）---- */
 .app-content-inner {
   margin: 0 auto;
   width: 100%;
-  max-width: 1440px;
+  max-width: none;
 }
 
 /* ---- 跳转链接：平时隐藏，键盘聚焦时可见 ---- */
@@ -60,6 +99,32 @@
 .app-content {
   padding-left: calc(var(--content-padding) + env(safe-area-inset-left, 0px));
   padding-right: calc(var(--content-padding) + env(safe-area-inset-right, 0px));
+}
+
+/* ============================================================
+   法律文档整页（《服务协议》《隐私政策》《使用规范》《版权说明》）
+   独立于应用外壳，按官方文档排版；打印时自动去掉导航与装饰
+   ============================================================ */
+.legal-page {
+  min-height: 100vh;
+}
+
+@media print {
+  .legal-topbar,
+  .legal-docnav,
+  .legal-toc,
+  .legal-toc-mobile,
+  .legal-footer {
+    display: none !important;
+  }
+  .legal-page {
+    background: #fff;
+  }
+  .legal-article {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
 }
 
 /* ============================================================

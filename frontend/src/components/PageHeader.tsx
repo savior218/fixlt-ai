@@ -28,7 +28,9 @@ export default function PageHeader({
         <div className="min-w-0">
           <h1 className="break-words text-xl font-bold text-stone-900">{title}</h1>
           {subtitle && (
-            <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+            <p data-elder="hide" className="mt-1 text-sm text-stone-500">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>

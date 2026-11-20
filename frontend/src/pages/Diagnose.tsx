@@ -107,14 +107,15 @@ export default function Diagnose() {
 
   /* ---------- 语音听写输入 ---------- */
   const voice = useSpeechRecognition();
-  const voiceConsumedRef = useRef("");
+  /** 访问照片 / 麦克风前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
+  const voiceConsumedSeqRef = useRef(0);
   useEffect(() => {
-    if (voice.finalText && voice.finalText !== voiceConsumedRef.current) {
-      voiceConsumedRef.current = voice.finalText;
-      setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
-      voice.clear();
-    }
-  }, [voice.finalText, voice.clear]);
+    // finalText 为增量文本，finalSeq 单调递增防止同一增量被消费两次
+    if (!voice.finalText || voice.finalSeq === voiceConsumedSeqRef.current) return;
+    voiceConsumedSeqRef.current = voice.finalSeq;
+    setInput((prev) => (prev ? `${prev}${voice.finalText}` : voice.finalText));
+  }, [voice.finalText, voice.finalSeq]);
   useEffect(() => {
     if (voice.error) notify(voice.error, "error");
   }, [voice.error, notify]);
@@ -124,8 +125,11 @@ export default function Diagnose() {
       voice.stop();
     } else if (!voice.supported) {
       notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
-    } else if (!voice.start()) {
-      notify("语音识别启动失败，请稍后再试", "error");
+    } else {
+      // 先征求意见：允许后才真正开启麦克风
+      requestPermission("microphone", () => {
+        if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+      });
     }
   }
 

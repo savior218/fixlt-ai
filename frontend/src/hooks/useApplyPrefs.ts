@@ -23,7 +23,9 @@ export function useApplyPrefs() {
     el.classList.toggle("hc", contrast !== "normal");
     el.classList.toggle("rm", reduceMotion);
     // 字号与页面缩放合并到根字号（Tailwind rem 布局全局生效）
-    const base = FS_BASE[fontScale];
+    // 长辈关怀模式：根字号至少 20px，确保整体观感与标准模式有明确差别
+    let base: number = FS_BASE[fontScale];
+    if (mode === "elder") base = Math.max(base, 20);
     el.style.fontSize = `${Math.round((base * zoom) / 100 * 100) / 100}px`;
   }, [fontScale, contrast, reduceMotion, mode, zoom]);
 }

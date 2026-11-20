@@ -1,11 +1,8 @@
 ﻿﻿import { Link, useNavigate } from "react-router-dom";
 import {
-  AirVent,
   ArrowRight,
   ClipboardList,
-  Refrigerator,
   Wrench,
-  WashingMachine,
   ChevronRight,
   AlertTriangle,
 } from "lucide-react";
@@ -17,12 +14,13 @@ import SectionCard from "../components/SectionCard";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
 import { usePrefs } from "../stores/prefs";
 import { relativeTime } from "../utils/format";
+import { DEVICE_IMAGES } from "../utils/deviceImages";
 
 /** 快速入口（点击直接进入对应类型诊断） */
 const QUICK_ENTRIES = [
-  { category: "ac", icon: AirVent, title: "空调", hint: "不制冷、不制热、漏水" },
-  { category: "fridge", icon: Refrigerator, title: "冰箱", hint: "不制冷、噪音大、结冰" },
-  { category: "washer", icon: WashingMachine, title: "洗衣机", hint: "不启动、不脱水、漏水" },
+  { category: "ac", title: "空调", hint: "不制冷、不制热、漏水" },
+  { category: "fridge", title: "冰箱", hint: "不制冷、噪音大、结冰" },
+  { category: "washer", title: "洗衣机", hint: "不启动、不脱水、漏水" },
 ] as const;
 
 const FAQ_ITEMS = [
@@ -31,6 +29,22 @@ const FAQ_ITEMS = [
   { q: "冰箱结冰严重怎么处理", to: "/diagnose?category=fridge" },
   { q: "什么情况必须立即停机？", to: "/diagnose" },
 ];
+
+/** 卡片标题右侧的"查看全部"胶囊按钮 */
+function MoreLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="group inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50/60 px-3 py-1 text-xs font-medium text-stone-500 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+    >
+      {label}
+      <ChevronRight
+        aria-hidden
+        className="h-3.5 w-3.5 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500"
+      />
+    </Link>
+  );
+}
 
 function greetingByHour(): string {
   const h = new Date().getHours();
@@ -54,31 +68,50 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* 顶部：问候 + 主操作（干净的纸面卡，不再用大色块横幅） */}
+      {/* 顶部：问候 + 主操作（长辈模式去掉装饰图与问候语，只留一个大按钮区） */}
       <section className="card-base relative overflow-hidden p-6 sm:p-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
-        >
-          <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
-        </div>
+        {!elder && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-8 -top-10 flex h-44 w-44 items-center justify-center rounded-full bg-brand-50"
+          >
+            <Wrench className="h-20 w-20 text-brand-200" strokeWidth={1.25} />
+          </div>
+        )}
 
-        <p className="text-sm text-stone-500">{greetingByHour()}</p>
+        {!elder && (
+          <p className="text-sm text-stone-500">{greetingByHour()}</p>
+        )}
         <h1
-          className={`mt-2 font-semibold leading-snug text-stone-900 ${
-            elder ? "text-2xl" : "text-[26px] sm:text-3xl"
+          className={`font-semibold leading-snug text-stone-900 ${
+            elder ? "text-3xl leading-relaxed" : "mt-2 text-[26px] sm:text-3xl"
           }`}
         >
           家电坏了？
           <span className="text-brand-700">一步步帮你找到原因</span>
         </h1>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button size="lg" onClick={() => navigate("/diagnose")}>
+        <div
+          className={
+            elder
+              ? "mt-7 flex flex-col gap-3"
+              : "mt-6 flex flex-wrap gap-3"
+          }
+        >
+          <Button
+            size="lg"
+            className={elder ? "w-full text-lg" : ""}
+            onClick={() => navigate("/diagnose")}
+          >
             开始智能诊断
             <ArrowRight aria-hidden className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="lg" onClick={() => navigate("/repair")}>
+          <Button
+            variant="outline"
+            size="lg"
+            className={elder ? "w-full text-lg" : ""}
+            onClick={() => navigate("/repair")}
+          >
             <ClipboardList aria-hidden className="h-4 w-4" />
             已找师傅，直接报修
           </Button>
@@ -92,21 +125,28 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {QUICK_ENTRIES.map((e) => {
-            const Icon = e.icon;
             return (
               <Link
                 key={e.category}
                 to={`/diagnose?category=${e.category}`}
                 className="card-base group flex items-center gap-3.5 p-4 transition-colors hover:border-brand-300"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-100">
-                  <Icon aria-hidden className="h-5 w-5" />
+                <span
+                  className={`flex shrink-0 items-center justify-center ${
+                    e.category === "ac" ? "h-14 w-[84px]" : "h-14 w-14"
+                  }`}
+                >
+                  <img
+                    src={DEVICE_IMAGES[e.category].src}
+                    alt={DEVICE_IMAGES[e.category].alt}
+                    className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.22)]"
+                  />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
                     {e.title}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
+                  <span data-elder="hide" className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
                 </span>
                 <ChevronRight
                   aria-hidden
@@ -118,14 +158,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 最近诊断记录 */}
+      {/* 最近诊断记录（长辈模式隐藏，只留核心入口；历史仍可从「维修档案」查看） */}
+      <div data-elder="hide">
       <SectionCard
         title="最近诊断记录"
-        action={
-          <Link to="/records" className="text-xs text-brand-700 hover:underline">
-            查看全部 ›
-          </Link>
-        }
+        action={<MoreLink to="/records" label="查看全部" />}
         padding="sm"
       >
         {recent.length === 0 ? (
@@ -140,13 +177,15 @@ export default function Home() {
               <li key={d.id}>
                 <Link
                   to={`/diagnosis/${d.id}/result`}
-                  className="flex items-center justify-between gap-3 px-1 py-3 transition-colors hover:bg-stone-50"
+                  className="group flex items-center gap-3 px-1 py-3.5 transition-colors hover:bg-stone-50"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-stone-800">
-                      {d.deviceName ?? "未关联设备"} · {d.symptom}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-stone-800 transition-colors group-hover:text-brand-700">
+                      {d.symptom}
                     </span>
-                    <span className="block text-xs text-stone-400">{relativeTime(d.createdAt)}</span>
+                    <span data-elder="hide" className="mt-0.5 block truncate text-xs text-stone-400">
+                      {d.deviceName ?? "未关联设备"} · {relativeTime(d.createdAt)}
+                    </span>
                   </span>
                   <RiskBadge level={d.riskLevel} />
                 </Link>
@@ -155,16 +194,13 @@ export default function Home() {
           </ul>
         )}
       </SectionCard>
+      </div>
 
       {/* 常见问题（elder 模式隐藏，降低信息密度） */}
       {!elder && (
         <SectionCard
           title="常见问题"
-          action={
-            <Link to="/diagnose" className="text-xs text-brand-700 hover:underline">
-              更多帮助 ›
-            </Link>
-          }
+          action={<MoreLink to="/diagnose" label="更多帮助" />}
           padding="sm"
         >
           <ul>

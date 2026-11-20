@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
 import Loading from "../components/Loading";
+import { MediaPermissionProvider } from "../components/MediaPermission";
 import MobileNavDrawer, { DESKTOP_NAV_QUERY } from "../components/MobileNavDrawer";
 import NotificationPopup from "../components/NotificationPopup";
 import SafetyBanner from "../components/SafetyBanner";
@@ -11,6 +12,8 @@ import TopBar from "../components/TopBar";
 import { ToastProvider } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
+import { useTicketStore } from "../stores/ticketStore";
 import { initSpeech, stopSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
 
@@ -19,6 +22,8 @@ export default function AppLayout() {
   const location = useLocation();
   /** 移动端导航抽屉（<1024px 由 TopBar 汉堡按钮触发） */
   const [navOpen, setNavOpen] = useState(false);
+  /** 桌面左侧导航栏展开状态（≥1024px 由 TopBar 三角形按钮切换） */
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const status = useAuthStore((s) => s.status);
   const epoch = useAuthStore((s) => s.epoch);
   const authError = useAuthStore((s) => s.error);
@@ -29,6 +34,16 @@ export default function AppLayout() {
   useEffect(() => {
     initSpeech();
   }, []);
+
+  // 保养到期提醒：打开应用时检查一次；同一到期周期只提醒一次
+  useEffect(() => {
+    useMaintenanceStore.getState().dispatchDueReminders();
+  }, []);
+
+  // 账号切换 / 退出登录时清空上一账号的报修事项缓存（旧本地草稿单独保留）
+  useEffect(() => {
+    useTicketStore.getState().clearAccountData();
+  }, [epoch]);
 
   // 页面切换、退出登录、账号切换时停止朗读，避免旧内容跟着新页面
   useEffect(() => {
@@ -46,6 +61,11 @@ export default function AppLayout() {
   // 路由变化时自动收起抽屉，避免遮挡新页面内容
   useEffect(() => {
     setNavOpen(false);
+  }, [location.pathname]);
+
+  // 切换页面后回到顶部，避免沿用上一页的滚动位置
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
 
   // 视口达到桌面宽度（≥1024px）自动关闭抽屉，避免遮罩残留
@@ -66,60 +86,79 @@ export default function AppLayout() {
     );
   }
 
+  // 未登录（或会话已过期）先进入登录页，登录后按有效期（服务端 7 天）免登录
+  if (status === "guest") {
+    return (
+      <Navigate
+        to={loginHref(`${location.pathname}${location.search}`)}
+        replace
+      />
+    );
+  }
+
   return (
     <ToastProvider>
-      <div className="app-shell flex min-h-screen">
-        <a
-          href="#main-content"
-          className="skip-link rounded-lg bg-brand-700 px-4 py-2 text-sm text-white"
-        >
-          跳到主要内容
-        </a>
+      <MediaPermissionProvider>
+        <div className="app-shell flex min-h-screen">
+          <a
+            href="#main-content"
+            className="skip-link rounded-lg bg-brand-700 px-4 py-2 text-sm text-white"
+          >
+            跳到主要内容
+          </a>
 
-        {/* 桌面（≥1024px）：左侧固定导航栏 240px；窄屏由 CSS 隐藏 */}
-        <SidebarNav />
+          {/* 桌面（≥1024px）：左侧固定导航栏 240px，可由顶栏三角形按钮折叠；窄屏由 CSS 隐藏 */}
+          <SidebarNav
+            open={sidebarOpen}
+            onToggle={() => setSidebarOpen((v) => !v)}
+          />
 
-        {/* 移动/平板（<1024px）：汉堡按钮 + 抽屉导航，入口与桌面一致 */}
-        <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+          {/* 移动/平板（<1024px）：汉堡按钮 + 抽屉导航，入口与桌面一致 */}
+          <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
 
-        {/* 右侧：顶栏 + 主内容 + 底部安全横幅 */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar onMenuClick={() => setNavOpen(true)} />
-          <main id="main-content" className="app-content flex-1" tabIndex={-1}>
-            {authError && (
-              <div className="mx-4 mt-4 flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:mx-6">
-                <span className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {authError}
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <Link
-                    to={loginHref(`${location.pathname}${location.search}`)}
-                    className="font-medium underline"
-                  >
-                    重新登录
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={clearAuthError}
-                    className="text-xs text-amber-700 underline"
-                  >
-                    知道了
-                  </button>
-                </span>
+          {/* 右侧：顶栏 + 主内容 + 底部安全横幅 */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar
+              onMenuClick={() => setNavOpen(true)}
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={() => setSidebarOpen((v) => !v)}
+            />
+            <main id="main-content" className="app-content flex-1" tabIndex={-1}>
+              {authError && (
+                <div className="mx-4 mt-4 flex items-start justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:mx-6">
+                  <span className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {authError}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <Link
+                      to={loginHref(`${location.pathname}${location.search}`)}
+                      className="font-medium underline"
+                    >
+                      重新登录
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={clearAuthError}
+                      className="text-xs text-amber-700 underline"
+                    >
+                      知道了
+                    </button>
+                  </span>
+                </div>
+              )}
+              {/* 账号切换 / 退出 / 失效时重新挂载页面，清空上一账号的页面内存状态 */}
+              <div key={`${location.pathname}-${epoch}`}>
+                <Outlet />
               </div>
-            )}
-            {/* 账号切换 / 退出 / 失效时重新挂载页面，清空上一账号的页面内存状态 */}
-            <div key={`${location.pathname}-${epoch}`}>
-              <Outlet />
-            </div>
-          </main>
-          <SafetyBanner />
-        </div>
+            </main>
+            <SafetyBanner />
+          </div>
 
-        {/* 新消息弹窗提醒（右下角；免打扰开启时不弹） */}
-        <NotificationPopup />
-      </div>
+          {/* 新消息弹窗提醒（右下角；免打扰开启时不弹） */}
+          <NotificationPopup />
+        </div>
+      </MediaPermissionProvider>
     </ToastProvider>
   );
 }

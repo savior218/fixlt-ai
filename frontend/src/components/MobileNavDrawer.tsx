@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { ShieldCheck, X } from "lucide-react";
 
+import BrandMark from "./BrandMark";
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
+import { usePrefs } from "../stores/prefs";
 
 /** 桌面侧栏断点（与 layout.css 的 1023px/1024px 保持一致） */
 export const DESKTOP_NAV_QUERY = "(min-width: 1024px)";
@@ -27,6 +29,11 @@ export default function MobileNavDrawer({
   onClose: () => void;
 }) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  /** 长辈模式：当前项改用实心高亮，隐藏重复的安全守护入口 */
+  const elder = usePrefs((s) => s.mode === "elder");
+  /** 减少动画时直接跳转，不做平滑滚动 */
+  const reduceMotion = usePrefs((s) => s.reduceMotion);
+  const { pathname } = useLocation();
   /** 触发按钮：打开时记录，关闭时归还焦点 */
   const triggerRef = useRef<Element | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -91,11 +98,26 @@ export default function MobileNavDrawer({
 
   if (!open) return null;
 
+  /** 关闭抽屉；若点的正是当前页，等滚动锁解除后回到顶部 */
+  const handleNavClick = (to: string) => {
+    onClose();
+    if (pathname !== to) return;
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    }, 0);
+  };
+
   const linkClass = (isActive: boolean) =>
     [
       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
       isActive
-        ? "bg-brand-100 text-brand-800"
+        ? elder
+          ? "bg-brand-600 font-bold text-white"
+          : "bg-brand-100 text-brand-800"
         : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
     ].join(" ");
 
@@ -126,9 +148,7 @@ export default function MobileNavDrawer({
       >
         {/* 头部：品牌 + 关闭 */}
         <div className="flex h-16 items-center justify-between border-b border-stone-200 pl-5 pr-3">
-          <span className="flex items-center gap-2 text-base font-bold text-stone-900">
-            <span aria-hidden className="text-xl">🔧</span>修必达
-          </span>
+          <BrandMark />
           <button
             type="button"
             aria-label="关闭导航菜单"
@@ -149,7 +169,7 @@ export default function MobileNavDrawer({
                   <NavLink
                     to={item.to}
                     end={item.end}
-                    onClick={onClose}
+                    onClick={() => handleNavClick(item.to)}
                     className={({ isActive }) => linkClass(isActive)}
                   >
                     <Icon className="h-5 w-5 shrink-0" aria-hidden />
@@ -161,11 +181,11 @@ export default function MobileNavDrawer({
           </ul>
         </nav>
 
-        {/* 底部安全守护（与桌面侧栏一致） */}
-        <div className="border-t border-stone-200 px-3 py-3">
+        {/* 底部安全守护（安全专题页，与桌面侧栏一致；长辈模式下精简隐藏） */}
+        <div data-elder="hide" className="border-t border-stone-200 px-3 py-3">
           <NavLink
             to={SAFETY_ITEM.to}
-            onClick={onClose}
+            onClick={() => handleNavClick(SAFETY_ITEM.to)}
             className={({ isActive }) => linkClass(isActive)}
           >
             <ShieldCheck className="h-5 w-5 text-brand-600" aria-hidden />

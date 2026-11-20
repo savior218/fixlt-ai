@@ -530,6 +530,8 @@ export async function generateAIDiagnosis(
           question_text: q.questionText,
           answer: q.answer,
           unknown: q.unknown || isUnknownAnswer(q.answer),
+          input_source: q.inputSource,
+          selection_source: q.selectionSource,
         })),
         conversation: toChatPayload(ctx.chat ?? []),
         device_name: ctx.device?.name ?? null,

@@ -36,6 +36,8 @@ class QAItem(BaseModel):
     question_text: str = Field(min_length=1, max_length=160)
     answer: str = Field(min_length=1, max_length=300)
     unknown: bool = False
+    input_source: str | None = None
+    selection_source: str | None = None
 
 
 class ContentItem(BaseModel):

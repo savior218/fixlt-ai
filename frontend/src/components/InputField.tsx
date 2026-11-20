@@ -96,11 +96,11 @@ export default function InputField({
       {error ? (
         <p className="mt-1 text-xs text-red-600">{error}</p>
       ) : description ? (
-        <p className="mt-1 text-xs text-stone-500">{description}</p>
+        <p data-elder="hide" className="mt-1 text-xs text-stone-500">{description}</p>
       ) : null}
 
       {maxLength && mode === "textarea" && !error && !description && (
-        <p className="mt-1 text-right text-xs text-stone-400">
+        <p data-elder="hide" className="mt-1 text-right text-xs text-stone-400">
           {value.length}/{maxLength}
         </p>
       )}

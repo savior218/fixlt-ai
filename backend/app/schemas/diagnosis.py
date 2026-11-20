@@ -22,6 +22,8 @@ class QAItem(BaseModel):
     question_text: str = Field(min_length=1, max_length=160)
     answer: str = Field(min_length=1, max_length=300)
     unknown: bool = False
+    input_source: Literal["text", "voice", "option"] | None = None
+    selection_source: Literal["rule", "model", "rule_fallback"] | None = None
 
 
 class ChatTurn(BaseModel):

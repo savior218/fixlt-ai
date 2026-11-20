@@ -1,23 +1,34 @@
-﻿﻿import { useEffect, useMemo, useState } from "react";
+﻿﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, FastForward, RotateCcw } from "lucide-react";
+import { AlertTriangle, CalendarClock, Download, Phone, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import TicketTracker from "../components/TicketTracker";
 import SourceBadge from "../components/SourceBadge";
-import { TICKET_STATUS_LABELS } from "../services/api";
+import {
+  LEGACY_STATUS_LABELS,
+  PROGRESS_STATUS_LABELS,
+  type RepairTicket,
+} from "../services/api";
+import {
+  CATEGORY_LABELS,
+  MAINTENANCE_CATALOG,
+  computeDue,
+  intervalLabel,
+  lookupHotline,
+} from "../services/afterSalesService";
 import { useToast } from "../components/Toast";
 import { avgIntervalLabel, computeStats } from "../services/repairService";
-import { useNotificationStore } from "../stores/notifications";
 import {
   localRepairCount,
   recordsForOwner,
   useRepairStore,
 } from "../stores/repairStore";
+import { useDeviceStore } from "../stores/deviceStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
 import {
   diagnosesForOwner,
@@ -128,7 +139,7 @@ export default function Records() {
     <div className="space-y-5">
       <PageHeader
         title="维修档案"
-        subtitle="查看您的维修记录，了解设备健康状况"
+        subtitle="跟踪报修流程闭环与维修记录，并按品类管理保养提醒"
         actions={
           <Button variant="secondary" onClick={() => notify("演示状态：导出功能暂未接入", "info")}>
             <Download className="h-4 w-4" /> 导出记录
@@ -136,8 +147,11 @@ export default function Records() {
         }
       />
 
-      {/* 报修工单跟踪（模块②） */}
-      <TicketsSection />
+      {/* 报修流程闭环：官方售后电话 + 话术 + 已维修 / 未维修跟踪 */}
+      <AfterSalesSection />
+
+      {/* 保养提醒：按品类间隔记录保养，到期自动提醒 */}
+      <MaintenanceSection />
 
       {localCount > 0 && (
         <p role="note" className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -362,81 +376,340 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 报修工单跟踪区（模块②）：状态跟踪条 + 演示推进 + 状态变化通知 */
-function TicketsSection() {
+/** 报修流程记录：平台不代报修；按「已维修 / 未维修 / 进行中」分组展示官方售后跟进闭环 */
+function AfterSalesSection() {
   const { notify } = useToast();
   const tickets = useTicketStore((s) => s.tickets);
-  const syncFromBackend = useTicketStore((s) => s.syncFromBackend);
-  const advance = useTicketStore((s) => s.advance);
-  const addNotification = useNotificationStore((s) => s.add);
+  const total = useTicketStore((s) => s.total);
+  const page = useTicketStore((s) => s.page);
+  const pageSize = useTicketStore((s) => s.pageSize);
+  const loading = useTicketStore((s) => s.loading);
+  const legacyDrafts = useTicketStore((s) => s.legacyDrafts);
+  const load = useTicketStore((s) => s.load);
 
   useEffect(() => {
-    void syncFromBackend();
-  }, [syncFromBackend]);
+    void load(1);
+  }, [load]);
 
-  async function handleAdvance(id: number) {
-    const ticket = tickets.find((t) => t.id === id);
-    if (!ticket) return;
-    const ok = await advance(id);
-    if (ok) {
-      const next = useTicketStore
-        .getState()
-        .tickets.find((t) => t.id === id);
-      addNotification({
-        type: "ticket",
-        title: "工单状态更新",
-        body: `「${ticket.symptom}」工单已流转到「${
-          next ? TICKET_STATUS_LABELS[next.status] : "下一阶段"
-        }」。`,
-      });
-      notify("工单状态已更新", "success");
-    } else {
-      notify("工单状态推进失败，请稍后重试", "error");
-    }
+  async function changePage(next: number) {
+    const ok = await load(next);
+    if (!ok) notify("报修流程记录加载失败，请稍后重试", "error");
+  }
+
+  /** 按闭环进度分组：进行中 / 已维修 / 未维修 */
+  const groups = useMemo(() => {
+    const isInProgress = (t: RepairTicket) =>
+      !t.progress_status ||
+      (["pending_contact", "contacted", "scheduled"] as string[]).includes(t.progress_status);
+    return {
+      ongoing: tickets.filter(isInProgress),
+      repaired: tickets.filter((t) => t.progress_status === "completed"),
+      unrepaired: tickets.filter((t) => t.progress_status === "canceled"),
+    };
+  }, [tickets]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  function renderTicket(t: RepairTicket) {
+    const hotline = lookupHotline(t.brand);
+    return (
+      <li key={t.id} className="rounded-xl border border-stone-200 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link to={`/tickets/${t.id}`} className="text-sm font-semibold text-stone-900 hover:underline">
+            {t.symptom}
+            <span className="ml-2 text-xs font-normal text-stone-400">
+              #{t.id} · {relativeTime(t.created_at)}
+            </span>
+          </Link>
+          <span
+            className={[
+              "rounded-full px-2 py-0.5 text-xs",
+              t.progress_status === "completed"
+                ? "bg-risk-low-bg text-risk-low-deep"
+                : t.progress_status === "canceled"
+                  ? "bg-stone-100 text-stone-500"
+                  : "bg-brand-50 text-brand-700",
+            ].join(" ")}
+          >
+            {t.progress_status
+              ? `${PROGRESS_STATUS_LABELS[t.progress_status]}${
+                  t.progress_status === "pending_contact" ? "" : `（由 ${t.progress_updated_by ?? "本人"} 更新）`
+                }`
+              : `旧状态：${LEGACY_STATUS_LABELS[t.status]}（未经本轮确认）`}
+          </span>
+        </div>
+        {t.brand || t.model ? (
+          <p className="mt-1 text-xs text-stone-500">
+            {CATEGORY_LABELS[t.category] ?? "家电"}
+            {" · "}
+            {[t.brand, t.model].filter(Boolean).join(" ")}
+          </p>
+        ) : null}
+        {hotline && (
+          <a
+            href={`tel:${hotline.phone.replace(/-/g, "")}`}
+            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
+          >
+            <Phone aria-hidden className="h-3.5 w-3.5" />
+            {hotline.brand}官方售后 {hotline.phone}
+          </a>
+        )}
+        {t.photo_ids.length > 0 && (
+          <p className="mt-1 text-xs text-stone-500">关联照片 {t.photo_ids.length} 张</p>
+        )}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Link to={`/tickets/${t.id}`} className="text-xs text-brand-700 hover:underline">
+            查看话术与详情并更新进度
+          </Link>
+        </div>
+      </li>
+    );
   }
 
   return (
-    <SectionCard title={`报修工单（${tickets.length}）`}>
-      {tickets.length === 0 ? (
+    <SectionCard
+      title="报修流程记录"
+      action={
+        <span className="text-xs text-stone-500">
+          已维修 {groups.repaired.length} · 未维修 {groups.unrepaired.length} · 进行中{" "}
+          {groups.ongoing.length}
+        </span>
+      }
+    >
+      <p className="mb-3 text-xs text-stone-500">
+        平台不代您报修。在
+        <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
+          智能报修助手
+        </Link>
+        生成话术并拨打品牌官方售后电话后，回到这里把流程更新为「已联系售后 → 已维修 / 未维修」，形成完整闭环。
+      </p>
+
+      {legacyDrafts.length > 0 && (
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          另有 {legacyDrafts.length} 条旧版本本地草稿（未提交到服务端，仅保留在本机，不会被当作已保存事项）：
+          <ul className="mt-1 space-y-0.5">
+            {legacyDrafts.slice(0, 3).map((t) => (
+              <li key={t.id}>{t.symptom} · {t.created_at}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {tickets.length === 0 && !loading ? (
         <p className="text-sm text-stone-500">
-          暂无报修工单。在
+          当前账号暂无报修流程记录。可在
           <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
             智能报修助手
           </Link>
-          生成报修说明后点击「一键提交报修」，工单进度会在这里展示。
+          生成报修话术并拨打官方售后电话后，把报修流程存入维修档案。
         </p>
       ) : (
-        <ul className="space-y-3">
-          {tickets.map((t) => (
-            <li key={t.id} className="rounded-xl border border-stone-200 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-stone-900">
-                  {t.symptom}
-                  <span className="ml-2 text-xs font-normal text-stone-400">
-                    #{t.id} · {relativeTime(t.created_at)}
-                  </span>
-                </p>
-                {t.status !== "completed" && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleAdvance(t.id)}
-                    aria-label="演示推进工单状态"
-                  >
-                    <FastForward className="h-3.5 w-3.5" /> 推进状态（演示）
+        <>
+          {groups.repaired.length > 0 && (
+            <TicketGroup label={`已通过官方售后维修（${groups.repaired.length}）`}>
+              {groups.repaired.map(renderTicket)}
+            </TicketGroup>
+          )}
+          {groups.unrepaired.length > 0 && (
+            <TicketGroup label={`未维修（${groups.unrepaired.length}）`}>
+              {groups.unrepaired.map(renderTicket)}
+            </TicketGroup>
+          )}
+          {groups.ongoing.length > 0 && (
+            <TicketGroup label={`进行中（${groups.ongoing.length}）`}>
+              {groups.ongoing.map(renderTicket)}
+            </TicketGroup>
+          )}
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
+              <span>第 {page} / {totalPages} 页 · 共 {total} 条</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page <= 1 || loading}
+                  onClick={() => void changePage(page - 1)}
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => void changePage(page + 1)}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </SectionCard>
+  );
+}
+
+function TicketGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-3 last:mb-0">
+      <p className="mb-1.5 text-xs font-semibold text-stone-600">{label}</p>
+      <ul className="space-y-3">{children}</ul>
+    </div>
+  );
+}
+
+/** 保养提醒：按品类保养目录记录每台设备的保养间隔，到期自动站内提醒 */
+function MaintenanceSection() {
+  const { notify } = useToast();
+  const { devices, load } = useDeviceStore();
+  const logs = useMaintenanceStore((s) => s.logs);
+  const recordMaintenance = useMaintenanceStore((s) => s.recordMaintenance);
+  const dispatchDueReminders = useMaintenanceStore((s) => s.dispatchDueReminders);
+  /** 补记日期输入（key = `${deviceId}:${item}`） */
+  const [dates, setDates] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // 进入维修档案时即时检查一次到期提醒（同一周期全局只提醒一次，重复调用安全）
+  useEffect(() => {
+    dispatchDueReminders();
+  }, [dispatchDueReminders]);
+
+  const rows = useMemo(() => {
+    const result: {
+      key: string;
+      deviceId: number;
+      deviceName: string;
+      category: string;
+      location: string | null;
+      item: string;
+      intervalDays: number;
+      lastDoneAt: string | null;
+    }[] = [];
+    for (const d of devices) {
+      for (const cat of MAINTENANCE_CATALOG[d.category] ?? []) {
+        const log = logs.find((l) => l.deviceId === d.id && l.item === cat.item);
+        result.push({
+          key: `${d.id}:${cat.item}`,
+          deviceId: d.id,
+          deviceName: d.name,
+          category: d.category,
+          location: d.location,
+          item: cat.item,
+          intervalDays: cat.intervalDays,
+          lastDoneAt: log?.lastDoneAt ?? null,
+        });
+      }
+    }
+    // 已到期的排最前
+    return result.sort((a, b) => {
+      const dueOf = (r: (typeof result)[number]) =>
+        r.lastDoneAt ? computeDue(r.lastDoneAt, r.intervalDays).daysLeft : -Infinity;
+      return dueOf(a) - dueOf(b);
+    });
+  }, [devices, logs]);
+
+  function save(r: (typeof rows)[number], doneAt: string) {
+    if (!doneAt) {
+      notify("请先选择保养完成日期", "error");
+      return;
+    }
+    recordMaintenance({
+      deviceId: r.deviceId,
+      deviceName: r.deviceName,
+      category: r.category,
+      location: r.location,
+      item: r.item,
+      intervalDays: r.intervalDays,
+      doneAt: new Date(doneAt).toISOString(),
+    });
+    notify(
+      `已记录「${r.deviceName} · ${r.item}」，下次提醒将在 ${intervalLabel(r.intervalDays)}后`,
+      "success"
+    );
+  }
+
+  const dueCount = rows.filter(
+    (r) => r.lastDoneAt && computeDue(r.lastDoneAt, r.intervalDays).overdue
+  ).length;
+
+  return (
+    <SectionCard
+      title="保养提醒"
+      action={
+        dueCount > 0 ? (
+          <span className="rounded-full bg-risk-high-bg px-2 py-0.5 text-xs font-medium text-risk-high-deep">
+            {dueCount} 项已到期
+          </span>
+        ) : undefined
+      }
+    >
+      <p className="mb-3 flex items-start gap-2 text-xs text-stone-500">
+        <CalendarClock aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+        按品类默认保养间隔跟踪每台设备（如空调滤网每 1 个月清洗一次）。
+        记录保养后，到期会通过站内消息提醒您；也可补记过去的保养日期。
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-stone-500">
+          暂无可跟踪保养的设备。先在
+          <Link to="/devices" className="mx-1 text-brand-700 hover:underline">
+            我的设备
+          </Link>
+          添加空调 / 冰箱 / 洗衣机 / 电视，这里会自动生成对应保养计划。
+        </p>
+      ) : (
+        <ul className="divide-y divide-stone-100">
+          {rows.map((r) => {
+            const due = r.lastDoneAt ? computeDue(r.lastDoneAt, r.intervalDays) : null;
+            const doneDate = dates[r.key] ?? new Date().toISOString().slice(0, 10);
+            return (
+              <li key={r.key} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-stone-800">
+                    {r.deviceName} · {r.item}
+                    <span className="ml-2 text-xs font-normal text-stone-400">
+                      {r.location ? `${r.location} · ` : ""}
+                      {intervalLabel(r.intervalDays)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-stone-400">
+                    {r.lastDoneAt
+                      ? `上次保养：${formatDateTime(r.lastDoneAt)} · ${
+                          due?.overdue
+                            ? `已到期 ${Math.abs(due.daysLeft)} 天，建议尽快保养`
+                            : `下次提醒：${formatDateTime(due!.dueAt)}（约 ${due!.daysLeft} 天后）`
+                        }`
+                      : "尚未记录保养，记录一次后开始按间隔提醒"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {due?.overdue && (
+                    <span className="rounded-full bg-risk-high-bg px-2 py-0.5 text-xs font-medium text-risk-high-deep">
+                      已到期
+                    </span>
+                  )}
+                  <input
+                    type="date"
+                    aria-label={`${r.deviceName} ${r.item} 保养完成日期`}
+                    value={doneDate}
+                    onChange={(e) => setDates((d) => ({ ...d, [r.key]: e.target.value }))}
+                    className="rounded-lg border border-stone-300 px-2 py-1.5 text-xs"
+                  />
+                  <Button variant="secondary" size="sm" onClick={() => save(r, doneDate)}>
+                    记录保养
                   </Button>
-                )}
-              </div>
-              {t.brand || t.model ? (
-                <p className="mt-1 text-xs text-stone-500">
-                  {[t.brand, t.model].filter(Boolean).join(" ")}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <TicketTracker status={t.status} />
-              </div>
-            </li>
-          ))}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </SectionCard>

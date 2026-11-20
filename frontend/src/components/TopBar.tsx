@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Menu, Settings, User } from "lucide-react";
 
+import BrandMark from "./BrandMark";
 import NotificationBell from "./NotificationBell";
+import SidebarToggle from "./SidebarToggle";
 import { useToast } from "./Toast";
 import { useAuthStore } from "../stores/authStore";
 import { useAvatarStore } from "../stores/avatarStore";
@@ -12,9 +14,17 @@ import { loginHref } from "../utils/redirect";
 interface TopBarProps {
   /** 移动端（<1024px）汉堡按钮点击：打开导航抽屉 */
   onMenuClick?: () => void;
+  /** 桌面（≥1024px）左侧导航栏当前是否展开 */
+  sidebarOpen: boolean;
+  /** 桌面（≥1024px）三角形按钮点击：折叠 / 展开左侧导航栏 */
+  onToggleSidebar: () => void;
 }
 
-export default function TopBar({ onMenuClick }: TopBarProps) {
+export default function TopBar({
+  onMenuClick,
+  sidebarOpen,
+  onToggleSidebar,
+}: TopBarProps) {
   const { mode, setMode } = usePrefs();
   const { notify } = useToast();
   const navigate = useNavigate();
@@ -62,8 +72,16 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
   return (
     <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
-      {/* 左：移动端菜单按钮 + 欢迎语（副标题窄屏隐藏） */}
+      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌补位 */}
       <div className="flex min-w-0 items-center gap-1">
+        {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
+        {!sidebarOpen && (
+          <SidebarToggle
+            open={sidebarOpen}
+            onToggle={onToggleSidebar}
+            className="hidden lg:inline-flex"
+          />
+        )}
         <button
           type="button"
           onClick={onMenuClick}
@@ -72,12 +90,19 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-stone-900">修必达</p>
-          <p className="hidden truncate text-xs text-stone-500 sm:block">
-            FixIt AI
-          </p>
-        </div>
+        {/* 移动 / 平板：侧栏被 CSS 隐藏，顶栏用图标补位（英文名标过宽） */}
+        <span className="app-topbar-brand ml-1 shrink-0 lg:hidden">
+          <BrandMark markOnly />
+        </span>
+        {/* 桌面：侧栏展开时品牌只在侧栏出现，这里留白；收起后才用英文名标补位 */}
+        <span
+          className={[
+            "app-topbar-wordmark ml-1 shrink-0",
+            sidebarOpen ? "hidden" : "hidden lg:inline-block",
+          ].join(" ")}
+        >
+          FixIt <span className="app-topbar-wordmark-accent">AI</span>
+        </span>
       </div>
 
       {/* 右：操作区（长辈模式文案窄屏缩短） */}
@@ -95,14 +120,18 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
               : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >
-          <span className="sm:hidden">{mode === "elder" ? "👵 长辈" : "长辈模式"}</span>
+          <span className="sm:hidden">
+            {mode === "elder" ? "退出长辈" : "长辈模式"}
+          </span>
           <span className="hidden sm:inline">
-            {mode === "elder" ? "👵 长辈模式" : "长辈关怀模式"}
+            {mode === "elder" ? "退出长辈模式" : "长辈关怀模式"}
           </span>
         </button>
 
-        {/* 通知中心（模块⑤：本地通知 + 未读徽标） */}
-        <NotificationBell />
+        {/* 通知中心（模块⑤：本地通知 + 未读徽标；长辈模式隐藏，减少干扰） */}
+        <div data-elder="hide" className="flex items-center">
+          <NotificationBell />
+        </div>
 
         {/* 账号入口：游客直接去登录，登录用户打开真实账户菜单 */}
         {status === "authenticated" && user ? (

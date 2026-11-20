@@ -20,6 +20,16 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def reset_model_limiter():
+    """每个用例重置模型并发/频率额度，避免跨用例共享进程内计数。"""
+    from app.services.limiter import reset_auth_limiter, reset_limiter
+
+    reset_limiter()
+    reset_auth_limiter()
+    yield
+
+
 @pytest.fixture
 def client():
     """独立 TestClient：独立 Cookie 罐，等价于一个浏览器会话。"""

@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     guest_ai_chat_rate_limit_per_minute: int = 10
     ai_max_concurrent: int = 2
     ai_max_request_bytes: int = 16 * 1024
+    # 动态问诊每轮调用模型，额度比单次诊断更宽；仍由后端限流
+    interview_rate_limit_per_minute: int = 14
 
     model_config = SettingsConfigDict(
         env_prefix="FIXITAI_",

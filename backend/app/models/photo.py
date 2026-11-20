@@ -24,3 +24,21 @@ class DiagnosisPhoto(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
+
+
+class RepairTicketPhoto(Base):
+    """报修事项与照片的关联：照片仍只归上传者所有，一张照片最多关联一个事项。"""
+
+    __tablename__ = "repair_ticket_photos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    ticket_id: Mapped[int] = mapped_column(
+        ForeignKey("repair_tickets.id"), index=True
+    )
+    photo_id: Mapped[int] = mapped_column(
+        ForeignKey("diagnosis_photos.id"), unique=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )

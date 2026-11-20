@@ -1,0 +1,5 @@
+Tool: built-in image_gen (not CLI).
+Input: https://pngimg.com/uploads/tv/tv_PNG477.png
+Output: television.png
+Prompt: Repair the missing/transparent screen into a fully opaque realistic dark charcoal-black powered-off glass screen with subtle studio reflections. Preserve the real television bezel and tabletop stand, frontal view. Remove stray artifacts. Keep only the television and stand, with genuine alpha transparency outside its silhouette. No scenery or extra objects. Clean photographic website appliance asset, not an illustration or emoji.
+The other three PNG assets are unchanged original cutouts.

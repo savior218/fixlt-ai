@@ -6,6 +6,7 @@ import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
 import ConfirmDialog from "../components/ConfirmDialog";
 import InputField from "../components/InputField";
+import { useMediaPermission } from "../components/MediaPermission";
 import ModalDialog from "../components/ModalDialog";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
@@ -29,6 +30,7 @@ import { useAvatarStore } from "../stores/avatarStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import {
@@ -77,9 +79,15 @@ const LOCAL_DATA_GROUPS = [
   },
   {
     key: "fixitai-tickets",
-    label: "本机工单缓存",
-    desc: "报修工单在本机的缓存副本",
+    label: "本机报修流程缓存",
+    desc: "报修流程记录在本机的缓存副本",
     clear: () => useTicketStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-maintenance",
+    label: "保养提醒记录",
+    desc: "本机保存的设备保养记录与到期提醒进度",
+    clear: () => useMaintenanceStore.getState().clearAll(),
   },
 ] as const;
 
@@ -107,6 +115,9 @@ export default function Settings() {
   const avatarUrl = useAvatarStore((s) =>
     user ? (s.avatars[user.id] ?? null) : null,
   );
+  /** 访问照片前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   /** 选择头像图片 → 校验 → 方形压缩 128px → 按账号保存（本地） */
   async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
@@ -345,31 +356,40 @@ export default function Settings() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* 可点击更换的头像（方形压缩后按账号本地存储） */}
-              <label
-                className="group relative block h-12 w-12 cursor-pointer"
-                title="点击更换头像"
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="用户头像"
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-                    {user.nickname.slice(0, 1)}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    requestPermission("photo", () =>
+                      avatarInputRef.current?.click()
+                    )
+                  }
+                  className="group relative block h-12 w-12 cursor-pointer rounded-full"
+                  title="点击更换头像"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="用户头像"
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+                      {user.nickname.slice(0, 1)}
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    <Camera aria-hidden className="h-4 w-4" />
                   </span>
-                )}
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  <Camera aria-hidden className="h-4 w-4" />
-                </span>
+                </button>
                 <input
+                  ref={avatarInputRef}
                   type="file"
                   accept="image/jpeg,image/png"
                   className="hidden"
                   onChange={handleAvatarChange}
                 />
-              </label>
+              </div>
               <div>
                 <p className="text-sm font-semibold text-stone-900">
                   {user.nickname}
@@ -428,15 +448,17 @@ export default function Settings() {
         )}
       </SectionCard>
 
-      {/* B2. 消息通知：免打扰开关 */}
-      <SectionCard title="消息通知">
-        <SwitchControl
-          label="消息免打扰"
-          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗提醒，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
-          checked={prefs.doNotDisturb}
-          onChange={prefs.setDoNotDisturb}
-        />
-      </SectionCard>
+      {/* B2. 消息通知：免打扰开关（长辈模式隐藏，通知铃铛在长辈模式下也不显示） */}
+      <div data-elder="hide">
+        <SectionCard title="消息通知">
+          <SwitchControl
+            label="消息免打扰"
+            description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+            checked={prefs.doNotDisturb}
+            onChange={prefs.setDoNotDisturb}
+          />
+        </SectionCard>
+      </div>
 
       {/* B. 使用模式 */}
       <SectionCard title="使用模式">
@@ -477,7 +499,7 @@ export default function Settings() {
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
           <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
-            <div className="flex w-56 items-center gap-2">
+            <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
               </Button>
@@ -596,9 +618,10 @@ export default function Settings() {
         </div>
       </SectionCard>
 
-      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示） */}
+      {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示；长辈模式隐藏此高级操作） */}
       {authStatus === "authenticated" &&
         localCounts.diagnoses + localCounts.repairs > 0 && (
+          <div data-elder="hide">
           <SectionCard title="本机历史">
             <p className="text-sm leading-relaxed text-stone-600">
               检测到本机还有 <strong>{localCounts.diagnoses}</strong> 份诊断报告、{" "}
@@ -624,6 +647,7 @@ export default function Settings() {
               onCancel={() => setImportOpen(false)}
             />
           </SectionCard>
+          </div>
         )}
 
       {/* F. 隐私与数据 */}
@@ -662,11 +686,13 @@ export default function Settings() {
             useRepairStore.getState().clearAll();
             useNotificationStore.getState().clearAll();
             useTicketStore.getState().clearAll();
+            useMaintenanceStore.getState().clearAll();
             useAvatarStore.setState({ avatars: {} });
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
             localStorage.removeItem("fixitai-notifications");
             localStorage.removeItem("fixitai-tickets");
+            localStorage.removeItem("fixitai-maintenance");
             localStorage.removeItem("fixitai-avatars");
             setClearOpen(false);
             notify("本机数据已清除", "success");
@@ -729,7 +755,8 @@ export default function Settings() {
         {/* 隐私政策、用户协议与版权说明已升级为独立页面（页脚与上方按钮均可跳转） */}
       </SectionCard>
 
-      {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文） */}
+      {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文；长辈模式下面板本身即示例，隐藏此演示） */}
+      <div data-elder="hide">
       <SectionCard title="长辈关怀模式 · AI 回复对比">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -758,6 +785,7 @@ export default function Settings() {
           注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
         </p>
       </SectionCard>
+      </div>
 
       {/* 编辑昵称 */}
       <ModalDialog

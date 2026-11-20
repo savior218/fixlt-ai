@@ -1,24 +1,30 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CheckCircle2, ClipboardCopy, ImagePlus, Loader2, Send, ShieldAlert, X } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCopy, Loader2, Phone, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import InputField from "../components/InputField";
+import { useMediaPermission } from "../components/MediaPermission";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import TicketTracker from "../components/TicketTracker";
 import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { useDeviceStore } from "../stores/deviceStore";
 import { getDiagnosisById } from "../stores/diagnosisStore";
+import { useAuthStore } from "../stores/authStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useTicketStore } from "../stores/ticketStore";
+import { PROGRESS_STATUS_LABELS, uploadDiagnosisPhoto } from "../services/api";
+import {
+  generateCallScript,
+  lookupHotline,
+  type BrandHotline,
+} from "../services/afterSalesService";
+import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 import { formatDate } from "../utils/format";
 import { contentFor } from "../utils/diagnosis";
 import { usePrefs } from "../stores/prefs";
-import { uploadDiagnosisPhoto } from "../services/api";
-import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
 
 /** P5 设备类型（报修场景比设备库更宽：含电视/其他） */
 const REPAIR_CATEGORIES = [
@@ -45,6 +51,7 @@ interface FormState {
   category: string;
   brand: string;
   model: string;
+  location: string;
   symptom: string;
   description: string;
   foundAt: string;
@@ -57,6 +64,7 @@ const EMPTY: FormState = {
   category: "",
   brand: "",
   model: "",
+  location: "",
   symptom: "",
   description: "",
   foundAt: "",
@@ -86,45 +94,47 @@ export default function RepairAssistant() {
   const [editing, setEditing] = useState<string | null>(null);
   /** elder 模式分两步填写 */
   const [wizardStep, setWizardStep] = useState(0);
-  /** 本次会话已提交的工单 ID（null = 未提交 / 降级为复制说明） */
+  /** 本次会话已保存的报修事项 ID（仅服务端确认成功后才有值） */
   const [submittedTicketId, setSubmittedTicketId] = useState<number | null>(null);
-
-  /* ---------- 故障照片上传（与诊断页同能力：压缩 → 预览 → 后端入库） ---------- */
-  const [photo, setPhoto] = useState<{ preview: string; id: number | null } | null>(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  /** 幂等标识：超时重试沿用同一个，服务端会返回同一条而不是重复创建 */
+  const clientRef = useRef(
+    `ticket-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now()}`
+  );
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoId, setPhotoId] = useState<number | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [photoDragOver, setPhotoDragOver] = useState(false);
+  /** 访问照片前先弹窗征得用户同意 */
+  const requestPermission = useMediaPermission();
+  const authStatus = useAuthStore((s) => s.status);
 
-  async function handlePhotoFile(file: File) {
-    const err = validatePhoto(file);
-    if (err) return notify(err, "error");
-    setPhotoUploading(true);
-    try {
-      const compressed = await compressImage(file);
-      const preview = await fileToDataUrl(compressed);
-      try {
-        const res = await uploadDiagnosisPhoto(compressed);
-        setPhoto({ preview, id: res.id });
-        notify("照片已上传，编号将写入报修说明", "success");
-      } catch {
-        // 后端不可用 / 未登录：仅本地预览
-        setPhoto({ preview, id: null });
-        notify("AI 服务不可用，照片仅本地预览", "info");
-      }
-    } catch {
-      notify("图片处理失败，请换一张试试", "error");
-    } finally {
-      setPhotoUploading(false);
-    }
-  }
-
-  const { tickets, syncFromBackend } = useTicketStore();
+  const tickets = useTicketStore((s) => s.tickets);
+  const loadTickets = useTicketStore((s) => s.load);
   const addNotification = useNotificationStore((s) => s.add);
 
   useEffect(() => {
     void load();
-    void syncFromBackend();
-  }, [load, syncFromBackend]);
+  }, [load]);
+
+  useEffect(() => {
+    if (authStatus === "authenticated") void loadTickets(1);
+  }, [authStatus, loadTickets]);
+
+  // 未登录时离开页面去登录：保留文字表单，回来后仍能继续提交
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("fixitai-repair-draft");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<FormState>;
+      setForm((f) => ({ ...f, ...saved }));
+      sessionStorage.removeItem("fixitai-repair-draft");
+    } catch {
+      /* 忽略损坏草稿 */
+    }
+  }, []);
 
   const submittedTicket = useMemo(
     () =>
@@ -182,43 +192,46 @@ export default function RepairAssistant() {
       category: catMap[d.category] ?? "other",
       brand: d.brand ?? "",
       model: d.model ?? "",
+      location: d.location ?? "",
     });
   }
 
-  /** 基于表单组装结构化文本（不凭空增加故障事实） */
+  /** 当前品牌对应的官方售后电话（用于拨打卡片；未收录返回 null） */
+  const hotline: BrandHotline | null = lookupHotline(form.brand);
+
+  /** 基于表单生成报修话术：拨官方售后电话时说明「什么问题 + 做过什么 + 希望怎么解决」 */
   function generate() {
     if (!form.category) return notify("请先选择设备类型", "error");
     if (!form.symptom) return notify("请先选择故障现象", "error");
-    const catLabel = REPAIR_CATEGORIES.find((c) => c.value === form.category)?.label ?? "";
     const checks = [...form.checks];
     if (form.customCheck.trim()) checks.push(form.customCheck.trim());
-    const lines = [
-      "【报修说明】",
-      `设备类型：${catLabel}${form.brand || form.model ? `（${[form.brand, form.model].filter(Boolean).join(" ")}）` : ""}`,
-      `故障现象：${form.symptom}`,
-      form.description.trim() ? `故障描述：${form.description.trim()}` : "",
-      form.foundAt ? `发现时间：${form.foundAt}` : "",
-      photo ? `故障照片：已附 1 张${photo.id != null ? `（上传编号 #${photo.id}）` : "（本地保存）"}` : "",
-      checks.length > 0 ? `已完成的检查：${checks.join("；")}` : "",
-      diagnosis && linkedContent
-        ? `关联诊断结论：${linkedContent.conclusion}`
-        : "",
-      diagnosis
-        ? `诊断内容来源：${
-            diagnosis.source === "ai"
-              ? `真实 AI${diagnosis.model ? `（${diagnosis.model}）` : ""}`
-              : diagnosis.source === "template"
-                ? "本地模板演示（非 AI）"
-                : "来源未记录"
-          }`
-        : "",
-      "",
-      `专业建议：${PRO_ADVICE}`,
-      `注意事项：${CAUTIONS.join("；")}。`,
-    ].filter((l) => l !== "");
-    setGenerated(lines.join("\n"));
+    const script = generateCallScript({
+      category: form.category,
+      brand: form.brand.trim() || null,
+      model: form.model.trim() || null,
+      location: form.location.trim() || null,
+      symptom: form.symptom,
+      description: form.description,
+      foundAt: form.foundAt || null,
+      checks,
+      diagnosisConclusion: diagnosis && linkedContent ? linkedContent.conclusion : null,
+    });
+    const sourceNote = diagnosis
+      ? `\n\n（附）诊断内容来源：${
+          diagnosis.source === "ai"
+            ? `真实 AI${diagnosis.model ? `（${diagnosis.model}）` : ""}`
+            : diagnosis.source === "template"
+              ? "本地模板演示（非 AI）"
+              : "来源未记录"
+        }`
+      : "";
+    const photoNote =
+      photoId != null
+        ? `\n（已上传故障照片编号 #${photoId}，如需要可向售后补充说明）`
+        : "";
+    setGenerated(`${script}${sourceNote}${photoNote}`);
     setEditing(null);
-    notify("报修说明已生成，可在右侧编辑", "success");
+    notify("报修话术已生成，可在右侧编辑", "success");
   }
 
   async function copy() {
@@ -226,24 +239,74 @@ export default function RepairAssistant() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      notify("报修内容已复制到剪贴板", "success");
+      notify("报修话术已复制到剪贴板", "success");
     } catch {
       notify("复制失败，请手动选择文本复制", "error");
     }
   }
 
-  /** 一键提交报修（模块②）：优先后端工单入库；后端不可用时降级为复制报修说明 */
+  async function handlePhoto(file: File | null | undefined) {
+    if (!file) return;
+    const err = validatePhoto(file);
+    if (err) {
+      notify(err, "error");
+      return;
+    }
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const compressed = await compressImage(file);
+      setPhotoPreview(await fileToDataUrl(compressed));
+      try {
+        const uploaded = await uploadDiagnosisPhoto(compressed);
+        setPhotoId(uploaded.id);
+        notify("照片已上传，保存报修事项后会一并关联", "success");
+      } catch {
+        // 上传失败不能显示“已上传”：保留预览，但明确标记未保存
+        setPhotoId(null);
+        setPhotoError("照片未上传成功，保存时不会包含这张照片；可重试或先保存文字说明");
+        notify("照片未上传成功", "error");
+      }
+    } catch {
+      setPhotoPreview(null);
+      setPhotoId(null);
+      notify("图片处理失败，请换一张试试", "error");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function removePhoto() {
+    setPhotoPreview(null);
+    setPhotoId(null);
+    setPhotoError(null);
+  }
+
+  function keepFormForLogin() {
+    try {
+      sessionStorage.setItem("fixitai-repair-draft", JSON.stringify(form));
+    } catch {
+      /* 隐私模式不可写时仅保留当前页面状态 */
+    }
+  }
+
+  /** 保存报修事项：只有服务端确认成功才显示“已保存”；失败不创建本地工单 */
   async function submitTicket() {
     const content = editing ?? generated;
     if (!content) return;
     if (!form.category || !form.symptom) {
+      setSubmitError("请先选择设备类型和故障现象");
       notify("请先选择设备类型和故障现象", "error");
       return;
     }
+    if (submitting) return;
     const checks = [...form.checks];
     if (form.customCheck.trim()) checks.push(form.customCheck.trim());
 
-    const backendOk = await useTicketStore.getState().submit({
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await useTicketStore.getState().submit({
+      client_ref: clientRef.current,
       category: form.category,
       symptom: form.symptom,
       description: form.description.trim() || null,
@@ -254,32 +317,30 @@ export default function RepairAssistant() {
       content,
       device_id: form.deviceId,
       diagnosis_ref: diagnosis?.id ?? null,
+      photo_ids: photoId != null ? [photoId] : [],
     });
+    setSubmitting(false);
 
-    if (backendOk) {
-      const id = useTicketStore.getState().tickets[0]?.id ?? null;
-      setSubmittedTicketId(id);
+    if (result.ok) {
+      setSubmittedTicketId(result.ticket.id);
+      setSubmitError(null);
+      // 同一内容再次保存视为新事项：换一个幂等标识
+      clientRef.current = `ticket-${
+        typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now()
+      }`;
       addNotification({
         type: "ticket",
-        title: "报修工单已提交",
-        body: `${form.symptom} · 工单已进入「待受理」状态，进度可在维修档案查看。`,
+        title: "报修流程已存入维修档案",
+        body: `${form.symptom} · 待联系官方售后。平台不代您报修，拨打电话后可回这里更新进度。`,
       });
-      notify(
-        elder
-          ? "报修已提交好啦！进度可以到「维修档案」里查看"
-          : "报修工单已提交，可在维修档案查看状态进度",
-        "success"
-      );
-    } else {
-      // 降级：未登录 / 离线 → 保留原有复制说明行为
-      setSubmittedTicketId(null);
-      try {
-        await navigator.clipboard.writeText(content);
-        notify("当前为离线演示模式：报修说明已复制，可手动联系售后", "info");
-      } catch {
-        notify("当前为离线演示模式，请手动复制报修说明", "info");
-      }
+      return;
     }
+
+    if (result.kind === "unauthenticated" || result.kind === "session_expired") {
+      keepFormForLogin();
+    }
+    setSubmitError(result.message);
+    notify(result.message, "error");
   }
 
   const step1Valid = form.category !== "" && form.symptom !== "";
@@ -391,90 +452,67 @@ export default function RepairAssistant() {
         </div>
       </fieldset>
 
-      {/* 上传照片：点击/拖拽上传 + 压缩预览 + 后端入库（失败降级本地） */}
-      <fieldset>
-        <legend className="mb-1.5 text-sm font-medium text-stone-700">故障照片（可选）</legend>
+      <div className="rounded-xl border border-stone-200 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="repair-photo" className="text-sm font-medium text-stone-700">
+            故障照片（可选）
+          </label>
+          {photoPreview && (
+            <button
+              type="button"
+              onClick={removePhoto}
+              aria-label="移除照片"
+              className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
+            >
+              <X className="h-3.5 w-3.5" /> 移除
+            </button>
+          )}
+        </div>
         <input
+          id="repair-photo"
           ref={photoInputRef}
           type="file"
           accept="image/jpeg,image/png"
           className="sr-only"
-          aria-label="选择故障照片"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void handlePhotoFile(f);
-            e.target.value = ""; // 允许重复选择同一文件
-          }}
+          onChange={(e) => void handlePhoto(e.target.files?.[0])}
         />
-        {photo ? (
-          <div className="flex items-center gap-3 rounded-xl border border-stone-200 p-3">
-            <img
-              src={photo.preview}
-              alt="故障照片预览"
-              className="h-20 w-20 rounded-lg border border-stone-200 object-cover"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-stone-700">
-                {photo.id != null ? "照片已上传 ✓" : "照片仅本地预览"}
-              </p>
-              <p className="mt-1 text-xs text-stone-400">
-                {photo.id != null ? "上传编号会写入报修说明，方便师傅查看" : "未连接服务器：照片不会随工单保存"}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={photoUploading}>
-                  重新选择
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPhoto(null)}>
-                  <X className="h-3.5 w-3.5" /> 移除
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            aria-label="上传故障照片"
-            onClick={() => photoInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setPhotoDragOver(true);
-            }}
-            onDragLeave={() => setPhotoDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setPhotoDragOver(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) void handlePhotoFile(f);
-            }}
-            className={[
-              "flex w-full flex-col items-center rounded-xl border border-dashed p-4 text-center transition-colors",
-              photoDragOver ? "border-brand-500 bg-brand-50" : "border-stone-300 hover:border-brand-400",
-            ].join(" ")}
+        {!photoPreview ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => requestPermission("photo", () => photoInputRef.current?.click())}
+            disabled={photoBusy}
           >
-            {photoUploading ? (
-              <>
-                <Loader2 aria-hidden className="h-6 w-6 animate-spin text-brand-600" />
-                <span className="mt-1.5 text-sm text-stone-600">照片处理中…</span>
-              </>
-            ) : (
-              <>
-                <ImagePlus aria-hidden className="h-6 w-6 text-stone-400" />
-                <span className="mt-1.5 text-sm text-stone-600">
-                  {elder ? "点这里，拍一张或选一张故障照片" : "点击上传或拖拽图片到此处"}
-                </span>
-                <span className="mt-0.5 text-xs text-stone-400">支持 JPG、PNG，不超过 10MB</span>
-              </>
-            )}
-          </button>
+            {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            {photoBusy ? "正在上传…" : "拍照或选择图片"}
+          </Button>
+        ) : (
+          <div className="mt-2 space-y-2">
+            <img
+              src={photoPreview}
+              alt="报修照片预览"
+              className="max-h-40 rounded-lg border border-stone-200 object-contain"
+            />
+            <p className={photoId != null ? "text-xs text-risk-low" : "text-xs text-amber-700"}>
+              {photoId != null
+                ? "照片已上传，保存报修事项后会关联到该事项"
+                : photoBusy
+                  ? "正在上传照片…"
+                  : "照片仅本地预览，尚未保存"}
+            </p>
+            {photoError && <p className="text-xs text-risk-high">{photoError}</p>}
+          </div>
         )}
         <p className="mt-2 text-xs leading-relaxed text-stone-400">
-          照片会随报修说明上传，仅用于故障判断与工单展示，不会用于广告投放或模型训练。详见
+          照片保存在服务端数据库，重新部署后仍可查看，仅当前账号可读取；照片仅用于故障判断与工单展示，
+          不会用于广告投放或模型训练。详见
           <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
             《隐私政策》
           </Link>
           。
         </p>
-      </fieldset>
+      </div>
     </>
   );
 
@@ -482,8 +520,21 @@ export default function RepairAssistant() {
     <div className="space-y-5">
       <PageHeader
         title="智能报修助手"
-        subtitle="整理故障信息，生成专业报修说明，帮助您更高效地联系维修服务"
+        subtitle="整理故障信息生成报修话术，并提供品牌官方售后电话，由您自行致电报修"
       />
+
+      {/* 流程说明：平台不代报修 */}
+      <div
+        role="note"
+        className="flex items-start gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-800"
+      >
+        <Phone aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
+        <p>
+          我们<span className="font-bold">不会替您一键报修</span>
+          ：生成话术后，请您拨打品牌官方售后电话，按话术说明故障和期望的处理方式；
+          整个报修流程会记录在维修档案中，方便您跟进到「已维修 / 未维修」。
+        </p>
+      </div>
 
       {/* 顶部安全提示条 */}
       <div
@@ -535,7 +586,7 @@ export default function RepairAssistant() {
                       上一步
                     </Button>
                     <Button size="lg" className="flex-1" onClick={generate}>
-                      生成报修说明
+                      生成报修话术
                     </Button>
                   </div>
                 )}
@@ -545,7 +596,7 @@ export default function RepairAssistant() {
                 {basicFields}
                 {detailFields}
                 <Button onClick={generate} className="w-full">
-                  生成报修说明
+                  生成报修话术
                 </Button>
               </>
             )}
@@ -554,7 +605,7 @@ export default function RepairAssistant() {
 
         {/* ---------- 右：预览 ---------- */}
         <SectionCard
-          title="报修说明预览"
+          title="报修话术预览"
           action={
             generated && (
               <button
@@ -571,7 +622,7 @@ export default function RepairAssistant() {
             <EmptyState
               icon="📝"
               title="尚未生成"
-              description="填写左侧表单并点击「生成报修说明」，此处会展示可复制的结构化内容。"
+              description="填写左侧表单并点击「生成报修话术」，此处会展示致电官方售后时可参考的话术。"
             />
           ) : editing != null ? (
             <div className="space-y-3">
@@ -588,6 +639,34 @@ export default function RepairAssistant() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* 官方售后电话：平台不代报修，由用户自行拨打 */}
+              <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-stone-800">
+                  <Phone aria-hidden className="h-4 w-4 text-brand-700" />
+                  {form.brand.trim() || "品牌"}官方售后电话
+                </p>
+                {hotline ? (
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-lg font-bold tracking-wide text-brand-800">
+                        {hotline.phone}
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        {hotline.note ?? ""} · 号码仅供参考，以品牌官方公布为准
+                      </p>
+                    </div>
+                    <a href={`tel:${hotline.phone.replace(/-/g, "")}`}>
+                      <Button size="sm">拨打官方售后</Button>
+                    </a>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-stone-500">
+                    暂未收录该品牌的官方电话，可查看设备保修卡、说明书或品牌官网；
+                    也可在左侧填写常见品牌（如格力、美的、海尔）后在此一键拨打。
+                  </p>
+                )}
+              </div>
+
               <pre className="whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">
                 {generated}
               </pre>
@@ -606,31 +685,67 @@ export default function RepairAssistant() {
                 </ul>
               </div>
 
-              {/* 已提交工单的状态跟踪条（模块②） */}
               {submittedTicket && (
                 <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
-                  <p className="mb-2 flex items-center justify-between text-sm font-semibold text-stone-800">
-                    工单状态跟踪
-                    <span className="text-xs font-normal text-stone-400">
-                      #{submittedTicket.id}
-                    </span>
+                  <p className="text-sm font-semibold text-stone-800">
+                    报修流程已存入维修档案
                   </p>
-                  <TicketTracker status={submittedTicket.status} compact />
+                  <p className="mt-1 text-xs text-stone-600">
+                    编号 #{submittedTicket.id} · 当前进度：
+                    {" "}
+                    {submittedTicket.progress_status
+                      ? PROGRESS_STATUS_LABELS[submittedTicket.progress_status]
+                      : "旧状态"}
+                    。平台不代您报修：请拨打官方售后电话，之后回维修档案更新「已维修 / 未维修」。
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link to={`/tickets/${submittedTicket.id}`}>
+                      <Button size="sm">打开详情更新进度</Button>
+                    </Link>
+                    <Link to="/records">
+                      <Button variant="secondary" size="sm">去维修档案</Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {submitError && (
+                <div role="alert" className="rounded-xl border border-risk-high-border bg-risk-high-bg p-3 text-sm text-risk-high-deep">
+                  <p>{submitError}</p>
+                  {authStatus !== "authenticated" ? (
+                    <Link to="/login" className="mt-2 inline-block font-semibold underline">
+                      去登录（表单内容已暂存在本机，登录后返回本页继续提交）
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => void submitTicket()}
+                      disabled={submitting}
+                    >
+                      {submitting ? "重试中…" : "重试提交"}
+                    </Button>
+                  )}
                 </div>
               )}
 
               <div className="flex flex-wrap gap-2">
-                <Button onClick={copy}>
-                  <ClipboardCopy className="h-4 w-4" /> 复制报修内容
+                <Button variant="secondary" onClick={copy}>
+                  <ClipboardCopy className="h-4 w-4" /> 复制报修话术
                 </Button>
-                <Button onClick={submitTicket}>
-                  <Send className="h-4 w-4" /> {elder ? "一键提交报修" : "一键提交报修"}
+                <Button onClick={() => void submitTicket()} disabled={submitting || photoBusy}>
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {submitting ? "保存中…" : "存入维修档案"}
                 </Button>
               </div>
               <p className="text-xs text-stone-400">
-                提交后工单将进入「待受理」状态，进度可在
-                <a href="#/records" className="text-brand-700 hover:underline">维修档案</a>
-                跟踪；离线或未登录时自动降级为复制报修说明。
+                平台不代您报修：保存后可在维修档案跟进整个流程（待联系 → 已联系售后 → 已维修 / 未维修），
+                也可在详情中记录联系对象、联系时间、预约时间和处理备注。
               </p>
             </div>
           )}
