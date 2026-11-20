@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Camera, Mic, ShieldCheck } from "lucide-react";
+import { Camera, Mic } from "lucide-react";
 
 import Button from "./Button";
 import ModalDialog from "./ModalDialog";
@@ -39,24 +39,22 @@ const CONTENT: Record<
 > = {
   photo: {
     title: "允许访问照片？",
-    description: "上传故障照片前，需要先获得你的同意",
+    description: "",
     icon: Camera,
-    allowLabel: "允许访问",
+    allowLabel: "允许",
     points: [
-      "仅在你点击「拍照或选择图片」时打开相机 / 相册，不会在后台读取",
-      "照片用于识别家电故障，保存在你的账号下，仅本人可查看",
-      "可随时在「个人中心 · 数据管理」中删除，不用于广告投放或模型训练",
+      "仅在点击选图时读取，不会在后台访问",
+      "仅用于故障诊断，可随时在数据管理中删除",
     ],
   },
   microphone: {
     title: "允许使用麦克风？",
-    description: "语音输入前，需要先获得你的同意",
+    description: "",
     icon: Mic,
-    allowLabel: "允许使用",
+    allowLabel: "允许",
     points: [
-      "仅在你点击「语音输入」时开始录音，点停止即结束",
-      "语音会实时转写成文字填入输入框，你可以修改后再发送",
-      "转写内容仅用于本次问诊，不会长期保存",
+      "仅在点击语音输入时录音",
+      "转写文字仅用于本次问诊",
     ],
   },
 };
@@ -97,12 +95,12 @@ export function MediaPermissionProvider({ children }: { children: ReactNode }) {
         open={pending !== null && content !== null}
         size="sm"
         title={content?.title ?? ""}
-        description={content?.description}
+        description={content?.description || undefined}
         onClose={close}
         footer={
           <>
             <Button variant="secondary" onClick={close}>
-              暂不允许
+              取消
             </Button>
             <Button onClick={allow}>{content?.allowLabel ?? "允许"}</Button>
           </>
@@ -124,13 +122,7 @@ export function MediaPermissionProvider({ children }: { children: ReactNode }) {
             ))}
           </ul>
         </div>
-        <p className="mt-4 flex items-start gap-1.5 rounded-lg bg-stone-50 px-3 py-2 text-xs leading-relaxed text-stone-500">
-          <ShieldCheck
-            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600"
-            aria-hidden
-          />
-          你可以在浏览器地址栏随时撤回授权；选择「暂不允许」不影响其他功能的使用。
-        </p>
+
       </ModalDialog>
     </PermissionContext.Provider>
   );
