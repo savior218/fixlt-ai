@@ -28,6 +28,30 @@
   transition: margin-left 0.22s ease, visibility 0s linear 0.22s;
 }
 
+/* ---- 侧栏品牌区：左上角暖陶土氛围，底部渐隐细线收边 ---- */
+.app-sidebar-brand {
+  position: relative;
+  background: radial-gradient(
+    150% 180% at 0% 0%,
+    rgba(201, 100, 66, 0.12) 0%,
+    rgba(201, 100, 66, 0) 62%
+  );
+}
+.app-sidebar-brand::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-300) 0%,
+    rgba(227, 155, 127, 0) 78%
+  );
+  pointer-events: none;
+}
+
 /* ---- 顶部栏 ----
    不固定单行高度：长辈模式放大字号时允许顶栏增高 */
 .app-topbar {
