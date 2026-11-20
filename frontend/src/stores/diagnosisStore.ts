@@ -113,6 +113,7 @@ export const useDiagnosisStore = create<DiagnosisState>()(
           role: msg.role,
           content: msg.content,
           suggestions: msg.suggestions,
+          photoPreview: msg.photoPreview,
         };
         set((s) => ({
           draftOwner: s.ownerKey,

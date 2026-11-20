@@ -69,6 +69,8 @@ export interface ChatMessage {
   time: string;
   /** AI 建议选项（点选后作为用户输入发送） */
   suggestions?: string[];
+  /** 随用户消息一起发送的照片（数据 URL，展示在消息气泡里） */
+  photoPreview?: string;
 }
 
 /** AI 生成失败信息（保存在草稿中，切换页面后仍可重试） */

@@ -300,13 +300,17 @@ export default function Diagnose() {
     };
     const history = [...draft.chat, message];
 
-    appendMessage({ role: "user", content: text });
+    // 有待发送照片时，照片跟这条消息一起进入对话气泡，并从输入区移除
+    const attachPhoto = draft.photoId != null && !photoSentRef.current;
+    const photoPreview = attachPhoto ? draft.photoPreview ?? undefined : undefined;
+    appendMessage({ role: "user", content: text, photoPreview });
     setInput("");
     setDraft({
       category,
       description,
       qa: buildQAFromChat(history),
       aiError: null,
+      ...(attachPhoto ? { photoPreview: null } : {}),
     });
 
     const ctx = makeCtx(category, buildQAFromChat(history), history, description);
@@ -588,6 +592,7 @@ export default function Diagnose() {
               key={m.id}
               role={m.role}
               content={m.content}
+              photoPreview={m.photoPreview}
               time={m.time}
               suggestions={m.role === "ai" && m.id === lastAiId ? m.suggestions : undefined}
               onSuggestion={sendText}

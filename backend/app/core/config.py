@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     ai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
     ai_text_model: str = "glm-4-air"
     # 视觉模型（模块③ AI 看图）：glm-4v-flash 免费、支持视觉；留空则回退文本模型
-    ai_vision_model: str = "glm-4v-flash"
+    ai_vision_model: str = "glm-4v"
     ai_api_key: str = ""
     ai_timeout_seconds: float = 60.0
     ai_max_output_tokens: int = 1500

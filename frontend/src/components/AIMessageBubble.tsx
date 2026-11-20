@@ -11,9 +11,12 @@ export default function AIMessageBubble({
   onSuggestion,
   tone = "standard",
   speakKey,
+  photoPreview,
 }: {
   role: "ai" | "user";
   content?: string;
+  /** 用户随消息发送的照片（展示在气泡内） */
+  photoPreview?: string;
   /** 消息时间（如 14:32） */
   time?: string;
   /** AI 正在输入时显示加载动画 */
@@ -34,6 +37,13 @@ export default function AIMessageBubble({
         <div
           className={`max-w-[85%] break-words rounded-2xl rounded-br-md bg-brand-600 text-white ${elder ? "px-4 py-3 text-lg leading-relaxed" : "px-3.5 py-2.5 text-sm leading-relaxed"}`}
         >
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="随消息发送的照片"
+              className="mb-2 max-h-60 w-full rounded-lg object-cover"
+            />
+          )}
           {content}
         </div>
         {time && <span className="pr-1 text-xs text-stone-400">{time}</span>}
