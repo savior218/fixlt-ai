@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ClipboardList,
   Home,
+  Phone,
   Refrigerator,
   ShieldCheck,
   Stethoscope,
@@ -23,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/diagnose", label: "AI诊断", icon: Stethoscope },
   { to: "/devices", label: "我的设备", icon: Refrigerator },
   { to: "/repair", label: "智能报修", icon: Wrench },
+  { to: "/hotlines", label: "售后电话", icon: Phone },
   { to: "/records", label: "维修档案", icon: ClipboardList },
   { to: "/settings", label: "个人中心", icon: User },
 ];

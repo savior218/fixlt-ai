@@ -56,7 +56,14 @@ export default function SectionCard({
         .join(" ")}
     >
       {title && (
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div
+          className={[
+            "mb-3 flex items-center justify-between gap-2",
+            padding === "none" ? "px-4 pt-4" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-stone-700">
             {icon && <span className="text-brand-600">{icon}</span>}
             {title}

@@ -677,6 +677,12 @@ export default function RepairAssistant() {
                     也可在左侧填写常见品牌（如格力、美的、海尔）后在此一键拨打。
                   </p>
                 )}
+                <Link
+                  to="/hotlines"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
+                >
+                  查看全部品牌官方售后电话与官方来源
+                </Link>
               </div>
 
               <pre className="whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">

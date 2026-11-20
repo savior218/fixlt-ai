@@ -12,6 +12,7 @@ import DynamicInterview from "./pages/DynamicInterview";
 import DiagnosisReport from "./pages/DiagnosisReport";
 import DiagnosisResult from "./pages/DiagnosisResult";
 import Home from "./pages/Home";
+import Hotlines from "./pages/Hotlines";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="devices/:id/history" element={<RepairHistory />} />
         {/* P5 智能报修（?diagnosisId= 带入） / P4 维修档案 */}
         <Route path="repair" element={<RepairAssistant />} />
+        <Route path="hotlines" element={<Hotlines />} />
         <Route path="records" element={<Records />} />
         <Route path="tickets/:id" element={<TicketDetail />} />
         {/* 个人数据管理 */}

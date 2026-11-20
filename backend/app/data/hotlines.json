@@ -1,0 +1,2385 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-11-20",
+  "region": "中国大陆",
+  "verification_limit": "官网公布核验，未实际拨测；不保证即时接通。分类为检索导航，具体服务范围按型号和销售渠道确认。",
+  "records": [
+    {
+      "id": "haier-cn-main",
+      "brand_id": "haier",
+      "brand": "海尔",
+      "aliases": [
+        "Haier"
+      ],
+      "phone": "95179",
+      "phone_uri": "tel:95179",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "电视影音",
+        "热水采暖",
+        "厨房电器",
+        "净水饮水",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.haier.com/contact/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时",
+      "notes": "当前联系页推荐95179；4006999999为过渡并行号码，不作为首选。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "海尔",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.haier.com/contact/",
+        "expected_phone_found_in_text": {
+          "95179": true
+        },
+        "content_sha256": "59100729cc33783693d024b73a6d165b9945abc55eb10b58e1816d2ef21376f0",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "casarte-cn-main",
+      "brand_id": "casarte",
+      "brand": "卡萨帝",
+      "aliases": [
+        "Casarte"
+      ],
+      "phone": "95179",
+      "phone_uri": "tel:95179",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "电视影音",
+        "热水采暖",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.haier.com/support/cjwtypz/other/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时",
+      "notes": "海尔官方FAQ明确覆盖卡萨帝；子品牌不另造热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "卡萨帝",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.haier.com/support/cjwtypz/other/",
+        "expected_phone_found_in_text": {
+          "95179": true
+        },
+        "content_sha256": "86c63485e02e936adc3d1b974f99a5e51a5ae4e931c7fe1e228b8a6412671f79",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "leader-cn-main",
+      "brand_id": "leader",
+      "brand": "Leader统帅",
+      "aliases": [
+        "统帅",
+        "Leader"
+      ],
+      "phone": "95179",
+      "phone_uri": "tel:95179",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "热水采暖",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.haier.com/support/cjwtypz/other/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时",
+      "notes": "海尔官方FAQ明确覆盖Leader。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "Leader统帅",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.haier.com/support/cjwtypz/other/",
+        "expected_phone_found_in_text": {
+          "95179": true
+        },
+        "content_sha256": "86c63485e02e936adc3d1b974f99a5e51a5ae4e931c7fe1e228b8a6412671f79",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "midea-cn-main",
+      "brand_id": "midea",
+      "brand": "美的",
+      "aliases": [
+        "Midea"
+      ],
+      "phone": "4008899315",
+      "phone_uri": "tel:4008899315",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "热水采暖",
+        "厨房电器",
+        "净水饮水",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.midea.com.cn/zh/midea-service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "美的统一服务入口；具体产品确认型号。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "美的",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.midea.com.cn/zh/midea-service",
+        "expected_phone_found_in_text": {
+          "4008899315": true
+        },
+        "content_sha256": "7c08126b55d979ad6d85ef3696653d82f3b4838503b743216d39e83347a6b632",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "gree-cn-main",
+      "brand_id": "gree",
+      "brand": "格力",
+      "aliases": [
+        "GREE"
+      ],
+      "phone": "95082",
+      "phone_uri": "tel:95082",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.gree.com/cn/zh-CN/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "采用当前官网专线；不再默认推荐历史400号码。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "格力",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.gree.com/cn/zh-CN/",
+        "expected_phone_found_in_text": {
+          "95082": true
+        },
+        "content_sha256": "266519cebc415989b35acfc9f09b087d36598697fc0faa8cbed610abd49f43d6",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "hisense-cn-main",
+      "brand_id": "hisense",
+      "brand": "海信",
+      "aliases": [
+        "Hisense"
+      ],
+      "phone": "4006111111",
+      "phone_uri": "tel:4006111111",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "电视影音",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.hisense.com/server/value-added.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "中央空调官方FAQ注明转7，勿将分公司商务电话当售后。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "海信",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.hisense.com",
+        "expected_phone_found_in_text": {
+          "4006111111": false
+        },
+        "content_sha256": "3ab3ba345d8e40112125c7133a71605db0b2ac8a0239a80bb6a8253614752c90",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "ronshen-cn-main",
+      "brand_id": "ronshen",
+      "brand": "容声",
+      "aliases": [
+        "Ronshen"
+      ],
+      "phone": "4008099999",
+      "phone_uri": "tel:4008099999",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "洗衣干衣"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.ronshen.cn/server.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "容声家电；同名其他授权产品需核对制造商。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "容声",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "error": "SSLError",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "访问失败不等于号码失效；保留已检索到的官方页面证据，交人工复核。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "kelon-cn-main",
+      "brand_id": "kelon",
+      "brand": "科龙",
+      "aliases": [
+        "Kelon"
+      ],
+      "phone": "4008099999",
+      "phone_uri": "tel:4008099999",
+      "region": "CN-mainland",
+      "categories": [
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.kelon.com/service/commercial/qa/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "来源明确为中央空调咨询、报修、报装；不扩大为全品类。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "科龙",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.kelon.com/service/commercial/qa/",
+        "expected_phone_found_in_text": {
+          "4008099999": true
+        },
+        "content_sha256": "a956ebd3da1eb9642ecc6c687fe93fc4728001cbd29284fdfb42e4cd6b341ea7",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "tcl-cn-main",
+      "brand_id": "tcl",
+      "brand": "TCL",
+      "aliases": [
+        "TCL"
+      ],
+      "phone": "4008123456",
+      "phone_uri": "tel:4008123456",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.tcl.com/cn/zh/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时",
+      "notes": "客户服务中心热线；商用4009123456不混作家用热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "TCL",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.tcl.com/cn/zh/contact-us",
+        "expected_phone_found_in_text": {
+          "4008123456": true
+        },
+        "content_sha256": "972e73fec5a2cf0a7007e3bf38f429c499140d25e8e22ec245d650aaa58c9a5b",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "panasonic-cn-main",
+      "brand_id": "panasonic",
+      "brand": "松下",
+      "aliases": [
+        "Panasonic"
+      ],
+      "phone": "4008811315",
+      "phone_uri": "tel:4008811315",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "电视影音",
+        "厨房电器",
+        "个护电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://panasonic.cn/contact-us/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时，部分时段语音留言",
+      "notes": "不可把24小时服务解释为24小时人工。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "松下",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://panasonic.cn/contact-us/",
+        "expected_phone_found_in_text": {
+          "4008811315": true
+        },
+        "content_sha256": "51f2d65990e4e46630812d952d423403a47405245a1a7d378e3e533c1fb36568",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "samsung-cn-main",
+      "brand_id": "samsung",
+      "brand": "三星",
+      "aliases": [
+        "Samsung"
+      ],
+      "phone": "4008105858",
+      "phone_uri": "tel:4008105858",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "冰箱冷柜",
+        "洗衣干衣"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.samsung.com.cn/support/newsalert/129565/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "2026-05-07家电业务调整公告仍明确保留售后；停止销售不等于售后停用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "三星",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.samsung.com.cn/support/newsalert/129565/",
+        "expected_phone_found_in_text": {
+          "4008105858": true
+        },
+        "content_sha256": "c91a0e588ff7934282342132b817a87a5fd6cfe5a04ddb03f299ca02cee5886b",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "lg-cn-main",
+      "brand_id": "lg",
+      "brand": "LG",
+      "aliases": [
+        "乐金"
+      ],
+      "phone": "4008199999",
+      "phone_uri": "tel:4008199999",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.lg.com/cn/support/telephone",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日08:00-18:00",
+      "notes": "个人顾客全国热线；商用电视、多联机等另有专线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "LG",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 403,
+        "final_url": "https://www.lg.com/cn/support/telephone",
+        "expected_phone_found_in_text": {
+          "4008199999": false
+        },
+        "content_sha256": "0ca8b3a7f5adcdcd8a8bb322a8cfd8e7edf1b67a2070a48281468711a39c7166",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "sony-cn-main",
+      "brand_id": "sony",
+      "brand": "索尼",
+      "aliases": [
+        "Sony",
+        "BRAVIA"
+      ],
+      "phone": "4008109000",
+      "phone_uri": "tel:4008109000",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://service.sony.com.cn/wap/contact.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周六09:00-21:00；周日09:00-18:00",
+      "notes": "消费产品；不混用广播电视专业产品热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "索尼",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://service.sony.com.cn/wap/contact.html",
+        "expected_phone_found_in_text": {
+          "4008109000": true
+        },
+        "content_sha256": "a219529ad90e411e132e2fb032c53fe4929a92c2a181d9e68a07a1c61fa8eacf",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "xiaomi-cn-main",
+      "brand_id": "xiaomi",
+      "brand": "小米",
+      "aliases": [
+        "Xiaomi",
+        "米家",
+        "Redmi"
+      ],
+      "phone": "950816",
+      "phone_uri": "tel:950816",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "净水饮水",
+        "清洁电器",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.mi.com/c/service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "needs_review",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "08:00-18:00",
+      "notes": "统一入口；生态链不同制造商可能另有服务主体，不推定所有米家产品均直接承修。 本次检索索引为950816，但同一服务页打开结果仍出现4001005678，先暂停自动推荐，待官方当前入口或人工拨测确认。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": false,
+      "brand_group": "小米",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.mi.com/c/service",
+        "expected_phone_found_in_text": {
+          "950816": false
+        },
+        "content_sha256": "dda7a350a158c25f2930ed12354de211b6d83c9d054d4aaeb1f8193b09452c1d",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "fotile-cn-main",
+      "brand_id": "fotile",
+      "brand": "方太",
+      "aliases": [
+        "FOTILE"
+      ],
+      "phone": "952315",
+      "phone_uri": "tel:952315",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "热水采暖",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.fotile.com/h5/services/fuwuzhengce.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "7×24小时",
+      "notes": "当前官方幸福服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "方太",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.fotile.com/h5/services/fuwuzhengce.html",
+        "expected_phone_found_in_text": {
+          "952315": true
+        },
+        "content_sha256": "2a6b2f29ae6bd65c151aa6350932f4c01276fdb0768e46fd2485faf1be29a7f2",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "robam-cn-main",
+      "brand_id": "robam",
+      "brand": "老板",
+      "aliases": [
+        "老板电器",
+        "ROBAM"
+      ],
+      "phone": "95105855",
+      "phone_uri": "tel:95105855",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "热水采暖",
+        "净水饮水",
+        "冰箱冷柜"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.robam.com/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "当前官网尊享服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "老板",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.robam.com/",
+        "expected_phone_found_in_text": {
+          "95105855": true
+        },
+        "content_sha256": "5fdd15e4e1126c9f51ed07bfe7774fe7a5f1ee571b2604fc9d00b038c199f733",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "vatti-cn-main",
+      "brand_id": "vatti",
+      "brand": "华帝",
+      "aliases": [
+        "Vatti"
+      ],
+      "phone": "4008886288",
+      "phone_uri": "tel:4008886288",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "热水采暖"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.vatti.com.cn/service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "全国售后电话。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "华帝",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.vatti.com.cn/service",
+        "expected_phone_found_in_text": {
+          "4008886288": true
+        },
+        "content_sha256": "ec4182d8d12d24e0253a2e0df9a7ef503c5629d15f232b04fa6f0808ff5d06e0",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "vanward-cn-main",
+      "brand_id": "vanward",
+      "brand": "万和",
+      "aliases": [
+        "Vanward"
+      ],
+      "phone": "4008308383",
+      "phone_uri": "tel:4008308383",
+      "region": "CN-mainland",
+      "categories": [
+        "热水采暖",
+        "厨房电器",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.vanward.com/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "全国服务入口。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "万和",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.vanward.com/",
+        "expected_phone_found_in_text": {
+          "4008308383": true
+        },
+        "content_sha256": "868ab178c48faf03af41ba8695bce0c3add41dee6f56be374c956bdc7795e8bb",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "rinnai-cn-main",
+      "brand_id": "rinnai",
+      "brand": "林内",
+      "aliases": [
+        "Rinnai"
+      ],
+      "phone": "4006990606",
+      "phone_uri": "tel:4006990606",
+      "region": "CN-mainland",
+      "categories": [
+        "热水采暖",
+        "厨房电器",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.rinnai.com.cn/mobile/contactUs.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "7×24小时",
+      "notes": "全国统一服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "林内",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.rinnai.com.cn/mobile/contactUs.html",
+        "expected_phone_found_in_text": {
+          "4006990606": true
+        },
+        "content_sha256": "79e12f9fbf49b7d27d17d8b47ae240160ff616ab07ec9e4d3135fd4844e3bb07",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "noritz-cn-main",
+      "brand_id": "noritz",
+      "brand": "能率",
+      "aliases": [
+        "NORITZ"
+      ],
+      "phone": "4009881998",
+      "phone_uri": "tel:4009881998",
+      "region": "CN-mainland",
+      "categories": [
+        "热水采暖",
+        "厨房电器",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.noritz.com.cn/service/network/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "全国热线；各城市服务网点号码不替代统一热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "能率",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.noritz.com.cn/service/network/",
+        "expected_phone_found_in_text": {
+          "4009881998": true
+        },
+        "content_sha256": "ff71a797ea77267fcf8d2c0d7f88a7f11e59dec1dcc369a13fc6e2087dc2c1f7",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "aosmith-cn-main",
+      "brand_id": "aosmith",
+      "brand": "A.O.史密斯",
+      "aliases": [
+        "艾欧史密斯",
+        "AOSmith"
+      ],
+      "phone": "4008288988",
+      "phone_uri": "tel:4008288988",
+      "region": "CN-mainland",
+      "categories": [
+        "热水采暖",
+        "净水饮水",
+        "厨房电器",
+        "空气处理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.aosmith-ailink.com/service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "消费者服务热线；4001988988用途须另核对，不混用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "A.O.史密斯",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.aosmith-ailink.com/service",
+        "expected_phone_found_in_text": {
+          "4008288988": true
+        },
+        "content_sha256": "2a291e4e554082b9b8053e0722fcffc628576e09dd38dd6216588da28674c25f",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "supor-cn-main",
+      "brand_id": "supor",
+      "brand": "苏泊尔",
+      "aliases": [
+        "SUPOR"
+      ],
+      "phone": "4008899717",
+      "phone_uri": "tel:4008899717",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.supor.com.cn/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "人工08:00-21:00",
+      "notes": "官网全国售后热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "苏泊尔",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.supor.com.cn/",
+        "expected_phone_found_in_text": {
+          "4008899717": true
+        },
+        "content_sha256": "8163341a6e1cf96cbbabfb5b81c936ded6d9116492d54b2bc631d97ff961e08c",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "joyoung-cn-main",
+      "brand_id": "joyoung",
+      "brand": "九阳",
+      "aliases": [
+        "Joyoung"
+      ],
+      "phone": "4006186999",
+      "phone_uri": "tel:4006186999",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "净水饮水",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.joyoung.com/service/support/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "官网热线；网页在线人工时段不自动等于电话时段。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "九阳",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.joyoung.com/service/support/",
+        "expected_phone_found_in_text": {
+          "4006186999": true
+        },
+        "content_sha256": "1a94f47dea12d2d7e8c07069c9269415ae794a514187f5d3214bcaf6122e8c92",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "bear-cn-main",
+      "brand_id": "bear",
+      "brand": "小熊",
+      "aliases": [
+        "Bear"
+      ],
+      "phone": "4006622580",
+      "phone_uri": "tel:4006622580",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.bears.com.cn/contact.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "服务联系电话；排除举报电话和总机。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "小熊",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.bears.com.cn/contact.html",
+        "expected_phone_found_in_text": {
+          "4006622580": true
+        },
+        "content_sha256": "2dbffe65021457217500ba5688c624b4ee2fa997eb4ab2e287c519c5ccac33f2",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "galanz-cn-main",
+      "brand_id": "galanz",
+      "brand": "格兰仕",
+      "aliases": [
+        "Galanz"
+      ],
+      "phone": "4008300333",
+      "phone_uri": "tel:4008300333",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.galanz.com.cn/ContactUs",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "中国集团官网；不使用美国服务号码。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "格兰仕",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.galanz.com.cn/ContactUs",
+        "expected_phone_found_in_text": {
+          "4008300333": true
+        },
+        "content_sha256": "f816bdea8a856d140f7830467ab1c57af78272be0a5d6ec845403954aa182720",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "changhong-cn-main",
+      "brand_id": "changhong",
+      "brand": "长虹",
+      "aliases": [
+        "CHANGHONG"
+      ],
+      "phone": "4008111666",
+      "phone_uri": "tel:4008111666",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "生活小电",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://cn.changhong.com/fw/fwzx/fwgg_976/202604/t20260428_472620.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "7×24小时",
+      "notes": "长虹快益点服务；官方还列4006111666。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "长虹",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://cn.changhong.com/fw/fwzx/fwgg_976/202604/t20260428_472620.html",
+        "expected_phone_found_in_text": {
+          "4008111666": true
+        },
+        "content_sha256": "4c7a7b8187491f9ea6b9857c473a8c4efe591318367596f5c143b04e78b7bf4d",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "meiling-cn-main",
+      "brand_id": "meiling",
+      "brand": "美菱",
+      "aliases": [
+        "Meiling"
+      ],
+      "phone": "4008111666",
+      "phone_uri": "tel:4008111666",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "洗衣干衣",
+        "空调",
+        "厨房电器",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://images.changhong.com/chqyz/xwzx_255/mtbd/202607/t20260721_483640.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "7×24小时",
+      "notes": "2026-07-21长虹官网明确长虹美菱全系列由快益点服务；还列4006111666。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "美菱",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://images.changhong.com/chqyz/xwzx_255/mtbd/202607/t20260721_483640.html",
+        "expected_phone_found_in_text": {
+          "4008111666": true
+        },
+        "content_sha256": "b0f4e57799eb731cdd93580dedc98400c741b0535d4dd5d2f6dfb66073dc4d8e",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "aux-cn-main",
+      "brand_id": "aux",
+      "brand": "奥克斯",
+      "aliases": [
+        "AUX"
+      ],
+      "phone": "4008268268",
+      "phone_uri": "tel:4008268268",
+      "region": "CN-mainland",
+      "categories": [
+        "空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.aux-home.com/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "仅空调；不可据品牌相同推广到授权小家电。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "奥克斯",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.aux-home.com/",
+        "expected_phone_found_in_text": {
+          "4008268268": true
+        },
+        "content_sha256": "c27ed26dc20d3cdf4dc1996fb21afbeb1110048826f212d7ae1cfaf095bc3f47",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "konka-cn-main",
+      "brand_id": "konka",
+      "brand": "康佳",
+      "aliases": [
+        "KONKA"
+      ],
+      "phone": "4008800016",
+      "phone_uri": "tel:4008800016",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "空调",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.konka.com/n-47.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "24小时",
+      "notes": "全国售后热线；授权产品核对机身主体。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "康佳",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.konka.com/n-47.html",
+        "expected_phone_found_in_text": {
+          "4008800016": true
+        },
+        "content_sha256": "4da22dbe00a4f78c0694111a195f352e25b25b724fb4eaeffc332634c6a9575d",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "skyworth-cn-main",
+      "brand_id": "skyworth",
+      "brand": "创维",
+      "aliases": [
+        "Skyworth"
+      ],
+      "phone": "95105555",
+      "phone_uri": "tel:95105555",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.skyworth.com/service.php",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "不混用创维数字95105596或创维汽车热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "创维",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.skyworth.com/service.php",
+        "expected_phone_found_in_text": {
+          "95105555": true
+        },
+        "content_sha256": "06bce4b88eefb62524cb0607a22b0c5c140b28ccb544a55d3091727943c6ee30",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "dyson-cn-main",
+      "brand_id": "dyson",
+      "brand": "戴森",
+      "aliases": [
+        "Dyson"
+      ],
+      "phone": "4009202808",
+      "phone_uri": "tel:4009202808",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器",
+        "个护电器",
+        "空气处理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://support.dyson.cn/supportcn.aspx",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "09:00-21:00",
+      "notes": "普通消费者服务；专业沙龙渠道有单独专线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "戴森",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 403,
+        "final_url": "https://support.dyson.cn/supportcn.aspx",
+        "expected_phone_found_in_text": {
+          "4009202808": false
+        },
+        "content_sha256": "f55aba82c7d549f6c3d2b7f8ae4e1216db5d5eeff097eff11b17a2af0ba96176",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "ecovacs-cn-main",
+      "brand_id": "ecovacs",
+      "brand": "科沃斯",
+      "aliases": [
+        "ECOVACS",
+        "地宝",
+        "窗宝"
+      ],
+      "phone": "4008868888",
+      "phone_uri": "tel:4008868888",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器",
+        "空气处理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.ecovacs.cn/policy/contactus",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "服务电话；监督热线时段不等于普通服务时段。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "科沃斯",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.ecovacs.cn/policy/contactus",
+        "expected_phone_found_in_text": {
+          "4008868888": true
+        },
+        "content_sha256": "27a721fdc9b1ec5846568e9d0e2ef16d83e9debff071e623dce5fde04a553b61",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "roborock-cn-main",
+      "brand_id": "roborock",
+      "brand": "石头",
+      "aliases": [
+        "石头科技",
+        "Roborock",
+        "小瓦"
+      ],
+      "phone": "4009001755",
+      "phone_uri": "tel:4009001755",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://mall.roborock.com/introduction/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日08:00-20:00",
+      "notes": "石头、小瓦产品；不把历史米家代工型号自动归入。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "石头",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://mall.roborock.com/introduction/contact-us",
+        "expected_phone_found_in_text": {
+          "4009001755": false
+        },
+        "content_sha256": "bbabb256c9ebf018a2f4337f73ad4c32bde9ab09ccaafabe1aa1db926cedb2f4",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "dreame-cn-main",
+      "brand_id": "dreame",
+      "brand": "追觅",
+      "aliases": [
+        "Dreame"
+      ],
+      "phone": "4001181111",
+      "phone_uri": "tel:4001181111",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器",
+        "个护电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://mall.dreame.tech/help/contactUs",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "09:00-22:00，全年无休",
+      "notes": "电话与在线客服时段不同。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "追觅",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://mall.dreame.tech/help/contactUs",
+        "expected_phone_found_in_text": {
+          "4001181111": true
+        },
+        "content_sha256": "598e396f8f4cb662dd2008b43ab2d829bd4673cfb13bea160cece83ce9340710",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "tineco-cn-main",
+      "brand_id": "tineco",
+      "brand": "添可",
+      "aliases": [
+        "Tineco"
+      ],
+      "phone": "4007794666",
+      "phone_uri": "tel:4007794666",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器",
+        "个护电器",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.tineco.cn/service/index",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日09:00-20:00",
+      "notes": "普通服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "添可",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.tineco.cn/service/index",
+        "expected_phone_found_in_text": {
+          "4007794666": true
+        },
+        "content_sha256": "ff552fd9c58703b4deee560bb54ad82fc7395238436d317e92004cf75858f04f",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "narwal-cn-main",
+      "brand_id": "narwal",
+      "brand": "云鲸",
+      "aliases": [
+        "Narwal"
+      ],
+      "phone": "4000800630",
+      "phone_uri": "tel:4000800630",
+      "region": "CN-mainland",
+      "categories": [
+        "清洁电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://cn.narwal.com/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "官方联系电话。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "云鲸",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://cn.narwal.com/contact-us",
+        "expected_phone_found_in_text": {
+          "4000800630": false
+        },
+        "content_sha256": "6380132644286674e54cdd4d09ff2a65b8b6ed7b91ace57579e05633863d1dc8",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "meida-cn-main",
+      "brand_id": "meida",
+      "brand": "美大",
+      "aliases": [
+        "MEIDA"
+      ],
+      "phone": "4008879882",
+      "phone_uri": "tel:4008879882",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.meida.com/news/13033.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "2026-06-23官方防冒用公告明确唯一售后热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "美大",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.meida.com/news/13033.html",
+        "expected_phone_found_in_text": {
+          "4008879882": true
+        },
+        "content_sha256": "f7d7ffebd56fef1f6ce00b0f3523f8ee456762bc7be5387d20869c37d996c408",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "marssenger-cn-main",
+      "brand_id": "marssenger",
+      "brand": "火星人",
+      "aliases": [
+        "MARSSENGER"
+      ],
+      "phone": "4008888490",
+      "phone_uri": "tel:4008888490",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.marssenger.com/index.php/service.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "集成灶等；不采信非官网宣称的换号文章。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "火星人",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.marssenger.com/index.php/service.html",
+        "expected_phone_found_in_text": {
+          "4008888490": true
+        },
+        "content_sha256": "0009e69efd261f4f0f9c572deb64029b80ff4f73296e54728c2beb5aee30de3b",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "sacon-cn-main",
+      "brand_id": "sacon",
+      "brand": "帅康",
+      "aliases": [
+        "Sacon"
+      ],
+      "phone": "4007001111",
+      "phone_uri": "tel:4007001111",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "热水采暖",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.sacon.cn/service.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "全国服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "帅康",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.sacon.cn/service.html",
+        "expected_phone_found_in_text": {
+          "4007001111": true
+        },
+        "content_sha256": "d35c599439edf15c6c0ca8988d97e449ce5feccbb2135588c30c56e99b7d117e",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "daikin-cn-main",
+      "brand_id": "daikin",
+      "brand": "大金",
+      "aliases": [
+        "DAIKIN"
+      ],
+      "phone": "4008201081",
+      "phone_uri": "tel:4008201081",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.daikin-china.com.cn/ServiceHome/CompanyInfo/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "365天24小时",
+      "notes": "售后；4008206266为销售咨询，不混用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "大金",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.daikin-china.com.cn/ServiceHome/CompanyInfo/",
+        "expected_phone_found_in_text": {
+          "4008201081": true
+        },
+        "content_sha256": "8d1874d811058065c4709906e58e6876b335d399149659f35cccd10af435df92",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "mhi-cn-main",
+      "brand_id": "mhi",
+      "brand": "三菱重工空调",
+      "aliases": [
+        "Mitsubishi Heavy Industries"
+      ],
+      "phone": "4006993030",
+      "phone_uri": "tel:4006993030",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.mhi-ac.com/support/serviceIndex.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "4007003030已于2025-03-12公告停用；不与三菱电机混用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "三菱重工空调",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.mhi-ac.com/support/serviceIndex.html",
+        "expected_phone_found_in_text": {
+          "4006993030": false
+        },
+        "content_sha256": "1af2a16bcc6c706fbb805eb4ee3ae5f2cfff260be74bac28a9761c044c30083f",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "hitachi-hvac-cn-main",
+      "brand_id": "hitachi-hvac",
+      "brand": "日立中央空调",
+      "aliases": [
+        "Hitachi",
+        "海信日立"
+      ],
+      "phone": "4008601111",
+      "phone_uri": "tel:4008601111",
+      "region": "CN-mainland",
+      "categories": [
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.hisensehitachi.com/repairService/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "仅海信日立中央空调，不扩大到日立冰箱等产品。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "日立中央空调",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.hisensehitachi.com/repairService/",
+        "expected_phone_found_in_text": {
+          "4008601111": true
+        },
+        "content_sha256": "64d055ee3d31193bb23290cf4331b0c1e151d0ea27edcec1bcb5a008bbdd09ea",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "york-vrf-cn-main",
+      "brand_id": "york-vrf",
+      "brand": "约克VRF",
+      "aliases": [
+        "YORK"
+      ],
+      "phone": "4006206607",
+      "phone_uri": "tel:4006206607",
+      "region": "CN-mainland",
+      "categories": [
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.yorkvrfchina.com/qa_mob/index.aspx?nodeid=1155",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "仅约克VRF渠道；不扩大到所有约克商用冷水机。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "约克VRF",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.yorkvrfchina.com/qa_mob/index.aspx?nodeid=1155",
+        "expected_phone_found_in_text": {
+          "4006206607": true
+        },
+        "content_sha256": "933ca9542dc6774349866be3b45260b48d1d4c6658985a90db649e80ef43661b",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "electrolux-cn-main",
+      "brand_id": "electrolux",
+      "brand": "伊莱克斯",
+      "aliases": [
+        "Electrolux"
+      ],
+      "phone": "95105801",
+      "phone_uri": "tel:95105801",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "洗衣干衣",
+        "厨房电器",
+        "清洁电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.electrolux.com.cn/support/service-centres/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "中国服务中心热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "伊莱克斯",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.electrolux.com.cn/support/service-centres/",
+        "expected_phone_found_in_text": {
+          "95105801": true
+        },
+        "content_sha256": "d2ce8c069b5a0b55865ae2d59116d5106ccf9c56d5df51efb967421fbbbbbc28",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "beko-cn-main",
+      "brand_id": "beko",
+      "brand": "倍科",
+      "aliases": [
+        "Beko"
+      ],
+      "phone": "4008285353",
+      "phone_uri": "tel:4008285353",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "洗衣干衣",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.beko.com.cn/serviceSupport.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "09:00-18:00，节假日不休",
+      "notes": "官网延保服务明确人工时段，具体产品按服务条款。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "倍科",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.beko.com.cn/serviceSupport.html",
+        "expected_phone_found_in_text": {
+          "4008285353": true
+        },
+        "content_sha256": "f83cb2fc4de36dc059d8270b008e81500541db329dda2aaf81376adbaa720d73",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "aucma-cn-main",
+      "brand_id": "aucma",
+      "brand": "澳柯玛",
+      "aliases": [
+        "AUCMA"
+      ],
+      "phone": "4006187777",
+      "phone_uri": "tel:4006187777",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "空调",
+        "洗衣干衣",
+        "厨房电器",
+        "净水饮水",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.aucma.com.cn/contact.php",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "全国统一服务热线；业务经理和售前座机不混用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "澳柯玛",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.aucma.com.cn/contact.php",
+        "expected_phone_found_in_text": {
+          "4006187777": true
+        },
+        "content_sha256": "ef9ae7bc95380f8ce3d9286dbf0ca1936325caaf85977c024b046d9a69da3bbf",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "yair-cn-main",
+      "brand_id": "yair",
+      "brand": "扬子空调",
+      "aliases": [
+        "YAIR"
+      ],
+      "phone": "4008877000",
+      "phone_uri": "tel:4008877000",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "中央空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.yair.com.cn/public/service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日08:30-18:30",
+      "notes": "仅扬子空调，不泛化到扬子授权小家电。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "扬子空调",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "error": "SSLError",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "访问失败不等于号码失效；保留已检索到的官方页面证据，交人工复核。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "angel-cn-main",
+      "brand_id": "angel",
+      "brand": "安吉尔",
+      "aliases": [
+        "Angel"
+      ],
+      "phone": "4007003339",
+      "phone_uri": "tel:4007003339",
+      "region": "CN-mainland",
+      "categories": [
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.angelgroup.com.cn/serviceOnlineConsultation",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "7×24小时",
+      "notes": "官方服务入口。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "安吉尔",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.angelgroup.com.cn/serviceOnlineConsultation",
+        "expected_phone_found_in_text": {
+          "4007003339": true
+        },
+        "content_sha256": "67dcbd2c320b41b9ec5841f1c0e7da2d30beecac4af04feec547c1791551683b",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "qinyuan-cn-main",
+      "brand_id": "qinyuan",
+      "brand": "沁园",
+      "aliases": [
+        "Qinyuan"
+      ],
+      "phone": "4001111222",
+      "phone_uri": "tel:4001111222",
+      "region": "CN-mainland",
+      "categories": [
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.qinyuan.cn/service.aspx",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日08:00-20:00",
+      "notes": "官网两种分组写法对应相同数字。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "沁园",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.qinyuan.cn/service.aspx",
+        "expected_phone_found_in_text": {
+          "4001111222": true
+        },
+        "content_sha256": "2d6cd0682c2fb7e503b3ffaeb95bdba89ac3ed330dbb2d1279399ced2a33b4dc",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "brita-cn-main",
+      "brand_id": "brita",
+      "brand": "碧然德",
+      "aliases": [
+        "BRITA"
+      ],
+      "phone": "4009218318",
+      "phone_uri": "tel:4009218318",
+      "region": "CN-mainland",
+      "categories": [
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.brita.cn/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日09:00-18:00，法定节假日休息",
+      "notes": "仅中国大陆消费者服务。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "碧然德",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.brita.cn/contact-us",
+        "expected_phone_found_in_text": {
+          "4009218318": true
+        },
+        "content_sha256": "733bcde92a60ce4d10e47afa64d3f86d4305d77815770c597881b40737b959e0",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "delonghi-cn-main",
+      "brand_id": "delonghi",
+      "brand": "德龙",
+      "aliases": [
+        "DeLonghi",
+        "De’Longhi"
+      ],
+      "phone": "4008271668",
+      "phone_uri": "tel:4008271668",
+      "region": "CN-mainland",
+      "categories": [
+        "咖啡电器",
+        "厨房电器",
+        "空气处理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.delonghi.com/zh-cn/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日09:00-18:00，法定节假日除外",
+      "notes": "维修、产品支持；4008271660为配件订购。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "德龙",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.delonghi.com/zh-cn/contact-us",
+        "expected_phone_found_in_text": {
+          "4008271668": true
+        },
+        "content_sha256": "9ac1cd20822a51dd733972ddb08605ddf2b13ae58c8a00bbc69fd2431f016de9",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "braun-household-cn-main",
+      "brand_id": "braun-household",
+      "brand": "博朗厨房小家电",
+      "aliases": [
+        "Braun Household",
+        "博朗"
+      ],
+      "phone": "4008271668",
+      "phone_uri": "tel:4008271668",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "咖啡电器",
+        "衣物护理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.braunhousehold.com/zh-cn/contact-us",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日09:00-18:00，法定节假日除外",
+      "notes": "德龙体系厨房小家电，不适用于博朗剃须刀和欧乐B。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "博朗",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 502,
+        "final_url": "https://www.braunhousehold.com/zh-cn/contact-us",
+        "expected_phone_found_in_text": {
+          "4008271668": false
+        },
+        "content_sha256": "660f19c09a36ca1620054261590b73df388b95892469ff17c1caf4e50376aa02",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_search_index"
+    },
+    {
+      "id": "morphyrichards-cn-main",
+      "brand_id": "morphyrichards",
+      "brand": "摩飞",
+      "aliases": [
+        "Morphy Richards"
+      ],
+      "phone": "4008820686",
+      "phone_uri": "tel:4008820686",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "生活小电"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.morphyrichards.net/lxwmIQ/index_49.aspx",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "新宝体系摩飞中国官方全国服务电话。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "摩飞",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.morphyrichards.net/lxwmIQ/index_49.aspx",
+        "expected_phone_found_in_text": {
+          "4008820686": true
+        },
+        "content_sha256": "ca2bfb061f9413120a6e5eecd116044b24555a19dbf2edeb09e220f56db34d47",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "royalstar-cn-main",
+      "brand_id": "royalstar",
+      "brand": "荣事达电子电器",
+      "aliases": [
+        "荣事达",
+        "Royalstar"
+      ],
+      "phone": "4001100315",
+      "phone_uri": "tel:4001100315",
+      "region": "CN-mainland",
+      "categories": [
+        "生活小电",
+        "热水采暖",
+        "厨房电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.rsdgroup.com.cn/view.aspx?keyno=2311",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "仅该集团服务体系，不推定所有荣事达品牌授权冰洗产品适用。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "荣事达电子电器",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.rsdgroup.com.cn/view.aspx?keyno=2311",
+        "expected_phone_found_in_text": {
+          "4001100315": true
+        },
+        "content_sha256": "d1580c9b5dfea7997f7497316bcb16a5e1a3950e7f6f5fa7496fe7677fdab01f",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "littleswan-cn-main",
+      "brand_id": "littleswan",
+      "brand": "小天鹅",
+      "aliases": [
+        "Little Swan"
+      ],
+      "phone": "4008228228",
+      "phone_uri": "tel:4008228228",
+      "region": "CN-mainland",
+      "categories": [
+        "洗衣干衣",
+        "冰箱冷柜",
+        "空调"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.littleswan.com/",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "周一至周日07:30-24:00",
+      "notes": "当前官网服务入口。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "小天鹅",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.littleswan.com/",
+        "expected_phone_found_in_text": {
+          "4008228228": true
+        },
+        "content_sha256": "a996e8119fe81fe2975c941f41f95d3bb95201732884aaae843edbcb82092c42",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "philips-versuni-cn-main",
+      "brand_id": "philips-versuni",
+      "brand": "飞利浦家居电器",
+      "aliases": [
+        "Philips",
+        "范颂尼",
+        "Versuni"
+      ],
+      "phone": "4008800008",
+      "phone_uri": "tel:4008800008",
+      "region": "CN-mainland",
+      "categories": [
+        "厨房电器",
+        "清洁电器",
+        "衣物护理",
+        "空气处理"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.home.id/zh-CN/support",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "仅范颂尼家居电器体系；不适用于飞利浦电视、照明、医疗等。页面时段0:00-0:00含义不明，未采作24小时。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "飞利浦家居电器",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.home.id/zh-CN/support",
+        "expected_phone_found_in_text": {
+          "4008800008": true
+        },
+        "content_sha256": "0d8528fe1aeea9f780c703bbb61ad009ed5203421fd0191b75cbe1fc976a9a67",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "colmo-cn-main",
+      "brand_id": "colmo",
+      "brand": "COLMO",
+      "aliases": [
+        "COLMO"
+      ],
+      "phone": "4009699999",
+      "phone_uri": "tel:4009699999",
+      "region": "CN-mainland",
+      "categories": [
+        "空调",
+        "冰箱冷柜",
+        "洗衣干衣",
+        "厨房电器",
+        "净水饮水"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.colmo.com.cn/Service",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": null,
+      "notes": "官网全国客服服务热线。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "COLMO",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.colmo.com.cn/Service",
+        "expected_phone_found_in_text": {
+          "4009699999": true
+        },
+        "content_sha256": "9ca464ad885cf523ddcf27d9366bfc487ec2462272ef0a7671aac4872271cbb0",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "toshiba-appliances-cn-main",
+      "brand_id": "toshiba",
+      "brand": "东芝生活电器",
+      "aliases": [
+        "Toshiba",
+        "东芝"
+      ],
+      "phone": "4008229088",
+      "phone_uri": "tel:4008229088",
+      "region": "CN-mainland",
+      "categories": [
+        "冰箱冷柜",
+        "洗衣干衣",
+        "热水采暖",
+        "厨房电器",
+        "净水饮水",
+        "清洁电器"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.toshiba.com.cn/service/personal_home/product_texu_info/smym-jd.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "全年00:00-24:00",
+      "notes": "东芝官网明确由美的集团提供服务；不适用于电视和商用空调。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "东芝",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.toshiba.com.cn/service/personal_home/product_texu_info/smym-jd.html",
+        "expected_phone_found_in_text": {
+          "4008229088": true
+        },
+        "content_sha256": "57c93ec0b83a013fd391eecf937abd85b00daa22db2bae48ac7a8403e942e3eb",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    },
+    {
+      "id": "toshiba-tv-cn-main",
+      "brand_id": "toshiba",
+      "brand": "东芝电视",
+      "aliases": [
+        "Toshiba",
+        "东芝"
+      ],
+      "phone": "4008567888",
+      "phone_uri": "tel:4008567888",
+      "region": "CN-mainland",
+      "categories": [
+        "电视影音"
+      ],
+      "category_mapping_basis": "editorial_navigation_confirm_model",
+      "source_url": "https://www.toshiba.com.cn/service/personal_home/product_texu_info/smym-sp.html",
+      "source_type": "official_service_or_contact_page",
+      "web_status": "official_page_listed",
+      "web_checked_on": "2026-11-20",
+      "phone_test_status": "not_tested",
+      "phone_tested_at": null,
+      "hours": "全年00:00-24:00",
+      "notes": "东芝官网明确由海信集团提供服务，与东芝生活电器热线分开。",
+      "next_review_on": "2026-12-20",
+      "display_enabled": true,
+      "brand_group": "东芝",
+      "http_check": {
+        "checked_on": "2026-11-20",
+        "http_status": 200,
+        "final_url": "https://www.toshiba.com.cn/service/personal_home/product_texu_info/smym-sp.html",
+        "expected_phone_found_in_text": {
+          "4008567888": true
+        },
+        "content_sha256": "a465777056e1697d402aef26d21da552e90d55c818bbdafa48c823ade8133053",
+        "method": "HTTP_GET_visible_text",
+        "limitation": "HTTP状态与页面数字匹配不能证明电话接通，也不能自动证明服务品类。"
+      },
+      "evidence_level": "official_page_live_text_match"
+    }
+  ]
+}

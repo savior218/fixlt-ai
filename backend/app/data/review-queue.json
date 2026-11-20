@@ -1,0 +1,27 @@
+{
+  "as_of": "2026-11-20",
+  "rule": "本文件不自动导入前台电话推荐；下列候选均未拨测。旧官方文档只能证明历史关联，不能证明当前接通。",
+  "items": [
+    {"brand":"西门子家电","candidate":"4008899999","official_evidence":"https://media3.bsh-group.cn/Documents/8001218129_B.pdf","reason":"官方说明书可查，当前服务页访问失败；不使用西门子工业自动化热线替代。"},
+    {"brand":"博世家电","candidate":"4008855888","official_evidence":"https://media3.bosch-home.cn/Documents/9001611767_A.pdf","reason":"仅取得旧官方文档，当前服务页访问失败；需复核当期入口。"},
+    {"brand":"万家乐","candidate":"4001288888","official_evidence":"https://www.chinamacro.cn/Uploads/Products/202401/65a79d607c36b.pdf","reason":"官方说明书可查，当前官网超时；暂不自动推荐。"},
+    {"brand":"惠而浦","candidates":["4008899360","95105696"],"official_evidence":["https://www.whirlpool.com.cn/about/service","https://www.whirlpool.com.cn/uploads/WDD120844SAOT/%E8%AF%B4%E6%98%8E%E4%B9%A6/%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf"],"reason":"官网服务页和产品说明书出现不同号码，需要确认品类或切换关系。"},
+    {"brand":"小米","candidates":["950816","4001005678"],"official_evidence":["https://www.mi.com/c/service","https://www.mi.com/service/contact"],"reason":"官方检索索引与打开页面出现不同号码，主数据保留但display_enabled=false。"},
+    {"brand":"夏普家电","candidate":"4008981818","official_evidence":"https://www.sharp.cn/sites/default/files/uploads/cocoro-air/FX-S120Z%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf","reason":"空气净化器等说明书可查，尚缺当前统一服务页核实；电视不直接套用。"},
+    {"brand":"三菱电机家用中央空调","candidate":"4008858830","official_evidence":"https://www.mlc-cn.com/service-question.html","reason":"页面为咨询热线，尚须确认维修入口；不泛化到壁挂机/柜机，不与三菱重工混用。"},
+    {"brand":"富士通将军/将军空调","candidate":"4009909200","official_evidence":"https://www.fujitsu.ixun.info/service/list.php?catid=42","reason":"需确认当前品牌更名、官网域名归属与服务主体；排除媒体宣称的新号。"},
+    {"brand":"新飞","candidate":"4006098888","official_evidence":"https://www.frestec.com/newweb/concatus.html","reason":"已找到官方入口，但电话为动态内容，未从当前官方页面提取确认。"},
+    {"brand":"志高空调","candidate":null,"reason":"检索被仿冒维修站及第三方换号文章占据，未取得当前官方服务页号码。"},
+    {"brand":"康宝","candidate":"4007000818","official_evidence":"https://www.canbo.cn/","reason":"仅取得第三方转载说明书；官方入口返回VPN证书页，不足以确认当前号码。"},
+    {"brand":"北鼎","candidate":"4008815820","official_evidence":"https://files.buydeem.cn/pdf/life_home_product/20207233721xnepm.pdf","reason":"取得旧官方说明书，但尚未核实当期服务入口。"},
+    {"brand":"东菱小家电","candidate":null,"official_evidence":"https://www.donlim.com/dl22.jhtml","reason":"确认新宝旗下品牌，但未核实专用售后；不得套用东菱电源的电话。"},
+    {"brand":"德尔玛","candidate":"4008309932","reason":"当前仅取得第三方品牌资料，未取得足够官方证据。"},
+    {"brand":"飞科","candidate":"4008878282","reason":"行业媒体名单存在，但仍需当前品牌官网核实。"},
+    {"brand":"奔腾个人护理电器","candidate":null,"reason":"检索存在同名公司，未取得当前官方服务证据，不混用尚奔腾水壶公司电话。"},
+    {"brand":"美诺","candidate":"4006306306","official_evidence":"https://media.miele.com/downloads/14/3b/01_C7F12828BDFB1EEEAC8B97D60F18143B.pdf","reason":"仅取得官方旧说明书，待当期服务页面复核。"},
+    {"brand":"奥马","candidate":"4007001770","official_evidence":"https://homastore.cn/contact","reason":"旧官方ESG报告和第三方名单可查，但未取得当前服务页电话确认。"}
+  ],
+  "retired_numbers":[{"brand":"三菱重工空调","phone":"4007003030","retired_notice_date":"2025-03-12","replacement":"4006993030","source":"https://www.mhi-ac.com/news/674.html"}],
+  "transitional_numbers":[{"brands":["海尔","卡萨帝","Leader"],"phone":"4006999999","preferred":"95179","source":"https://www.haier.com/contact/","note":"官方标注过渡期并行、后续逐步停用，不作为前台默认推荐。"}],
+  "alternate_current_numbers":[{"brands":["长虹","美菱"],"phone":"4006111666","preferred":"4008111666","source":"https://cn.changhong.com/fw/fwzx/fwgg_976/202604/t20260428_472620.html"}]
+}

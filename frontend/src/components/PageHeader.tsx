@@ -7,6 +7,8 @@ export default function PageHeader({
   icon,
   actions,
   action,
+  titleClassName,
+  subtitleClassName,
 }: {
   title: string;
   subtitle?: string;
@@ -16,6 +18,10 @@ export default function PageHeader({
   actions?: ReactNode;
   /** 右侧操作区（单个节点，兼容旧用法） */
   action?: ReactNode;
+  /** 按页面覆盖标题字体等样式 */
+  titleClassName?: string;
+  /** 按页面覆盖副标题字体等样式 */
+  subtitleClassName?: string;
 }) {
   return (
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -33,7 +39,10 @@ export default function PageHeader({
             {title}
           </h1>
           {subtitle && (
-            <p data-elder="hide" className="mt-1 text-sm text-stone-500">
+            <p
+              data-elder="hide"
+              className={`mt-1 text-sm text-stone-500 ${subtitleClassName ?? ""}`}
+            >
               {subtitle}
             </p>
           )}

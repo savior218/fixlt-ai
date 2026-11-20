@@ -16,17 +16,26 @@ export interface BrandHotline {
 }
 
 export const BRAND_HOTLINES: BrandHotline[] = [
-  { brand: "格力", phone: "400-836-5315", note: "格力电器官方服务热线" },
-  { brand: "美的", phone: "400-889-9315", note: "美的集团官方服务热线" },
-  { brand: "海尔", phone: "400-699-9999", note: "海尔智家官方服务热线" },
-  { brand: "海信", phone: "400-611-1111", note: "海信官方服务热线" },
-  { brand: "容声", phone: "400-809-9999", note: "容声冰箱官方服务热线" },
-  { brand: "西门子", phone: "400-889-9999", note: "西门子家电官方服务热线" },
-  { brand: "松下", phone: "400-810-0781", note: "松下电器官方服务热线" },
-  { brand: "TCL", phone: "400-812-3456", note: "TCL 官方服务热线" },
+  { brand: "格力", phone: "95082", note: "格力官网当前专线；不再默认推荐历史 400 号码" },
+  { brand: "美的", phone: "4008899315", note: "美的集团官方服务热线" },
+  { brand: "海尔", phone: "95179", note: "海尔官网当前推荐；4006999999 为过渡并行号码，不作为首选" },
+  {
+    brand: "卡萨帝",
+    phone: "95179",
+    note: "海尔官方 FAQ 明确覆盖卡萨帝；与海尔共用服务热线",
+  },
+  { brand: "海信", phone: "4006111111", note: "海信官方服务热线" },
+  { brand: "容声", phone: "4008099999", note: "容声冰箱官方服务热线" },
+  { brand: "松下", phone: "4008811315", note: "松下电器官方服务热线" },
+  { brand: "TCL", phone: "4008123456", note: "TCL 官方服务热线" },
   { brand: "创维", phone: "95105555", note: "创维官方服务热线" },
-  { brand: "奥克斯", phone: "400-826-9315", note: "奥克斯空调官方服务热线" },
+  { brand: "奥克斯", phone: "4008268268", note: "奥克斯空调官方服务热线" },
 ];
+
+/**
+ * 仅作智能报修页的快捷拨号提示；完整品牌 / 品类目录与官方来源请到 `/hotlines`。
+ * 号码来自 2026-11-20 官方页面核验资料，未实际拨测。
+ */
 
 /** 按品牌名模糊查找官方售后电话（未填写或未收录时返回 null） */
 export function lookupHotline(brand?: string | null): BrandHotline | null {
