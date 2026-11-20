@@ -362,7 +362,7 @@ def test_chat_high_risk_is_blocked_before_model(monkeypatch):
         called["hit"] = True
         raise AssertionError("高风险输入不应调用模型")
 
-    monkeypatch.setattr(glm_client, "chat_json_messages", _bomb)
+    monkeypatch.setattr(glm_client, "chat_reply_messages", _bomb)
     resp = client.post(
         "/api/diagnose/chat",
         json=make_chat_payload(
@@ -390,7 +390,7 @@ def test_chat_returns_natural_reply(monkeypatch):
         }
 
     monkeypatch.setattr(glm_client, "is_configured", lambda: True)
-    monkeypatch.setattr(glm_client, "chat_json_messages", _ok)
+    monkeypatch.setattr(glm_client, "chat_reply_messages", _ok)
     resp = client.post("/api/diagnose/chat", json=make_chat_payload())
     assert resp.status_code == 200
     body = resp.json()
@@ -410,7 +410,7 @@ def test_chat_unsafe_reply_is_rejected(monkeypatch):
         }
 
     monkeypatch.setattr(glm_client, "is_configured", lambda: True)
-    monkeypatch.setattr(glm_client, "chat_json_messages", _unsafe)
+    monkeypatch.setattr(glm_client, "chat_reply_messages", _unsafe)
     resp = client.post("/api/diagnose/chat", json=make_chat_payload())
     assert resp.status_code == 502
     assert resp.json()["detail"]["code"] == "ai_unsafe_output"
@@ -431,7 +431,7 @@ def test_chat_ready_requires_three_user_turns(monkeypatch):
         }
 
     monkeypatch.setattr(glm_client, "is_configured", lambda: True)
-    monkeypatch.setattr(glm_client, "chat_json_messages", _premature)
+    monkeypatch.setattr(glm_client, "chat_reply_messages", _premature)
 
     two_turns = make_chat_payload(
         messages=[
