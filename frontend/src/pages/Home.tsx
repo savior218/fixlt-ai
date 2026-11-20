@@ -133,7 +133,7 @@ export default function Home() {
               <Link
                 key={e.category}
                 to={`/diagnose?category=${e.category}`}
-                className="card-base group flex items-center gap-3.5 p-4 transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/50 hover:shadow-sm"
+                className="group flex items-center gap-3.5 rounded-2xl border border-border bg-surface p-4 shadow-card transition-all duration-200 hover:border-brand-300 hover:bg-brand-100 hover:shadow-md"
               >
                 <span
                   className={`flex shrink-0 items-center justify-center ${
@@ -148,13 +148,13 @@ export default function Home() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
-                    className={`block font-semibold text-stone-800 transition-colors group-hover:text-brand-700 ${elder ? "text-lg" : "text-[15px]"}`}
+                    className={`block font-semibold text-stone-800 transition-colors group-hover:text-brand-800 ${elder ? "text-lg" : "text-[15px]"}`}
                   >
                     {e.title}
                   </span>
                   <span
                     data-elder="hide"
-                    className="mt-0.5 block truncate text-xs text-stone-500 transition-colors group-hover:text-stone-600"
+                    className="mt-0.5 block truncate text-xs text-stone-500 transition-colors group-hover:text-brand-700"
                   >
                     {e.hint}
                   </span>
