@@ -497,8 +497,13 @@ export default function RepairAssistant() {
             {photoError && <p className="text-xs text-risk-high">{photoError}</p>}
           </div>
         )}
-        <p className="mt-2 text-xs text-stone-400">
-          照片保存在服务端数据库，重新部署后仍可查看；仅当前账号可读取。
+        <p className="mt-2 text-xs leading-relaxed text-stone-400">
+          照片保存在服务端数据库，重新部署后仍可查看，仅当前账号可读取；照片仅用于故障判断与工单展示，
+          不会用于广告投放或模型训练。详见
+          <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
+            《隐私政策》
+          </Link>
+          。
         </p>
       </div>
     </>

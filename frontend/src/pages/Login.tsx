@@ -211,6 +211,20 @@ export default function Login() {
             />
           )}
 
+          {tab === "register" && (
+            <p className="text-xs leading-relaxed text-stone-500">
+              点击「注册并登录」即表示你已阅读并同意
+              <Link to="/terms" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
+                《用户协议》
+              </Link>
+              与
+              <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
+                《隐私政策》
+              </Link>
+              。
+            </p>
+          )}
+
           {formError && (
             <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {formError}

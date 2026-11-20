@@ -27,7 +27,9 @@ import {
 import { useAuthStore } from "../stores/authStore";
 import { useAvatarStore } from "../stores/avatarStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
+import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
+import { useTicketStore } from "../stores/ticketStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import {
   initSpeech,
@@ -40,6 +42,56 @@ import { compressAvatar, validatePhoto } from "../utils/image";
 import { loginHref } from "../utils/redirect";
 
 type SaveState = "idle" | "saving" | "saved";
+
+/** 本机数据分类：key 与各 zustand persist 的存储名一一对应 */
+const LOCAL_DATA_GROUPS = [
+  {
+    key: "fixitai-prefs",
+    label: "界面偏好",
+    desc: "字体缩放、对比度、长辈关怀模式、朗读与免打扰设置",
+    clear: () => usePrefs.getState().reset(),
+  },
+  {
+    key: "fixitai-diagnosis",
+    label: "诊断草稿与报告副本",
+    desc: "本机保存的诊断草稿、问诊对话与报告副本",
+    clear: () => useDiagnosisStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-repairs",
+    label: "维修记录副本",
+    desc: "本机保存的维修档案与费用记录",
+    clear: () => useRepairStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-avatars",
+    label: "本机头像",
+    desc: "按账号保存的头像图片，仅存于本机浏览器",
+    clear: () => useAvatarStore.setState({ avatars: {} }),
+  },
+  {
+    key: "fixitai-notifications",
+    label: "站内消息",
+    desc: "诊断完成、报修状态等站内提醒",
+    clear: () => useNotificationStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-tickets",
+    label: "本机工单缓存",
+    desc: "报修工单在本机的缓存副本",
+    clear: () => useTicketStore.getState().clearAll(),
+  },
+] as const;
+
+/** localStorage 占用估算（UTF-16 每字符约 2 字节） */
+function localSizeText(key: string): string {
+  const raw = localStorage.getItem(key);
+  if (!raw) return "无数据";
+  const bytes = raw.length * 2;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 102.4) / 10} KB`;
+  return `${Math.round(bytes / 104857.6) / 10} MB`;
+}
 
 /** P9 个人设置（对照「智修AI长辈关怀设置界面.png」） */
 export default function Settings() {
@@ -80,7 +132,9 @@ export default function Settings() {
 
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
+  /** 删除某类本机数据后触发重算占用 */
+  const [dataVersion, setDataVersion] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
 
@@ -575,11 +629,17 @@ export default function Settings() {
       {/* F. 隐私与数据 */}
       <SectionCard title="隐私与数据">
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setPrivacyOpen(true)}>
-            隐私说明
-          </Button>
-          <Button variant="secondary" onClick={() => navigate("/data")}>
-            个人数据管理
+          <Link to="/privacy" className={buttonClass("secondary", "md")}>
+            隐私政策
+          </Link>
+          <Link to="/terms" className={buttonClass("secondary", "md")}>
+            用户协议
+          </Link>
+          <Link to="/copyright" className={buttonClass("secondary", "md")}>
+            版权说明
+          </Link>
+          <Button variant="secondary" onClick={() => setDataOpen(true)}>
+            管理本机数据
           </Button>
           <Button variant="secondary" onClick={() => setClearOpen(true)}>
             清除本机数据
@@ -594,16 +654,20 @@ export default function Settings() {
         <ConfirmDialog
           open={clearOpen}
           title="确认清除本机数据？"
-          message="将清除本机的偏好设置、所有本机诊断草稿与维修记录。已保存到服务端的设备不会受影响。"
+          message="将清除本机的偏好设置、头像、所有本机诊断草稿与维修记录。已保存到服务端的设备不会受影响。"
           confirmLabel="确认清除"
           onConfirm={() => {
             prefs.reset();
             useDiagnosisStore.getState().clearAll();
             useRepairStore.getState().clearAll();
+            useNotificationStore.getState().clearAll();
+            useTicketStore.getState().clearAll();
+            useAvatarStore.setState({ avatars: {} });
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
             localStorage.removeItem("fixitai-notifications");
             localStorage.removeItem("fixitai-tickets");
+            localStorage.removeItem("fixitai-avatars");
             setClearOpen(false);
             notify("本机数据已清除", "success");
           }}
@@ -617,44 +681,52 @@ export default function Settings() {
           onConfirm={() => setDeleteOpen(false)}
           onCancel={() => setDeleteOpen(false)}
         />
-        {/* 隐私说明弹窗（比赛合规：涉及用户数据须提供基本隐私说明） */}
+        {/* 本机数据管理：按类别查看占用并单独删除（对应隐私政策「你的权利」） */}
         <ModalDialog
-          open={privacyOpen}
-          title="修必达 FixIt AI · 隐私说明"
-          description="我们如何收集、使用和保护你的数据"
-          onClose={() => setPrivacyOpen(false)}
+          open={dataOpen}
+          title="管理本机数据"
+          description="以下数据仅保存在当前浏览器，按类别删除不会影响已保存到账号云端的记录。"
+          onClose={() => setDataOpen(false)}
           footer={
-            <Button variant="primary" onClick={() => setPrivacyOpen(false)}>
-              我已阅读
+            <Button variant="secondary" onClick={() => setDataOpen(false)}>
+              完成
             </Button>
           }
         >
-          <div className="space-y-3 text-sm leading-relaxed text-stone-700">
-            <p>
-              <strong>1. 收集的数据。</strong>
-              为提供家电故障诊断服务，本产品会收集你主动填写的内容：设备信息（名称、品牌、型号、位置）、故障描述与问诊对话、维修记录，以及界面偏好设置（字体、缩放、对比度、长辈关怀模式等）。
-            </p>
-            <p>
-              <strong>2. 数据的存储。</strong>
-              界面偏好与诊断草稿保存在你的浏览器本地，并按登录账号隔离；设备、你主动保存的诊断报告与维修记录保存在服务端数据库中，只归当前登录账号所有，其他账号无法读取。未归属的旧本机记录会独立保留为本机历史，不会自动归属新注册账号，需你在本页主动导入。
-            </p>
-            <p>
-              <strong>3. AI 诊断说明。</strong>
-              当你发起 AI 诊断时，故障描述与问诊对话会经由本产品服务端发送至智谱 GLM 大模型接口用于生成诊断内容；本产品不向 AI 服务发送你的账号信息，AI 服务商按其隐私政策处理请求数据。未配置 AI 服务时，诊断由本地规则引擎完成，数据不出本机。
-            </p>
-            <p>
-              <strong>4. 数据安全。</strong>
-              密码由服务端使用成熟哈希算法保存；登录令牌存放在 HttpOnly Cookie 中，不写入 localStorage。AI 服务密钥与会话密钥仅保存在服务端环境变量中，不随前端代码分发；产品不包含广告跟踪或第三方统计脚本。
-            </p>
-            <p>
-              <strong>5. 你的控制权。</strong>
-              你可以在本页「清除本机数据」随时删除本地保存的偏好、草稿与维修记录，也可以退出登录使当前会话失效。账号注销功能暂未开放。本版本不使用邮箱验证或手机号验证，也不会把未验证的信息标注为已验证。
-            </p>
-            <p className="text-xs text-stone-400">
-              本说明与产品当前实际功能一致。功能更新导致数据处理方式变化时，我们将同步更新本说明。
-            </p>
-          </div>
+          <ul key={dataVersion} className="divide-y divide-stone-100">
+            {LOCAL_DATA_GROUPS.map((group) => {
+              const size = localSizeText(group.key);
+              const empty = size === "无数据";
+              return (
+                <li key={group.key} className="flex items-start justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-stone-800">{group.label}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-stone-500">{group.desc}</p>
+                    <p className="mt-1 text-xs text-stone-400">占用：{size}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={empty}
+                    onClick={() => {
+                      group.clear();
+                      localStorage.removeItem(group.key);
+                      setDataVersion((v) => v + 1);
+                      notify(`已清除「${group.label}」`, "success");
+                    }}
+                  >
+                    删除
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-4 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
+            设备档案、诊断报告与维修记录保存在服务端，仅当前账号可见；如需删除云端数据，请在对应页面删除，
+            或通过《隐私政策》末节的联系方式提出申请。
+          </p>
         </ModalDialog>
+        {/* 隐私政策、用户协议与版权说明已升级为独立页面（页脚与上方按钮均可跳转） */}
       </SectionCard>
 
       {/* F. 长辈关怀模式展示（AI 回复对比，文案为设计稿原文） */}

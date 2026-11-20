@@ -54,6 +54,8 @@ interface TicketState {
   refresh: (id: number) => Promise<RepairTicket | null>;
   /** 账号切换/退出：清空当前账号的内存与服务端缓存，不影响保留的旧草稿 */
   clearAccountData: () => void;
+  /** 清除本机数据：清空账号缓存并丢弃旧版本遗留草稿 */
+  clearAll: () => void;
   removeLegacyDraft: (id: number) => void;
 }
 
@@ -183,6 +185,16 @@ export const useTicketStore = create<TicketState>()(
       },
 
       clearAccountData: () => set({ tickets: [], total: 0, page: 1, synced: false, loading: false }),
+
+      clearAll: () =>
+        set({
+          tickets: [],
+          total: 0,
+          page: 1,
+          synced: false,
+          loading: false,
+          legacyDrafts: [],
+        }),
 
       removeLegacyDraft: (id) =>
         set((s) => ({

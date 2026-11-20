@@ -1,6 +1,8 @@
 import { Route, Routes } from "react-router-dom";
 
+import About from "./pages/About";
 import AppLayout from "./layouts/AppLayout";
+import CopyrightInfo from "./pages/CopyrightInfo";
 import DataManagement from "./pages/DataManagement";
 import DeviceDetail from "./pages/DeviceDetail";
 import Devices from "./pages/Devices";
@@ -11,10 +13,12 @@ import DiagnosisResult from "./pages/DiagnosisResult";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Records from "./pages/Records";
 import RepairAssistant from "./pages/RepairAssistant";
 import RepairHistory from "./pages/RepairHistory";
 import Settings from "./pages/Settings";
+import TermsOfService from "./pages/TermsOfService";
 import TicketDetail from "./pages/TicketDetail";
 import UiKit from "./pages/UiKit";
 
@@ -44,6 +48,11 @@ export default function App() {
         <Route path="login" element={<Login />} />
         {/* P9 个人设置 / 个人中心 */}
         <Route path="settings" element={<Settings />} />
+        {/* 法律文档：关于我们 / 隐私政策 / 用户协议 / 版权说明 */}
+        <Route path="about" element={<About />} />
+        <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="terms" element={<TermsOfService />} />
+        <Route path="copyright" element={<CopyrightInfo />} />
         <Route path="ui-kit" element={<UiKit />} />
         <Route path="*" element={<NotFound />} />
       </Route>
