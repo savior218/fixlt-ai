@@ -133,7 +133,7 @@ export default function Home() {
               <Link
                 key={e.category}
                 to={`/diagnose?category=${e.category}`}
-                className="card-base group flex items-center gap-3.5 p-4 transition-colors hover:border-brand-300"
+                className="card-base group flex items-center gap-3.5 p-4 transition-all duration-200 hover:border-brand-400 hover:bg-brand-50/50 hover:shadow-sm"
               >
                 <span
                   className={`flex shrink-0 items-center justify-center ${
@@ -147,14 +147,21 @@ export default function Home() {
                   />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={`block font-semibold text-stone-800 ${elder ? "text-lg" : "text-[15px]"}`}>
+                  <span
+                    className={`block font-semibold text-stone-800 transition-colors group-hover:text-brand-700 ${elder ? "text-lg" : "text-[15px]"}`}
+                  >
                     {e.title}
                   </span>
-                  <span data-elder="hide" className="mt-0.5 block truncate text-xs text-stone-500">{e.hint}</span>
+                  <span
+                    data-elder="hide"
+                    className="mt-0.5 block truncate text-xs text-stone-500 transition-colors group-hover:text-stone-600"
+                  >
+                    {e.hint}
+                  </span>
                 </span>
                 <ChevronRight
                   aria-hidden
-                  className="h-4 w-4 shrink-0 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500"
+                  className="h-4 w-4 shrink-0 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-600"
                 />
               </Link>
             );
