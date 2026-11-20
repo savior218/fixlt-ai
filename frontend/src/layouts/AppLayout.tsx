@@ -62,6 +62,11 @@ export default function AppLayout() {
     setNavOpen(false);
   }, [location.pathname]);
 
+  // 切换页面后回到顶部，避免沿用上一页的滚动位置
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
   // 视口达到桌面宽度（≥1024px）自动关闭抽屉，避免遮罩残留
   useEffect(() => {
     const mq = window.matchMedia(DESKTOP_NAV_QUERY);

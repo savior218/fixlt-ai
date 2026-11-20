@@ -1,5 +1,6 @@
-﻿﻿﻿﻿﻿﻿import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
+import BrandMark from "./BrandMark";
 import { NAV_ITEMS, SAFETY_ITEM } from "../config/navigation";
 import { usePrefs } from "../stores/prefs";
 import SidebarToggle from "./SidebarToggle";
@@ -12,8 +13,21 @@ export default function SidebarNav({
   onToggle: () => void;
 }) {
   const SafetyIcon = SAFETY_ITEM.icon;
-  /** 长辈模式：当前项改用实心高亮，并隐藏与「个人中心」重复的底部入口 */
+  /** 长辈模式：当前项改用实心高亮，并精简底部次要入口 */
   const elder = usePrefs((s) => s.mode === "elder");
+  /** 减少动画时直接跳转，不做平滑滚动 */
+  const reduceMotion = usePrefs((s) => s.reduceMotion);
+  const { pathname } = useLocation();
+
+  /** 重复点击当前页的导航项也回到顶部；换页回顶由 AppLayout 统一处理 */
+  const handleNavClick = (to: string) => {
+    if (pathname !== to) return;
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  };
 
   return (
     <aside
@@ -26,20 +40,10 @@ export default function SidebarNav({
     >
       {/* Logo 区：高度与 TopBar 对齐；右侧为收起按钮（收起后按钮移交顶栏） */}
       <div
-        className="flex items-center justify-between gap-2 border-b border-stone-200 pl-5 pr-3"
+        className="app-sidebar-brand flex items-center justify-between gap-2 pl-4 pr-2"
         style={{ height: "var(--topbar-height)" }}
       >
-        <span className="flex min-w-0 items-center gap-2">
-          <img
-            src="/brand-icon.png"
-            alt=""
-            width={30}
-            height={30}
-            className="h-[30px] w-[30px] shrink-0"
-            aria-hidden
-          />
-          <span className="brand-wordmark text-stone-900">修必达</span>
-        </span>
+        <BrandMark />
         <SidebarToggle open={open} onToggle={onToggle} className="inline-flex" />
       </div>
 
@@ -53,6 +57,7 @@ export default function SidebarNav({
                 <NavLink
                   to={item.to}
                   end={item.end}
+                  onClick={() => handleNavClick(item.to)}
                   className={({ isActive }) =>
                     [
                       "app-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -73,10 +78,11 @@ export default function SidebarNav({
         </ul>
       </nav>
 
-      {/* 底部安全守护入口（长辈模式与「个人中心」指向同一页，隐藏避免重复） */}
+      {/* 底部安全守护入口（安全专题页；长辈模式精简为隐藏） */}
       <div data-elder="hide" className="border-t border-stone-200 px-3 py-3">
         <NavLink
           to={SAFETY_ITEM.to}
+          onClick={() => handleNavClick(SAFETY_ITEM.to)}
           className={({ isActive }) =>
             [
               "app-nav-link flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",

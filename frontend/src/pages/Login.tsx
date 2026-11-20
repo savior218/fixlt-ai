@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ChevronDown, Globe, LogIn, UserPlus } from "lucide-react";
 
+import BrandMark from "../components/BrandMark";
 import Button from "../components/Button";
 import InputField from "../components/InputField";
 import Loading from "../components/Loading";
@@ -607,16 +608,8 @@ export default function Login() {
       />
 
       {/* 左上角品牌区 */}
-      <header className="relative z-10 flex items-center gap-2.5 px-5 pt-6 sm:px-10">
-        <img
-          src="/brand-icon.png"
-          alt=""
-          width={32}
-          height={32}
-          className="h-8 w-8 shrink-0"
-          aria-hidden
-        />
-        <span className="brand-wordmark text-stone-900">修必达</span>
+      <header className="relative z-10 flex items-center px-5 pt-6 sm:px-10">
+        <BrandMark />
       </header>
 
       {/* 中央登录卡片 */}

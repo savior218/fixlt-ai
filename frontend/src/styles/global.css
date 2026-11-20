@@ -26,15 +26,6 @@ h2 {
   color: var(--color-text-primary);
 }
 
-/* ---- 品牌字标（登录页 / 侧栏 / 抽屉共用，保证三处字体一致） ---- */
-.brand-wordmark {
-  font-family: var(--font-family-heading);
-  font-size: 1.0625rem;
-  line-height: 1.3;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
 /* ---- 统一按钮样式基础 ----
    具体变体（primary/secondary/danger/ghost）由公共组件 Button 承担 */
 button {
@@ -52,6 +43,100 @@ button:disabled {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+}
+
+/* ============================================================
+   品牌标识（BrandMark）
+   图标方块加内高光与暖色投影；中文名用衬线 + 字距。
+   品牌文字只在侧栏出现一次，顶栏仅保留图标，避免重复。
+   ============================================================ */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  text-decoration: none;
+  border-radius: 0.75rem;
+}
+
+.brand-mark-tile {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0 0 1px rgba(111, 50, 28, 0.12),
+    0 3px 10px -3px rgba(111, 50, 28, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.brand-mark-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 斜向高光：给陶土色块一层玻璃质感 */
+.brand-mark-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0) 48%
+  );
+  pointer-events: none;
+}
+.brand-mark:hover .brand-mark-tile {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px rgba(111, 50, 28, 0.18),
+    0 6px 16px -4px rgba(111, 50, 28, 0.5);
+}
+
+.brand-mark-name {
+  font-family: var(--font-family-heading);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--color-brand-900);
+  white-space: nowrap;
+}
+
+/* 顶栏英文名标：侧栏收起后补位（侧栏展开时不显示，避免重复） */
+.app-topbar-wordmark {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-brand-900);
+  white-space: nowrap;
+}
+.app-topbar-wordmark-accent {
+  color: var(--color-brand-500);
+}
+
+/* 320px 级超窄屏：顶栏只留图标也放不下，直接让位给操作区 */
+@media (max-width: 359px) {
+  .app-topbar-brand {
+    display: none;
+  }
+}
+
+/* 长辈模式：品牌名放大一档，装饰阴影让位于清晰描边 */
+html[data-mode="elder"] .brand-mark-name {
+  font-size: 1.25rem;
+}
+html[data-mode="elder"] .brand-mark-tile {
+  box-shadow: 0 0 0 1.5px var(--color-brand-700);
 }
 
 /* ============================================================

@@ -8,7 +8,7 @@ import { relativeTime } from "../utils/format";
 import { playNotificationSound } from "../utils/notificationSound";
 
 const AUTO_CLOSE_MS = 4500;
-const MAX_VISIBLE = 3;
+const MAX_VISIBLE = 1;
 
 /**
  * 新消息弹窗 + 声音提醒（右下角）：通知入列即弹出并播放提示音，自动消失。
@@ -36,6 +36,8 @@ export default function NotificationPopup() {
       queue.forEach((n) => popPopup(n.id));
       return;
     }
+    // 超出可见数量的旧通知直接出队，避免队列堆积
+    queue.slice(0, -MAX_VISIBLE).forEach((n) => popPopup(n.id));
     const timers = visible.map((n) =>
       window.setTimeout(() => popPopup(n.id), AUTO_CLOSE_MS),
     );
