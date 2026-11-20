@@ -110,6 +110,20 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* 顶栏英文名标：侧栏收起后补位（侧栏展开时不显示，避免重复） */
+.app-topbar-wordmark {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-brand-900);
+  white-space: nowrap;
+}
+.app-topbar-wordmark-accent {
+  color: var(--color-brand-500);
+}
+
 /* 320px 级超窄屏：顶栏只留图标也放不下，直接让位给操作区 */
 @media (max-width: 359px) {
   .app-topbar-brand {

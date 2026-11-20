@@ -72,7 +72,7 @@ export default function TopBar({
 
   return (
     <header className="app-topbar sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-surface/95 px-4 backdrop-blur sm:px-6">
-      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌图标（文字只在侧栏出现，避免重复） */}
+      {/* 左：侧栏收起后的展开按钮 + 移动端菜单按钮 + 品牌补位 */}
       <div className="flex min-w-0 items-center gap-1">
         {/* 桌面（≥1024px）：侧栏收起后，展开按钮才会出现在顶栏最左侧 */}
         {!sidebarOpen && (
@@ -90,7 +90,19 @@ export default function TopBar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <BrandMark markOnly className="app-topbar-brand ml-1 shrink-0" />
+        {/* 移动 / 平板：侧栏被 CSS 隐藏，顶栏用图标补位（英文名标过宽） */}
+        <span className="app-topbar-brand ml-1 shrink-0 lg:hidden">
+          <BrandMark markOnly />
+        </span>
+        {/* 桌面：侧栏展开时品牌只在侧栏出现，这里留白；收起后才用英文名标补位 */}
+        <span
+          className={[
+            "app-topbar-wordmark ml-1 shrink-0",
+            sidebarOpen ? "hidden" : "hidden lg:inline-block",
+          ].join(" ")}
+        >
+          FixIt <span className="app-topbar-wordmark-accent">AI</span>
+        </span>
       </div>
 
       {/* 右：操作区（长辈模式文案窄屏缩短） */}
