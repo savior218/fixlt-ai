@@ -132,7 +132,7 @@ export default function Home() {
                 className="card-base group flex items-center gap-3.5 p-4 transition-colors hover:border-brand-300"
               >
                 <span
-                  className={`flex shrink-0 items-center justify-center rounded-xl bg-brand-50 transition-colors group-hover:bg-brand-100 ${
+                  className={`flex shrink-0 items-center justify-center ${
                     e.category === "ac" ? "h-14 w-[84px]" : "h-14 w-14"
                   }`}
                 >
