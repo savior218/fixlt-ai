@@ -139,7 +139,7 @@ export default function Home() {
                   <img
                     src={DEVICE_IMAGES[e.category].src}
                     alt={DEVICE_IMAGES[e.category].alt}
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(28,25,23,0.22)]"
                   />
                 </span>
                 <span className="min-w-0 flex-1">
