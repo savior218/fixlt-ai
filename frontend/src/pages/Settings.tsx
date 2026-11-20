@@ -29,6 +29,7 @@ import { useAvatarStore } from "../stores/avatarStore";
 import { useDiagnosisStore } from "../stores/diagnosisStore";
 import { useNotificationStore } from "../stores/notifications";
 import { useRepairStore } from "../stores/repairStore";
+import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
 import { countLocalHistory, importLocalHistory } from "../services/cloudSync";
 import {
@@ -77,9 +78,15 @@ const LOCAL_DATA_GROUPS = [
   },
   {
     key: "fixitai-tickets",
-    label: "本机工单缓存",
-    desc: "报修工单在本机的缓存副本",
+    label: "本机报修流程缓存",
+    desc: "报修流程记录在本机的缓存副本",
     clear: () => useTicketStore.getState().clearAll(),
+  },
+  {
+    key: "fixitai-maintenance",
+    label: "保养提醒记录",
+    desc: "本机保存的设备保养记录与到期提醒进度",
+    clear: () => useMaintenanceStore.getState().clearAll(),
   },
 ] as const;
 
@@ -662,11 +669,13 @@ export default function Settings() {
             useRepairStore.getState().clearAll();
             useNotificationStore.getState().clearAll();
             useTicketStore.getState().clearAll();
+            useMaintenanceStore.getState().clearAll();
             useAvatarStore.setState({ avatars: {} });
             localStorage.removeItem("fixitai-diagnosis");
             localStorage.removeItem("fixitai-repairs");
             localStorage.removeItem("fixitai-notifications");
             localStorage.removeItem("fixitai-tickets");
+            localStorage.removeItem("fixitai-maintenance");
             localStorage.removeItem("fixitai-avatars");
             setClearOpen(false);
             notify("本机数据已清除", "success");
