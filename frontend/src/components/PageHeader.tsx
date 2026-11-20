@@ -33,8 +33,7 @@ export default function PageHeader({
         )}
         <div className="min-w-0">
           <h1
-            className="break-words text-xl font-bold text-stone-900"
-            style={{ fontFamily: "var(--font-family)" }}
+            className={`break-words text-xl font-bold text-stone-900 font-body ${titleClassName ?? ""}`}
           >
             {title}
           </h1>
