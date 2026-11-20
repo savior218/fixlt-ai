@@ -72,40 +72,75 @@ async def chat_json(
     user: str,
     image: dict | None = None,
     model: str | None = None,
+    max_tokens: int | None = None,
 ) -> dict:
-    """调用 GLM chat/completions，返回解析后的 JSON dict。
+    """单轮调用：把 user 作为唯一用户消息，返回解析后的 JSON dict。"""
+    return await chat_json_messages(
+        system,
+        [{"role": "user", "content": user}],
+        image=image,
+        model=model,
+        max_tokens=max_tokens,
+    )
 
-    image（可选）：{"mime": "image/jpeg", "base64": "..."}，传入时以
-    OpenAI 兼容的 image_url 消息格式附带图片（模块③ AI 看图）。
-    model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
-    """
-    if not is_configured():
-        raise GLMError("not_configured", "GLM API key 未配置（FIXITAI_AI_API_KEY）")
 
-    if image:
-        user_message = {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": user},
+def _attach_image(messages: list[dict], image: dict) -> list[dict]:
+    """把图片附到最近一条用户消息上（多轮对话中即用户的新问题）。"""
+    out = [dict(message) for message in messages]
+    for index in range(len(out) - 1, -1, -1):
+        if out[index].get("role") == "user":
+            content = out[index].get("content") or ""
+            out[index]["content"] = [
+                {"type": "text", "text": content},
                 {
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:{image['mime']};base64,{image['base64']}"
                     },
                 },
+            ]
+            return out
+    out.append(
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{image['mime']};base64,{image['base64']}"
+                    },
+                }
             ],
         }
-    else:
-        user_message = {"role": "user", "content": user}
+    )
+    return out
+
+
+async def chat_json_messages(
+    system: str,
+    messages: list[dict],
+    image: dict | None = None,
+    model: str | None = None,
+    max_tokens: int | None = None,
+) -> dict:
+    """多轮对话调用：messages 为 [{"role": "user"|"assistant", "content": str}]。
+
+    image（可选）：{"mime": "image/jpeg", "base64": "..."}，传入时以
+    OpenAI 兼容的 image_url 消息格式附在最近一条用户消息上（模块③ AI 看图）。
+    model（可选）：覆盖默认文本模型（看图时使用视觉模型）。
+    """
+    if not is_configured():
+        raise GLMError("not_configured", "GLM API key 未配置（FIXITAI_AI_API_KEY）")
+
+    history = [dict(message) for message in messages]
+    if image:
+        history = _attach_image(history, image)
 
     payload = {
         "model": model or settings.ai_text_model,
-        "messages": [
-            {"role": "system", "content": system},
-            user_message,
-        ],
+        "messages": [{"role": "system", "content": system}, *history],
         "temperature": 0.4,
-        "max_tokens": settings.ai_max_output_tokens,
+        "max_tokens": max_tokens or settings.ai_max_output_tokens,
         "response_format": {"type": "json_object"},
     }
     url = settings.ai_base_url.rstrip("/") + CHAT_COMPLETIONS_PATH

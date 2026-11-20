@@ -56,6 +56,9 @@ class Settings(BaseSettings):
 
     # 模型接口保护（单实例内存限流；多实例部署需改用 Redis 等共享存储）
     ai_rate_limit_per_minute: int = 8
+    # 自由聊天每轮调用一次模型，额度单独计算，避免对话被 8 次/分钟误伤
+    ai_chat_rate_limit_per_minute: int = 30
+    guest_ai_chat_rate_limit_per_minute: int = 10
     ai_max_concurrent: int = 2
     ai_max_request_bytes: int = 16 * 1024
 

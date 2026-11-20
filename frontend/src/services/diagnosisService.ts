@@ -8,8 +8,14 @@
    - 同一诊断保存 standard / elder 两套文案，共用事实、原因排序与行动含义
    ============================================================ */
 
-import { ApiError, requestAIDiagnosis } from "./api";
+import {
+  ApiError,
+  requestAIChat,
+  requestAIDiagnosis,
+  type AIChatMessage,
+} from "./api";
 import type {
+  ChatMessage,
   Diagnosis,
   DiagnosisContent,
   DiagnosisError,
@@ -71,6 +77,48 @@ export interface AskContext {
   device?: Device | null;
   /** 故障照片 ID（模块③ AI 看图；null/undefined = 无照片） */
   photoId?: number | null;
+  /** 自由聊天的完整对话（真实 AI 多轮问诊） */
+  chat?: ChatMessage[];
+}
+
+/** 聊天回复结果：与最终诊断生成分开处理，失败时保留对话并允许重试 */
+export type ChatResult =
+  | {
+      ok: true;
+      reply: string;
+      ready: boolean;
+      suggestions: string[];
+      model: string;
+    }
+  | { ok: false; kind: "interception"; interception: RiskInterception }
+  | { ok: false; kind: "error"; error: DiagnosisError };
+
+/** 把自由聊天记录转换为可追溯的问答摘要（用于保存与事实构造） */
+export function buildQAFromChat(chat: ChatMessage[]): QAPair[] {
+  const pairs: QAPair[] = [];
+  for (let i = 0; i < chat.length; i += 1) {
+    const message = chat[i];
+    if (message.role !== "user") continue;
+    const previous = [...chat.slice(0, i)].reverse().find((m) => m.role === "ai");
+    pairs.push({
+      questionId: `chat_${pairs.length + 1}`,
+      questionText: clip(previous?.content ?? "用户主动描述", 160),
+      answer: clip(message.content, 300),
+      unknown: isUnknownAnswer(message.content),
+    });
+  }
+  return pairs.slice(-12);
+}
+
+/** 后端对话协议：只保留最近 12 条，单条最多 600 字，避免超出请求体限制 */
+export function toChatPayload(chat: ChatMessage[]): AIChatMessage[] {
+  return chat
+    .slice(-12)
+    .map((message) => ({
+      role: message.role === "user" ? ("user" as const) : ("assistant" as const),
+      content: clip(message.content, 600),
+    }))
+    .filter((message) => message.content.length > 0);
 }
 
 export type AskResult =
@@ -335,6 +383,82 @@ export function nextTurn(ctx: AskContext, tone: Tone): AskResult {
   return { kind: "result" };
 }
 
+/**
+ * 自由聊天式问诊（真实 AI）：
+ * - 每一轮都把用户输入交给本地安全规则扫描，高风险立即拦截，不发请求
+ * - 成功返回自然语言回复、是否信息足够与快捷选项
+ * - 失败返回结构化错误，由页面保留对话并明确提示重试
+ */
+export async function chatWithAI(
+  ctx: AskContext,
+  chat: ChatMessage[],
+  tone: Tone,
+  signal?: AbortSignal
+): Promise<ChatResult> {
+  const scanned = [
+    ctx.symptom ?? "",
+    ctx.description,
+    ...chat.filter((m) => m.role === "user").map((m) => m.content),
+  ].join("\n");
+  const detected = detectRisk(scanned);
+  const base = SYMPTOM_BASE_RISK[ctx.symptom ?? ""] ?? "low";
+  if (higherRisk(detected.level, base) === "high") {
+    return {
+      ok: false,
+      kind: "interception",
+      interception: buildInterception(detected.matched, tone),
+    };
+  }
+
+  try {
+    const res = await requestAIChat(
+      {
+        category: ctx.category ?? "other",
+        symptom: ctx.symptom,
+        description: ctx.description,
+        messages: toChatPayload(chat),
+        device_name: ctx.device?.name ?? null,
+        device_brand: ctx.device?.brand ?? null,
+        device_model: ctx.device?.model ?? null,
+        photo_id: ctx.photoId ?? null,
+        tone,
+      },
+      signal
+    );
+    return {
+      ok: true,
+      reply: res.reply,
+      ready: res.ready,
+      suggestions: res.suggestions,
+      model: res.model,
+    };
+  } catch (err) {
+    if (err instanceof ApiError) {
+      if (err.code === "aborted") {
+        return {
+          ok: false,
+          kind: "error",
+          error: { code: "aborted", message: "请求已取消" },
+        };
+      }
+      if (err.code === "high_risk_blocked") {
+        const interception = backendInterception(err.detail, tone);
+        if (interception) return { ok: false, kind: "interception", interception };
+      }
+      return {
+        ok: false,
+        kind: "error",
+        error: { code: err.code, message: errorMessage(err.code) },
+      };
+    }
+    return {
+      ok: false,
+      kind: "error",
+      error: { code: "unknown", message: errorMessage("unknown") },
+    };
+  }
+}
+
 function errorMessage(code: string): string {
   switch (code) {
     case "ai_not_configured":
@@ -407,6 +531,7 @@ export async function generateAIDiagnosis(
           answer: q.answer,
           unknown: q.unknown || isUnknownAnswer(q.answer),
         })),
+        conversation: toChatPayload(ctx.chat ?? []),
         device_name: ctx.device?.name ?? null,
         device_brand: ctx.device?.brand ?? null,
         device_model: ctx.device?.model ?? null,

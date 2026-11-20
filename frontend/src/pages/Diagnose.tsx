@@ -1,8 +1,9 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+﻿﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   Camera,
+  FileText,
   FlaskConical,
   Lightbulb,
   Loader2,
@@ -30,14 +31,14 @@ import type { DiagnoseCategory } from "../services/diagnosisService";
 import {
   SYMPTOM_OPTIONS,
   buildLocalRisk,
+  buildQAFromChat,
   buildTemplateDiagnosis,
+  chatWithAI,
   generateAIDiagnosis,
-  nextTurn,
   type AskContext,
 } from "../services/diagnosisService";
-import { questionsFor } from "../services/questionScript";
-import type { Diagnosis, QAPair } from "../types/diagnosis";
-import { isUnknownAnswer } from "../utils/risk";
+import type { ChatMessage, Diagnosis, QAPair } from "../types/diagnosis";
+
 import { withMeta } from "../services/deviceService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useDiagnosisStore, diagnosesForOwner } from "../stores/diagnosisStore";
@@ -63,7 +64,7 @@ const CATEGORY_CARDS: { key: DiagnoseCategory; emoji: string; title: string; hin
 const ELDER_GUIDES = [
   "第一步，选择您要检查的设备",
   "第二步，描述遇到的问题",
-  "第三步，回答 AI 的几个小问题",
+  "第三步，和 AI 聊一聊故障情况",
   "完成",
 ];
 
@@ -88,10 +89,14 @@ export default function Diagnose() {
 
   const [customSymptom, setCustomSymptom] = useState(false);
   const [input, setInput] = useState("");
-  /** 问诊问题之间的短暂等待（不用于最终 AI 生成） */
+  /** 等待真实 AI 回复（不伪造进度） */
   const [thinking, setThinking] = useState(false);
   /** 最终诊断生成中（真实状态，不显示虚构进度） */
   const [generating, setGenerating] = useState(false);
+  /** AI 认为信息已足够，可以生成完整诊断报告 */
+  const [aiReady, setAiReady] = useState(false);
+  /** 最近一次失败发生在对话中，还是最终生成时 */
+  const [errorPhase, setErrorPhase] = useState<"chat" | "generate">("chat");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -102,6 +107,9 @@ export default function Diagnose() {
   const busyRef = useRef(false);
   /** 异步会话令牌：返回、重开、切设备后旧响应不得覆盖新会话 */
   const generationRef = useRef(0);
+  /** 对话请求令牌与中断控制器（自由聊天每轮都有独立请求） */
+  const chatSeqRef = useRef(0);
+  const chatAbortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   /** 当前问诊所属设备 / 类别（用于检测会话变化） */
@@ -112,7 +120,9 @@ export default function Diagnose() {
     return () => {
       mountedRef.current = false;
       generationRef.current += 1;
+      chatSeqRef.current += 1;
       abortRef.current?.abort();
+      chatAbortRef.current?.abort();
       busyRef.current = false;
     };
   }, []);
@@ -232,8 +242,11 @@ export default function Diagnose() {
 
   function cancelGeneration() {
     generationRef.current += 1;
+    chatSeqRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
     busyRef.current = false;
     setGenerating(false);
     setThinking(false);
@@ -243,6 +256,8 @@ export default function Diagnose() {
 
   function pickCategory(key: DiagnoseCategory) {
     cancelGeneration();
+    setAiReady(false);
+    setErrorPhase("chat");
     setDraft({ category: key, step: 1, qa: [], chat: [], aiError: null, riskInterception: null });
   }
 
@@ -250,6 +265,8 @@ export default function Diagnose() {
     const d = devices.find((x) => x.id === id);
     if (!d) return;
     cancelGeneration();
+    setAiReady(false);
+    setErrorPhase("chat");
     setDraft({
       deviceId: d.id,
       deviceName: d.name,
@@ -264,6 +281,8 @@ export default function Diagnose() {
 
   function pickSymptom(symptom: string) {
     cancelGeneration();
+    setAiReady(false);
+    setErrorPhase("chat");
     setDraft({ symptom, step: 2, qa: [], chat: [], aiError: null, riskInterception: null });
     startConsult(symptom);
   }
@@ -274,11 +293,17 @@ export default function Diagnose() {
       return;
     }
     cancelGeneration();
+    setAiReady(false);
+    setErrorPhase("chat");
     setDraft({ symptom: null, step: 2, qa: [], chat: [], aiError: null, riskInterception: null });
     startConsult(null);
   }
 
-  function makeCtx(symptomOverride?: string | null, qaOverride?: QAPair[]): AskContext {
+  function makeCtx(
+    symptomOverride?: string | null,
+    qaOverride?: QAPair[],
+    chatOverride?: ChatMessage[]
+  ): AskContext {
     return {
       category: draft.category,
       symptom:
@@ -287,87 +312,104 @@ export default function Diagnose() {
       qa: qaOverride ?? draft.qa,
       device: selectedDevice,
       photoId: draft.photoId,
+      chat: chatOverride ?? draft.chat,
     };
   }
 
-  /** 进入问诊：发送首个 AI 问题（新会话从空问答开始） */
-  function startConsult(symptom: string | null) {
-    const ctx = makeCtx(symptom, []);
+  /** 真实 AI 多轮对话：每轮携带完整历史，等待真实回复（不伪造进度） */
+  async function runChatTurn(history: ChatMessage[], ctx: AskContext) {
+    const token = ++chatSeqRef.current;
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+    setThinking(true);
+    setDraft({ aiError: null });
+
+    // 照片只在首轮随消息发送，后续轮次无需重复上传
+    const userTurns = history.filter((m) => m.role === "user").length;
+    const callCtx: AskContext = {
+      ...ctx,
+      photoId: userTurns <= 1 ? ctx.photoId ?? null : null,
+    };
     const tone = elder ? "elder" : "standard";
-    const turn = nextTurn(ctx, tone);
+    const result = await chatWithAI(callCtx, history, tone, controller.signal);
+
+    // 返回 / 重新开始 / 切设备后，旧响应不得覆盖新会话
+    if (token !== chatSeqRef.current || !mountedRef.current) return;
+    chatAbortRef.current = null;
+    setThinking(false);
+
+    if (!result.ok) {
+      if (result.kind === "interception") {
+        setDraft({ riskInterception: result.interception });
+        addNotification({
+          type: "risk",
+          title: `高风险告警 · ${result.interception.title}`,
+          body: result.interception.description,
+        });
+        return;
+      }
+      if (result.error.code === "aborted") return;
+      setErrorPhase("chat");
+      setDraft({ aiError: result.error });
+      return;
+    }
 
     appendMessage({
       role: "ai",
-      content: elder
-        ? "好的，我了解了。接下来我问您两个小问题，您点下面的按钮回答就行。"
-        : "收到，为了更准确地判断，我需要再确认几个问题。",
+      content: result.reply,
+      suggestions: result.suggestions,
     });
-
-    if (turn.kind === "question") {
-      appendMessage({ role: "ai", content: turn.question.text, suggestions: turn.question.suggestions });
-    } else if (turn.kind === "interception") {
-      setDraft({ riskInterception: turn.interception });
-      // 通知中心（模块⑤）：高风险告警
-      addNotification({
-        type: "risk",
-        title: `高风险告警 · ${turn.interception.title}`,
-        body: turn.interception.description,
-      });
-    } else {
-      // 问诊信息已齐（例如旧草稿迁移后）：直接生成
-      void generateResult(ctx);
-    }
+    setAiReady(result.ready);
   }
 
-  /** 用户回答（点选建议 / 自由输入） */
+  /** 进入问诊：把用户的首条描述发给真实 AI，由 AI 自然追问 */
+  function startConsult(symptom: string | null) {
+    setAiReady(false);
+    const firstText = symptom
+      ? `${symptom}${draft.description.trim() ? `：${draft.description.trim()}` : ""}`
+      : draft.description.trim();
+    if (!firstText) return;
+
+    const first: ChatMessage = {
+      id: "pending-first",
+      role: "user",
+      content: firstText,
+      time: "",
+    };
+    appendMessage({ role: "user", content: firstText });
+    const ctx = makeCtx(symptom, [], [first]);
+    void runChatTurn([first], ctx);
+  }
+
+  /** 用户自由输入：直接交给真实 AI 回复（不再走固定问题脚本） */
   function sendAnswer(text: string) {
     if (thinking || generating || busyRef.current || !text.trim()) return;
     const answer = text.trim();
-    const questions = questionsFor(draft.category);
-    const question = questions[draft.qa.length];
-    if (!question) {
-      notify("本轮问诊已完成，正在生成诊断结果", "info");
-      return;
-    }
-
-    const pair: QAPair = {
-      questionId: question.id,
-      questionText: question.text,
-      answer,
-      unknown: isUnknownAnswer(answer),
+    const message: ChatMessage = {
+      id: "pending-user",
+      role: "user",
+      content: answer,
+      time: "",
     };
-    const newQa = [...draft.qa, pair];
-
+    const history = [...draft.chat, message];
     appendMessage({ role: "user", content: answer });
     setInput("");
+    const ctx = makeCtx(undefined, buildQAFromChat(history), history);
+    void runChatTurn(history, ctx);
+  }
 
-    const ctx = makeCtx(undefined, newQa);
-    const tone = elder ? "elder" : "standard";
-    const turn = nextTurn(ctx, tone);
+  /** 对话失败后重试：保留已输入内容，重新请求同一轮回复 */
+  function retryChat() {
+    if (!draft.chat.length) return;
+    const ctx = makeCtx(undefined, buildQAFromChat(draft.chat), draft.chat);
+    void runChatTurn(draft.chat, ctx);
+  }
 
-    if (turn.kind === "result") {
-      setDraft({ qa: newQa });
-      void generateResult(ctx);
-      return;
-    }
-
-    setThinking(true);
-    window.setTimeout(() => {
-      if (!mountedRef.current) return;
-      if (turn.kind === "question") {
-        setDraft({ qa: newQa });
-        appendMessage({ role: "ai", content: turn.question.text, suggestions: turn.question.suggestions });
-      } else {
-        setDraft({ qa: newQa, riskInterception: turn.interception });
-        // 通知中心（模块⑤）：高风险告警
-        addNotification({
-          type: "risk",
-          title: `高风险告警 · ${turn.interception.title}`,
-          body: turn.interception.description,
-        });
-      }
-      setThinking(false);
-    }, 500);
+  /** 用完整对话生成最终诊断报告的上下文 */
+  function reportCtx(): AskContext {
+    const qa = buildQAFromChat(draft.chat);
+    return makeCtx(undefined, qa, draft.chat);
   }
 
   /**
@@ -414,6 +456,7 @@ export default function Diagnose() {
       return;
     }
     if (result.error.code === "aborted") return;
+    setErrorPhase("generate");
     setDraft({ aiError: result.error });
   }
 
@@ -443,6 +486,7 @@ export default function Diagnose() {
     setDraft({
       riskInterception: null,
       qa: [],
+      chat: [],
       description: "",
       step: 1,
     });
@@ -452,6 +496,8 @@ export default function Diagnose() {
   /** 重新开始 / 返回修改：取消未完成请求，但保留历史记录 */
   function restart() {
     cancelGeneration();
+    setAiReady(false);
+    setErrorPhase("chat");
     resetDraft();
   }
 
@@ -477,8 +523,7 @@ export default function Diagnose() {
   /* ---------- 模块④：自动朗读逻辑见下方“最新 AI 问题”与高风险提示 ---------- */
 
   const symptoms = draft.category ? SYMPTOM_OPTIONS[draft.category] : [];
-  const questions = questionsFor(draft.category);
-  const allAnswered = draft.qa.length >= questions.length;
+  const hasUserTurn = draft.chat.some((m) => m.role === "user");
   const riskPreview = buildLocalRisk(makeCtx());
 
   /** 仅最新一条 AI 消息展示可点选建议与朗读：防止历史选项误答新一轮问题 */
@@ -497,7 +542,7 @@ export default function Diagnose() {
       return;
     }
     if (!autoRead || !voiceEnabled || thinking || generating || interception) return;
-    if (!lastAi?.content || !lastAi.suggestions?.length) return;
+    if (!lastAi?.content) return;
     if (lastAi.id === autoBaselineRef.current) return;
     const key = `auto:diag:${lastAi.id}:${mode}`;
     if (!shouldAutoRead(key)) return;
@@ -951,7 +996,7 @@ export default function Diagnose() {
                 enterKeyHint="send"
                 autoComplete="off"
                 disabled={generating}
-                placeholder={elder ? "也可以打字告诉我…" : "请输入您的问题，比如：空调不制冷了…"}
+                placeholder={elder ? "想到什么就说什么，AI 会接着问…" : "直接和 AI 聊聊故障情况，想到什么说什么…"}
                 className="min-w-0 flex-1 rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
               />
               <Button
@@ -964,7 +1009,10 @@ export default function Diagnose() {
                 <Mic className="h-4 w-4" />
                 {voice.listening ? "停止" : ""}
               </Button>
-              <Button onClick={() => sendAnswer(input)} disabled={generating || !input.trim()}>
+              <Button
+                onClick={() => sendAnswer(input)}
+                disabled={thinking || generating || !input.trim()}
+              >
                 发送
               </Button>
             </div>
@@ -980,7 +1028,39 @@ export default function Diagnose() {
             </p>
           )}
 
-          {/* AI 失败：保留输入，明确来源，允许重试或主动选择模板 */}
+          {/* 生成报告入口：对话中随时可用，AI 认为信息足够时给出提示 */}
+          {hasUserTurn && !thinking && !generating && !draft.aiError && (
+            <section className="card-base flex flex-wrap items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-stone-800">
+                  {aiReady ? "AI 认为信息已经足够" : "随时可以生成诊断报告"}
+                </p>
+                <p className="mt-1 text-xs text-stone-500">
+                  {aiReady
+                    ? "也可以继续补充情况；生成时会基于当前完整对话整理原因与安全建议。"
+                    : "生成会基于当前完整对话调用真实 AI，通常需要 10–60 秒；也可以继续和 AI 聊。"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => void generateResult(reportCtx(), "ai")}
+                  disabled={thinking || generating || busyRef.current}
+                >
+                  <FileText className="h-4 w-4" /> 生成诊断报告
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => void generateResult(reportCtx(), "template")}
+                  disabled={thinking || generating || busyRef.current}
+                  title="模板演示由本地固定模板生成，不是真实 AI"
+                >
+                  <FlaskConical className="h-4 w-4" /> 模板演示（非 AI）
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {/* AI 失败：保留对话，明确来源；对话失败只重试对话，不拿模板冒充 */}
           {draft.aiError && (
             <section
               role="alert"
@@ -989,10 +1069,14 @@ export default function Diagnose() {
               <div className="flex items-start gap-3">
                 <AlertTriangle aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-amber-900">诊断未生成，未使用模板冒充 AI</h2>
+                  <h2 className="text-base font-bold text-amber-900">
+                    {errorPhase === "chat" ? "AI 对话未成功，未使用模板冒充 AI" : "诊断未生成，未使用模板冒充 AI"}
+                  </h2>
                   <p className="mt-1 text-sm text-amber-900">{draft.aiError.message}</p>
                   <p className="mt-1 text-xs text-amber-800">
-                    您的设备、描述和全部问答已保留。可以重试真实 AI，或主动选择模板演示。
+                    {errorPhase === "chat"
+                      ? "您已输入的内容都保留在对话里，可以重试继续和 AI 聊天，或返回修改描述。"
+                      : "您的设备、描述和全部对话已保留。可以重试真实 AI，或主动选择模板演示。"}
                   </p>
                   {draft.aiError.code === "ai_not_configured" && (
                     <p className="mt-1 text-xs text-amber-800">
@@ -1000,47 +1084,39 @@ export default function Diagnose() {
                     </p>
                   )}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      onClick={() => void generateResult(makeCtx(), "ai")}
-                      disabled={generating || busyRef.current}
-                    >
-                      <RefreshCw className="h-4 w-4" /> 重试真实 AI
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => void generateResult(makeCtx(), "template")}
-                      disabled={generating || busyRef.current}
-                      title="模板演示由本地固定模板生成，不是真实 AI"
-                    >
-                      <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
-                    </Button>
+                    {errorPhase === "chat" ? (
+                      <Button onClick={retryChat} disabled={thinking || generating}>
+                        <RefreshCw className="h-4 w-4" /> 重试 AI 对话
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => void generateResult(reportCtx(), "ai")}
+                          disabled={generating || busyRef.current}
+                        >
+                          <RefreshCw className="h-4 w-4" /> 重试真实 AI
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => void generateResult(reportCtx(), "template")}
+                          disabled={generating || busyRef.current}
+                          title="模板演示由本地固定模板生成，不是真实 AI"
+                        >
+                          <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
+                        </Button>
+                      </>
+                    )}
                     <Button variant="ghost" onClick={backToDescribe}>
                       返回修改描述
                     </Button>
                   </div>
-                  <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-800">
-                    模板演示来源标识：
-                    <SourceBadge source="template" />
-                  </p>
+                  {errorPhase === "generate" && (
+                    <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-800">
+                      模板演示来源标识：
+                      <SourceBadge source="template" />
+                    </p>
+                  )}
                 </div>
-              </div>
-            </section>
-          )}
-
-          {/* 问诊已答完但尚未生成（刷新 / 异常恢复） */}
-          {!draft.aiError && !generating && allAnswered && draft.chat.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-800">问诊信息已齐全，但尚未生成诊断结果。</p>
-              <p className="mt-1 text-xs text-slate-500">
-                可重试真实 AI，或主动选择模板演示（非 AI）。
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button onClick={() => void generateResult(makeCtx(), "ai")}>
-                  <RefreshCw className="h-4 w-4" /> 生成真实 AI 诊断
-                </Button>
-                <Button variant="secondary" onClick={() => void generateResult(makeCtx(), "template")}>
-                  <FlaskConical className="h-4 w-4" /> 查看模板演示（非 AI）
-                </Button>
               </div>
             </section>
           )}

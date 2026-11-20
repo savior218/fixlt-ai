@@ -298,7 +298,7 @@ def test_field_and_qa_count_constraints():
             "answer": "回答",
             "unknown": False,
         }
-        for i in range(5)
+        for i in range(13)
     ]
     assert client.post("/api/diagnose/complete", json=too_many_qa).status_code == 422
 
@@ -338,3 +338,85 @@ def test_model_evidence_is_not_trusted(monkeypatch):
     resp = client.post("/api/diagnose/complete", json=make_payload())
     assert resp.status_code == 200
     assert "压缩机压力为零" not in json.dumps(resp.json(), ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
+# 4. 自由聊天式问诊（/api/diagnose/chat）
+# ---------------------------------------------------------------------------
+def make_chat_payload(**overrides):
+    base = {
+        "category": "ac",
+        "symptom": "制冷效果变差",
+        "description": "空调开了半小时还是不凉",
+        "messages": [{"role": "user", "content": "空调开着但不凉，出风口只有自然风"}],
+        "tone": "standard",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_chat_high_risk_is_blocked_before_model(monkeypatch):
+    called = {"hit": False}
+
+    async def _bomb(*args, **kwargs):
+        called["hit"] = True
+        raise AssertionError("高风险输入不应调用模型")
+
+    monkeypatch.setattr(glm_client, "chat_json_messages", _bomb)
+    resp = client.post(
+        "/api/diagnose/chat",
+        json=make_chat_payload(
+            messages=[{"role": "user", "content": "空调冒烟了，还有焦味"}]
+        ),
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"]["code"] == "high_risk_blocked"
+    assert called["hit"] is False
+
+
+def test_chat_not_configured_returns_structured_error():
+    resp = client.post("/api/diagnose/chat", json=make_chat_payload())
+    assert resp.status_code == 503
+    assert resp.json()["detail"]["code"] == "ai_not_configured"
+
+
+def test_chat_returns_natural_reply(monkeypatch):
+    async def _ok(system, messages, **kwargs):
+        assert messages[-1]["role"] == "user"
+        return {
+            "reply": "了解了，先确认一下：开机后出风口是完全没风，还是有风但不凉？",
+            "ready": False,
+            "suggestions": ["完全没风", "有风但不凉", "说不准"],
+        }
+
+    monkeypatch.setattr(glm_client, "is_configured", lambda: True)
+    monkeypatch.setattr(glm_client, "chat_json_messages", _ok)
+    resp = client.post("/api/diagnose/chat", json=make_chat_payload())
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["source"] == "ai"
+    assert body["ready"] is False
+    assert body["reply"].startswith("了解了")
+    assert len(body["suggestions"]) == 3
+    assert body["safety_rules_version"].startswith("SAFETY-")
+
+
+def test_chat_unsafe_reply_is_rejected(monkeypatch):
+    async def _unsafe(system, messages, **kwargs):
+        return {
+            "reply": "你可以打开外壳后带电检查内部接线。",
+            "ready": False,
+            "suggestions": [],
+        }
+
+    monkeypatch.setattr(glm_client, "is_configured", lambda: True)
+    monkeypatch.setattr(glm_client, "chat_json_messages", _unsafe)
+    resp = client.post("/api/diagnose/chat", json=make_chat_payload())
+    assert resp.status_code == 502
+    assert resp.json()["detail"]["code"] == "ai_unsafe_output"
+
+
+def test_chat_requires_at_least_one_message():
+    resp = client.post("/api/diagnose/chat", json=make_chat_payload(messages=[]))
+    assert resp.status_code == 400
+    assert resp.json()["detail"]["code"] == "empty_conversation"
