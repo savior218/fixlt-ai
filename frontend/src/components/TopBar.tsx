@@ -86,7 +86,7 @@ export default function TopBar({
           type="button"
           onClick={onMenuClick}
           aria-label="打开导航菜单"
-          className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 lg:hidden"
+          className="rounded-lg p-2.5 text-stone-600 hover:bg-stone-100 lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -114,7 +114,7 @@ export default function TopBar({
           aria-pressed={mode === "elder"}
           aria-label="切换长辈关怀模式"
           className={[
-            "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+            "min-h-10 rounded-full border px-3 py-2 text-sm font-medium transition-colors lg:min-h-0 lg:py-1.5",
             mode === "elder"
               ? "border-brand-400 bg-brand-100 text-brand-700"
               : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
@@ -142,7 +142,7 @@ export default function TopBar({
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700 hover:bg-brand-200"
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-sm font-bold text-brand-700 hover:bg-brand-200 lg:h-8 lg:w-8"
             >
               <TopBarAvatar userId={user.id} fallback={user.nickname.slice(0, 1)} />
             </button>

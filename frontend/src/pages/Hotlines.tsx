@@ -145,7 +145,7 @@ function ContactRow({
 
   return (
     <div className="px-4 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-stone-900">
             {record.brand}
@@ -158,11 +158,11 @@ function ContactRow({
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:shrink-0 sm:items-end sm:gap-1">
           {isTouch ? (
             <a
               href={record.phone_uri}
-              className={`${buttonClass("primary", "md")} shrink-0`}
+              className={`${buttonClass("primary", "md")} w-full sm:w-auto`}
               aria-label={`拨打${record.brand}官方售后电话 ${record.phone}`}
             >
               <Phone aria-hidden className="h-4 w-4" />
@@ -187,7 +187,7 @@ function ContactRow({
             <button
               type="button"
               onClick={copyPhone}
-              className="inline-flex items-center gap-1 text-[11px] text-stone-500 hover:text-brand-700"
+              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg border border-stone-300 bg-surface px-3 text-xs text-stone-500 transition-colors hover:bg-stone-50 hover:text-brand-700 sm:min-h-0 sm:justify-start sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:text-[11px]"
             >
               {copied ? (
                 <Check aria-hidden className="h-3 w-3" />

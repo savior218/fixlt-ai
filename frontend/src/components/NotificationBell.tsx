@@ -99,7 +99,7 @@ export default function NotificationBell() {
         aria-label={open ? "关闭通知面板" : "打开通知面板"}
         aria-expanded={open}
         className={[
-          "bell-swing-trigger relative rounded-lg p-2 transition-colors",
+          "bell-swing-trigger relative rounded-lg p-2.5 transition-colors",
           "text-stone-500 hover:bg-brand-50 hover:text-brand-700",
           open ? "bg-brand-50 text-brand-700" : "",
           ringing ? "bell-ringing" : "",

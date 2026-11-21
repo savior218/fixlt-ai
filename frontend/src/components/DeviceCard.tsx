@@ -29,7 +29,7 @@ export default function DeviceCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border border-stone-200 bg-surface p-4 text-left shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
+      className="w-full min-w-0 rounded-2xl border border-stone-200 bg-surface p-4 text-left shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50/40 focus:outline-none focus:ring-2 focus:ring-brand-200"
     >
       <div className="flex items-start gap-3">
         {/* 设备图片：用户上传图优先；否则使用本地实物透明 PNG（不拉伸、不裁切） */}
@@ -54,8 +54,8 @@ export default function DeviceCard({
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className={`truncate font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <p className={`min-w-0 flex-1 truncate font-semibold text-stone-900 ${elder ? "text-lg" : "text-base"}`}>
               {device.name}
             </p>
             <span className="shrink-0">

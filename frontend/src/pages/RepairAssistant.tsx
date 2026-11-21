@@ -424,7 +424,7 @@ export default function RepairAssistant() {
         </select>
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <InputField label="品牌" placeholder="如：格力" value={form.brand} onChange={(v) => patch({ brand: v })} />
         <InputField label="型号" placeholder="如：KFR-35GW" value={form.model} onChange={(v) => patch({ model: v })} />
       </div>

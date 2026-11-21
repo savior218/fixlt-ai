@@ -236,7 +236,7 @@ export default function Devices() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((d) => (
-            <div key={d.id} className="space-y-2">
+            <div key={d.id} className="min-w-0 space-y-2">
               <DeviceCard
                 device={d}
                 status={d.status}
@@ -307,13 +307,13 @@ export default function Devices() {
                 ))}
               </select>
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InputField label="品牌" placeholder="格力" value={form.brand ?? ""} error={errors.brand}
                 onChange={(v) => setForm({ ...form, brand: v })} />
               <InputField label="型号" placeholder="KFR-35GW" value={form.model ?? ""} error={errors.model}
                 onChange={(v) => setForm({ ...form, model: v })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-stone-700">购买日期</span>
                 <input
