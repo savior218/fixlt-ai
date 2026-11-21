@@ -1,12 +1,11 @@
 ﻿﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Download, Phone, RotateCcw } from "lucide-react";
+import { AlertTriangle, ChevronRight, Download, Phone, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import SourceBadge from "../components/SourceBadge";
 import {
   LEGACY_STATUS_LABELS,
   PROGRESS_STATUS_LABELS,
@@ -178,8 +177,9 @@ export default function Records() {
                       {d.saveStatus === "failed" ? " · 未同步到云端" : ""}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <SourceBadge source={d.source} model={d.model} />
+                  <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-brand-700">
+                    点击查看
+                    <ChevronRight aria-hidden className="h-3.5 w-3.5" />
                   </span>
                 </Link>
               </li>
