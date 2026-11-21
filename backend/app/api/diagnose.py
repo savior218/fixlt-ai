@@ -87,6 +87,7 @@ SYSTEM_PROMPT = """你是"修必达（FixIt AI）"家用家电维修助手，负
 {
   "conclusion": "标准版核心结论，2-3 句，先给最可能的原因方向，再给排查思路",
   "conclusion_elder": "长辈关怀版核心结论，口语化、语气温和、多用短句，避免术语",
+  "user_summary": "用第三人称一句话总结用户描述的情况（如“空调噪音逐渐变大”），不超过 60 字，只写用户明确提供的信息",
   "possible_causes": [{"title": "原因标题", "description": "为什么可能导致该故障"}],
   "suggestions": [{"title": "步骤标题", "description": "具体做法，确保安全"}],
   "suggestions_elder": [{"title": "第一步：…", "description": "口语化的具体做法"}],
@@ -101,6 +102,8 @@ SYSTEM_PROMPT = """你是"修必达（FixIt AI）"家用家电维修助手，负
 2. suggestions 与 suggestions_elder 各给 3 条，按“先易后难、先安全后深入”排序，且两版含义一致。
 3. 标准版与长辈版必须共用同一套原因排序和行动含义，长辈版只改变表达方式，不改变判断结论。
 4. 所有文案使用简体中文，不编造准确率、维修报价或用户未提供的事实。
+5. user_summary 只总结用户明确说过的故障信息（设备、现象、出现时间、已尝试操作），
+   不要逐条罗列问答过程，不要写“用户回答”“助手问”等对话痕迹。
 """
 
 
@@ -429,6 +432,7 @@ async def complete_diagnosis(
             device_brand=req.device_brand,
             device_model=req.device_model,
             qa=[item.model_dump() for item in req.qa],
+            user_summary=content.user_summary,
         )
         risk_floor = compute_risk_floor(text, req.symptom)
 

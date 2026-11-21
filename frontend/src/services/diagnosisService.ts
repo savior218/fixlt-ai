@@ -169,6 +169,8 @@ export function buildEvidence(ctx: AskContext): {
 
   for (const item of ctx.qa) {
     if (!item.questionText || !item.answer) continue;
+    // 聊天轮次不作为判断依据逐条展示（由 AI 在 user_summary 中总结）
+    if (item.questionId.startsWith("chat_")) continue;
     if (item.unknown || isUnknownAnswer(item.answer)) {
       unknownInformation.push(
         `「${clip(item.questionText, 160)}」用户回答：${clip(item.answer)}（未知，未作为确认事实）`

@@ -7,7 +7,6 @@ import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
 import RiskAlert, { riskSpeechTitle } from "../components/RiskAlert";
 import SectionCard from "../components/SectionCard";
-import SourceBadge from "../components/SourceBadge";
 import SpeakButton from "../components/SpeakButton";
 import { useToast } from "../components/Toast";
 import { createRecordFromDiagnosis } from "../services/repairService";
@@ -196,17 +195,20 @@ export default function DiagnosisResult() {
         <div className="flex min-w-0 items-center gap-3">
           <CheckCircle2 aria-hidden className="h-8 w-8 shrink-0 text-risk-low" />
           <div className="min-w-0">
-            <h1 className={elder ? "text-xl font-bold text-stone-900" : "text-lg font-bold text-stone-900"}>
+            <h1
+              className={`font-body font-bold text-stone-900 ${
+                elder ? "text-xl" : "text-lg"
+              }`}
+            >
               {elder ? "诊断完成！这就告诉您怎么办" : "诊断完成！为您生成详细的维修建议"}
             </h1>
-            <p className="mt-0.5 text-sm text-stone-500">
+            <p className="mt-0.5 text-xs text-stone-500">
               {diagnosis.deviceName ?? "未关联设备"} · {diagnosis.symptom || "自定义描述"} ·{" "}
               {formatDateTime(diagnosis.createdAt)}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <SourceBadge source={diagnosis.source} model={diagnosis.model} />
           {authed ? (
             reportSaved ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-risk-low-bg px-2.5 py-1 text-xs font-medium text-risk-low-deep">
@@ -220,11 +222,7 @@ export default function DiagnosisResult() {
               <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-500">
                 保存中…
               </span>
-            ) : (
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                待保存到云端
-              </span>
-            )
+            ) : null
           ) : (
             <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-500">
               游客：仅保存在本机
@@ -271,8 +269,8 @@ export default function DiagnosisResult() {
         {(diagnosis.source === "ai" || diagnosis.source === "template") && (
           <p className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-400">
             {diagnosis.source === "ai"
-              ? `内容由真实 AI 生成${diagnosis.model ? `（${diagnosis.model}）` : ""}；风险等级由本地安全规则独立判定。`
-              : "内容由本地固定模板生成（非 AI）；风险等级由本地安全规则独立判定。"}
+              ? "内容由 FixIt AI 小助手生成"
+              : "内容由本地固定模板生成（非 AI）"}
           </p>
         )}
       </SectionCard>
@@ -358,18 +356,20 @@ export default function DiagnosisResult() {
         </SectionCard>
       )}
 
-      {/* 操作区（elder 最后一步才出现） */}
+      {/* 操作区（elder 最后一步才出现）：统一等宽等高的网格按钮 */}
       {showRest && (
-        <div className="card-base flex flex-wrap items-center gap-2 p-4">
+        <div className="card-base grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
           <SpeakButton
             text={summarySpeech}
             speechKey={`result:summary:${diagnosis.id}:${mode}`}
             label={elder ? "朗读结论、风险和建议" : "朗读本页重点"}
-            size={elder ? "md" : "sm"}
+            size="md"
+            className="w-full"
             elder={elder}
           />
           <Button
             variant="secondary"
+            className="w-full"
             onClick={() => {
               resetDraft();
               navigate("/diagnose");
@@ -380,6 +380,7 @@ export default function DiagnosisResult() {
           {authed ? (
             <Button
               variant={reportSaved ? "secondary" : "primary"}
+              className="w-full"
               onClick={() => void saveReport()}
               disabled={reportSaved || reportSaving}
             >
@@ -395,12 +396,12 @@ export default function DiagnosisResult() {
           ) : (
             <Link
               to={loginHref(`/diagnosis/${diagnosis.id}/result`)}
-              className={buttonClass("primary", "md")}
+              className={`${buttonClass("primary", "md")} w-full`}
             >
               <Save className="h-4 w-4" /> 登录后保存报告
             </Link>
           )}
-          <Button onClick={() => void saveRecord()} disabled={saved || repairBusy}>
+          <Button className="w-full" onClick={() => void saveRecord()} disabled={saved || repairBusy}>
             <Save className="h-4 w-4" />
             {repairBusy
               ? "保存中…"
@@ -410,10 +411,13 @@ export default function DiagnosisResult() {
                   ? "保存到维修档案"
                   : "保存维修记录"}
           </Button>
-          <Link to={`/diagnosis/${diagnosis.id}/report`} className={buttonClass("primary", "md")}>
+          <Link
+            to={`/diagnosis/${diagnosis.id}/report`}
+            className={`${buttonClass("primary", "md")} w-full`}
+          >
             {elder ? "看完整报告" : "查看完整报告"} <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link to="/repair" className={buttonClass("ghost", "md")}>
+          <Link to="/repair" className={`${buttonClass("ghost", "md")} w-full`}>
             <FileText className="h-4 w-4" /> {elder ? "去报修" : "去智能报修"}
           </Link>
         </div>

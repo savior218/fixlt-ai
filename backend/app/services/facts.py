@@ -33,6 +33,7 @@ def build_facts(
     device_brand: str | None,
     device_model: str | None,
     qa: list[dict],
+    user_summary: str = "",
 ) -> tuple[list[str], list[str]]:
     evidence: list[str] = []
     unknown: list[str] = []
@@ -50,13 +51,19 @@ def build_facts(
     else:
         evidence.append("故障现象：用户以文字描述了问题")
 
-    if description.strip():
+    summary = _clip(user_summary)
+    if summary:
+        evidence.append(f"用户描述：{summary}")
+    elif description.strip():
         evidence.append(f"用户描述：{_clip(description)}")
 
     for item in qa:
         question = _clip(str(item.get("question_text", "")))
         answer = _clip(str(item.get("answer", "")))
         if not question or not answer:
+            continue
+        # 自由聊天的轮次由 user_summary 统一概括，不再逐条展示原始问答
+        if str(item.get("question_id", "")).startswith("chat_"):
             continue
         if item.get("unknown") or is_unknown_answer(answer):
             unknown.append(f"「{question}」用户回答：{answer}（未知，未作为确认事实）")

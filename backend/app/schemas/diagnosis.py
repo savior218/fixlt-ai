@@ -94,6 +94,8 @@ class ModelDiagnosisContent(BaseModel):
 
     conclusion: str = Field(min_length=5, max_length=600)
     conclusion_elder: str = Field(min_length=5, max_length=600)
+    # 模型对用户描述的一句话总结（判断依据展示用，不逐条展示聊天原文）
+    user_summary: str = Field(default="", max_length=160)
     possible_causes: list[PossibleCause] = Field(min_length=1, max_length=4)
     # 看图诊断时模型可能给不出照片证据，允许为空数组
     evidence: list[str] = Field(default_factory=list, max_length=6)
