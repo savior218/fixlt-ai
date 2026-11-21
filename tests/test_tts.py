@@ -165,6 +165,8 @@ def test_baidu_synthesize_protocol(monkeypatch):
     assert captured["data"]["tok"] == "TOKEN"
     assert captured["data"]["per"] == "0"
     assert captured["data"]["spd"] == "5"
+    # 百度对 rate=16000 返回 err_no=501 parameter error，音频格式由 aue 决定
+    assert "rate" not in captured["data"]
 
 
 def test_baidu_json_error_body_maps_to_quota(monkeypatch):

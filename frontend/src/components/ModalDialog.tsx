@@ -94,6 +94,7 @@ export default function ModalDialog({
       aria-modal="true"
       aria-labelledby={titleId}
       className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center sm:px-4"
+      style={{ paddingBottom: "var(--kb, 0px)" }}
       onClick={onClose}
     >
       <div

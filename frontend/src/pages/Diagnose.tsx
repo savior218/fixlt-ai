@@ -528,6 +528,19 @@ export default function Diagnose() {
 
   const hasUserTurn = draft.chat.some((m) => m.role === "user");
 
+  /** 软键盘弹出后把输入区滚进可见视口（夸克 / UC 不会自动滚动） */
+  function keepInputVisible() {
+    window.setTimeout(() => {
+      const card = chatScrollRef.current?.parentElement;
+      const vv = window.visualViewport;
+      if (!card || !vv) return;
+      const rect = card.getBoundingClientRect();
+      const visibleBottom = vv.offsetTop + vv.height;
+      const delta = rect.bottom - visibleBottom + 16;
+      if (delta > 0) window.scrollBy({ top: delta, behavior: "smooth" });
+    }, 280);
+  }
+
   /* ================= 高风险安全拦截 ================= */
   if (interception) {
     return (
@@ -730,6 +743,7 @@ export default function Diagnose() {
               value={voice.listening ? `${input}${voice.interimText}` : input}
               maxLength={500}
               onChange={(e) => setInput(e.target.value)}
+              onFocus={keepInputVisible}
               onKeyDown={(e) => {
                 // Enter 发送，Shift+Enter 换行；输入法选字状态下不发送
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {

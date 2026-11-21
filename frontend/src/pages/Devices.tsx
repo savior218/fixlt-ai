@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Info, Plus } from "lucide-react";
+import { Info, Loader2, Plus } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -56,6 +56,8 @@ export default function Devices() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof DeviceForm, string>>>({});
   const [deleting, setDeleting] = useState<{ id: number; name: string } | null>(null);
+  /** 保存中：防止连点造成重复设备，并给出可见等待反馈 */
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void load();
@@ -113,10 +115,11 @@ export default function Devices() {
   }
 
   async function submit() {
-    if (!form) return;
+    if (!form || saving) return;
     const errs = validateDeviceForm(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+    setSaving(true);
     try {
       if (editingId == null) {
         await add(form);
@@ -128,7 +131,15 @@ export default function Devices() {
       setForm(null);
       setEditingId(null);
     } catch (e) {
-      notify((e as Error).message, "error");
+      const err = e as { message?: string; code?: string };
+      notify(
+        err.code === "timeout"
+          ? "请求超时：免费实例唤醒约需 1 分钟，请先刷新列表确认是否已保存，避免重复添加。"
+          : err.message || "保存失败，请稍后重试。",
+        "error"
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -271,10 +282,18 @@ export default function Devices() {
         onClose={() => setForm(null)}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setForm(null)}>
+            <Button variant="secondary" onClick={() => setForm(null)} disabled={saving}>
               取消
             </Button>
-            <Button onClick={() => void submit()}>保存</Button>
+            <Button onClick={() => void submit()} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> 保存中…
+                </>
+              ) : (
+                "保存"
+              )}
+            </Button>
           </>
         }
       >

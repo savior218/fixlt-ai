@@ -171,7 +171,6 @@ async def _synthesize_baidu(text: str, voice: str | None, speed: float) -> bytes
                     "vol": str(settings.baidu_tts_volume),
                     "per": str(_baidu_per(voice)),
                     "aue": "6",
-                    "rate": "16000",
                 },
             )
         except httpx.TimeoutException as exc:

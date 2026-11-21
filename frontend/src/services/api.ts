@@ -29,10 +29,41 @@ export class ApiError extends Error {
   }
 }
 
+/** 常规接口 30 秒；免费实例冷启动可能接近 1 分钟 */
+const DEFAULT_TIMEOUT_MS = 30_000;
+/** 只读请求超时后自动重试一次，给休眠实例留出唤醒时间 */
+const RETRY_TIMEOUT_MS = 60_000;
+/** 写操作等待更久，但仍然不自动重试（避免重复创建） */
+const WRITE_TIMEOUT_MS = 45_000;
+
 async function request<T>(
   path: string,
   init?: RequestInit,
-  timeoutMs = 20_000
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const isRead = method === "GET" || method === "HEAD";
+  try {
+    return await attempt<T>(path, init, timeoutMs);
+  } catch (err) {
+    // 只读请求（列表、登录态恢复）超时多半是实例在唤醒，重试一次；
+    // 写请求不重试，避免超时后服务端其实已成功导致重复数据
+    if (
+      !isRead ||
+      init?.signal?.aborted ||
+      !(err instanceof ApiError) ||
+      err.code !== "timeout"
+    ) {
+      throw err;
+    }
+    return attempt<T>(path, init, Math.max(timeoutMs, RETRY_TIMEOUT_MS));
+  }
+}
+
+async function attempt<T>(
+  path: string,
+  init: RequestInit | undefined,
+  timeoutMs: number
 ): Promise<T> {
   const controller = new AbortController();
   let timedOut = false;
@@ -183,14 +214,22 @@ export interface HotlineDirectory {
 export const listHotlines = () => request<HotlineDirectory>("/hotlines");
 
 export const createDevice = (d: DeviceInput) =>
-  request<Device>("/devices", { method: "POST", body: JSON.stringify(d) });
+  request<Device>(
+    "/devices",
+    { method: "POST", body: JSON.stringify(d) },
+    WRITE_TIMEOUT_MS
+  );
 export const updateDevice = (id: number, d: Partial<DeviceInput>) =>
-  request<Device>(`/devices/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(d),
-  });
+  request<Device>(
+    `/devices/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(d),
+    },
+    WRITE_TIMEOUT_MS
+  );
 export const deleteDevice = (id: number) =>
-  request<void>(`/devices/${id}`, { method: "DELETE" });
+  request<void>(`/devices/${id}`, { method: "DELETE" }, WRITE_TIMEOUT_MS);
 /** 游客演示：固定只读样例，没有写接口 */
 export const listDemoDevices = () => request<Device[]>("/demo/devices");
 

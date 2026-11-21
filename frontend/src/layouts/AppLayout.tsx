@@ -14,6 +14,7 @@ import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
 import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
+import { useVisualViewport } from "../hooks/useVisualViewport";
 import { initSpeech, stopSpeech, useSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
 
@@ -54,6 +55,9 @@ export default function AppLayout() {
   useEffect(() => {
     initSpeech();
   }, []);
+
+  // 软键盘弹出时同步可见视口高度，避免输入框被键盘遮挡
+  useVisualViewport();
 
   // 保养到期提醒：打开应用时检查一次；同一到期周期只提醒一次
   useEffect(() => {
