@@ -144,6 +144,8 @@ export default function Settings() {
   const [dndNoticeOpen, setDndNoticeOpen] = useState(false);
   /** 开启自动朗读后的提醒弹窗 */
   const [autoReadNoticeOpen, setAutoReadNoticeOpen] = useState(false);
+  /** 修改密码的二次确认弹窗 */
+  const [pwdConfirmOpen, setPwdConfirmOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   /** 删除某类本机数据后触发重算占用 */
@@ -272,21 +274,27 @@ export default function Settings() {
     }
   }
 
-  async function savePassword() {
+  /** 提交前先做前端校验；通过后弹出二次确认 */
+  function validatePasswordForm(): boolean {
     if (currentPwd.length === 0) {
       setAccountError("请输入旧密码");
-      return;
+      return false;
     }
     if (newPwd.length < 8) {
       setAccountError("新密码至少 8 位");
-      return;
+      return false;
     }
     if (newPwd !== confirmPwd) {
       setAccountError("两次输入的新密码不一致");
-      return;
+      return false;
     }
-    setAccountBusy(true);
     setAccountError(null);
+    return true;
+  }
+
+  async function savePassword() {
+    if (!validatePasswordForm()) return;
+    setAccountBusy(true);
     try {
       const message = await changePassword(currentPwd, newPwd);
       setPasswordOpen(false);
@@ -812,14 +820,18 @@ export default function Settings() {
       <ModalDialog
         open={passwordOpen}
         title="修改密码"
-        description="修改成功后，旧密码和全部旧登录会话都会失效。"
         onClose={closeEdit}
         footer={
           <>
             <Button variant="secondary" onClick={closeEdit} disabled={accountBusy}>
               取消
             </Button>
-            <Button onClick={() => void savePassword()} disabled={accountBusy}>
+            <Button
+              onClick={() => {
+                if (validatePasswordForm()) setPwdConfirmOpen(true);
+              }}
+              disabled={accountBusy}
+            >
               {accountBusy ? "提交中…" : "确认修改"}
             </Button>
           </>
@@ -858,6 +870,20 @@ export default function Settings() {
           )}
         </div>
       </ModalDialog>
+
+      {/* 修改密码二次确认：改完即退出其他设备，先让用户确认一下 */}
+      <ConfirmDialog
+        open={pwdConfirmOpen}
+        title="确认修改密码？"
+        message="修改后旧密码会立即失效，其他设备上的登录也会退出，需要用新密码重新登录。确定现在修改吗？"
+        confirmLabel="确认修改"
+        danger={false}
+        onConfirm={() => {
+          setPwdConfirmOpen(false);
+          void savePassword();
+        }}
+        onCancel={() => setPwdConfirmOpen(false)}
+      />
     </div>
   );
 }
