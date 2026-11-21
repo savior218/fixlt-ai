@@ -37,6 +37,29 @@ const REPAIR_CATEGORIES = [
 
 const SYMPTOMS = ["无法启动", "运行中异常", "漏水", "噪音过大", "其他问题"];
 
+/** 设备库分类 → 报修分类；电视 / 其他不在设备库中，只能手动填写 */
+const DEVICE_TO_REPAIR_CATEGORY: Record<string, string> = {
+  ac: "ac",
+  fridge: "fridge",
+  washer: "washer",
+};
+
+function repairCategoryLabel(value: string): string {
+  return REPAIR_CATEGORIES.find((c) => c.value === value)?.label ?? value;
+}
+
+/** 已添加设备的选项文案：没有品牌型号时只显示名称，避免出现空括号 */
+function deviceOptionLabel(d: {
+  name: string;
+  brand: string | null;
+  model: string | null;
+}): string {
+  const extras = [d.brand, d.model]
+    .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+    .join(" ");
+  return extras ? `${d.name}（${extras}）` : d.name;
+}
+
 const CHECK_OPTIONS = [
   "已检查电源是否正常",
   "已清理过滤网或排水口",
@@ -90,6 +113,23 @@ export default function RepairAssistant() {
     : null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
+  /** 只列出与当前设备类型一致的已添加设备，避免选错设备带错品牌型号 */
+  const devicesForCategory = useMemo(
+    () =>
+      devices.filter(
+        (d) => (DEVICE_TO_REPAIR_CATEGORY[d.category] ?? "other") === form.category
+      ),
+    [devices, form.category]
+  );
+  /** 已添加设备只覆盖空调 / 冰箱 / 洗衣机；电视与其他只能手填 */
+  const deviceLibrarySupportsCategory =
+    form.category === "ac" || form.category === "fridge" || form.category === "washer";
+  /** 草稿恢复或列表未加载完时，只有确实存在的同类设备才作为选中值 */
+  const selectedDeviceValue =
+    form.deviceId != null &&
+    devicesForCategory.some((d) => d.id === form.deviceId)
+      ? String(form.deviceId)
+      : "";
   const [generated, setGenerated] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   /** elder 模式分两步填写 */
@@ -196,13 +236,34 @@ export default function RepairAssistant() {
     }
     const d = devices.find((x) => x.id === Number(id));
     if (!d) return;
-    const catMap: Record<string, string> = { ac: "ac", fridge: "fridge", washer: "washer" };
     patch({
       deviceId: d.id,
-      category: catMap[d.category] ?? "other",
+      category: DEVICE_TO_REPAIR_CATEGORY[d.category] ?? "other",
       brand: d.brand ?? "",
       model: d.model ?? "",
       location: d.location ?? "",
+    });
+  }
+
+  /** 先选类型再选设备：换类型时清掉不再匹配的设备与其自动带入的信息 */
+  function onChangeCategory(next: string) {
+    setForm((f) => {
+      const picked =
+        f.deviceId != null ? devices.find((d) => d.id === f.deviceId) : undefined;
+      const pickedCategory = picked
+        ? DEVICE_TO_REPAIR_CATEGORY[picked.category] ?? "other"
+        : null;
+      if (picked && pickedCategory !== next) {
+        return {
+          ...f,
+          category: next,
+          deviceId: null,
+          brand: "",
+          model: "",
+          location: "",
+        };
+      }
+      return { ...f, category: next };
     });
   }
 
@@ -381,36 +442,12 @@ export default function RepairAssistant() {
   const basicFields = (
     <>
       <label className="block text-sm">
-        <span className="mb-1 block font-medium text-stone-700">选择已添加的设备</span>
-        <select
-          value={form.deviceId ?? ""}
-          onChange={(e) => onPickDevice(e.target.value)}
-          className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 ${
-            form.deviceId != null ? "text-stone-800" : "text-stone-400"
-          }`}
-        >
-          <option value="">请选择</option>
-          {devices.length === 0 ? (
-            <option value="" disabled>
-              {devicesLoading ? "加载中…" : "无"}
-            </option>
-          ) : (
-            devices.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}（{d.brand ?? ""} {d.model ?? ""}）
-              </option>
-            ))
-          )}
-        </select>
-      </label>
-
-      <label className="block text-sm">
         <span className="mb-1 block font-medium text-stone-700">
           设备类型 <span className="text-risk-high">*</span>
         </span>
         <select
           value={form.category}
-          onChange={(e) => patch({ category: e.target.value })}
+          onChange={(e) => onChangeCategory(e.target.value)}
           className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 ${
             form.category ? "text-stone-800" : "text-stone-400"
           }`}
@@ -423,6 +460,55 @@ export default function RepairAssistant() {
           ))}
         </select>
       </label>
+
+      <label className="block text-sm">
+        <span className="mb-1 block font-medium text-stone-700">
+          已添加的设备 <span className="font-normal text-stone-400">（选填）</span>
+        </span>
+        <select
+          value={selectedDeviceValue}
+          onChange={(e) => onPickDevice(e.target.value)}
+          disabled={!form.category || devicesLoading}
+          className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50 disabled:text-stone-400 ${
+            selectedDeviceValue ? "text-stone-800" : "text-stone-400"
+          }`}
+        >
+          <option value="">
+            {!form.category
+              ? "请先选择上方的设备类型"
+              : devicesLoading
+                ? "加载中…"
+                : devicesForCategory.length === 0
+                  ? deviceLibrarySupportsCategory
+                    ? "暂无该类型设备，可手动填写"
+                    : "该类型无需从设备库选择"
+                  : "不使用已添加设备，手动填写"}
+          </option>
+          {devicesForCategory.map((d) => (
+            <option key={d.id} value={d.id}>
+              {deviceOptionLabel(d)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {form.category && !devicesLoading && devicesForCategory.length === 0 && (
+        <p className="-mt-2 text-xs text-stone-500">
+          {deviceLibrarySupportsCategory ? (
+            <>
+              还没有添加过{repairCategoryLabel(form.category)}设备。可直接填写下方品牌型号，或去{" "}
+              <Link to="/devices" className="text-brand-700 underline">
+                我的设备
+              </Link>{" "}
+              添加。
+            </>
+          ) : (
+            <>
+              设备库暂只管理空调 / 冰箱 / 洗衣机，
+              {repairCategoryLabel(form.category)}请直接填写下方信息。
+            </>
+          )}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <InputField label="品牌" placeholder="如：格力" value={form.brand} onChange={(v) => patch({ brand: v })} />
