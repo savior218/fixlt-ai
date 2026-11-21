@@ -224,7 +224,7 @@ export default function Records() {
           setStatusFilter("all");
           setTimeFilter("all");
         }}
-        searchPlaceholder="搜索设备 / 故障 / 维修人员…"
+        searchPlaceholder="搜索设备、故障、维修人员…"
       />
 
       {/* 记录列表 */}
@@ -234,7 +234,7 @@ export default function Records() {
             <>
               <p className="text-sm text-stone-500">暂无维修记录</p>
               <p data-elder="hide" className="mt-1 text-xs text-stone-400">
-                完成诊断后点击「保存维修记录」，或手动添加维修记录。
+                完成诊断后点击保存维修记录，或手动添加维修记录。
               </p>
             </>
           ) : (
