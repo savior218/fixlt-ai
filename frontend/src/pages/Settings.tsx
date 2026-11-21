@@ -22,8 +22,6 @@ import {
   usePrefs,
   type ContrastLevel,
   type FontScale,
-  ZOOM_MAX,
-  ZOOM_MIN,
 } from "../stores/prefs";
 import { useAuthStore } from "../stores/authStore";
 import { useAvatarStore } from "../stores/avatarStore";
@@ -160,7 +158,6 @@ export default function Settings() {
   const speechStatus = useSpeech((s) => s.status);
   const speechActiveKey = useSpeech((s) => s.activeKey);
   const speechError = useSpeech((s) => s.error);
-  const speechVoiceLabel = useSpeech((s) => s.voiceLabel);
   const speechVoices = useSpeech((s) => s.voices);
   const speechNoZh = useSpeech((s) => s.noZhVoice);
   const audioSupported =
@@ -339,7 +336,6 @@ export default function Settings() {
     <div className="space-y-5">
       <PageHeader
         title="个人设置"
-        subtitle="管理您的账号信息与使用偏好，让修必达更符合您的使用习惯。"
         actions={
           <span
             aria-live="polite"
@@ -396,10 +392,6 @@ export default function Settings() {
                   <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-normal text-brand-700">
                     已登录
                   </span>
-                </p>
-                <p className="mt-0.5 text-sm text-stone-500">账号标识：{user.username}</p>
-                <p className="mt-0.5 text-xs text-stone-400">
-                  当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
                 </p>
               </div>
             </div>
@@ -486,7 +478,7 @@ export default function Settings() {
 
       {/* C. 显示设置 */}
       <SectionCard title="显示设置">
-        <SettingsRow label="字体大小" description="标准 / 大号 / 超大">
+        <SettingsRow label="字体大小">
           <SegmentedControl<FontScale>
             value={prefs.fontScale}
             onChange={prefs.setFontScale}
@@ -498,7 +490,7 @@ export default function Settings() {
           />
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
-          <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
+          <SettingsRow label="页面缩放">
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
@@ -509,7 +501,7 @@ export default function Settings() {
               </Button>
             </div>
           </SettingsRow>
-          <SettingsRow label="对比度" description="标准 / 高对比 / 更高对比">
+          <SettingsRow label="对比度">
             <SegmentedControl<ContrastLevel>
               value={prefs.contrast}
               onChange={prefs.setContrast}
@@ -521,9 +513,6 @@ export default function Settings() {
             />
           </SettingsRow>
         </div>
-        <p className="mt-3 rounded-xl bg-brand-50 p-3 text-xs text-brand-800">
-          实时预览：上方设置即刻生效，本页与全站文字、按钮会立即变化。
-        </p>
       </SectionCard>
 
       {/* D. 语音设置 */}
@@ -531,13 +520,12 @@ export default function Settings() {
         <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
-            description="允许使用浏览器语音合成朗读页面文字（不调用模型、不产生模型费用）"
             checked={prefs.voiceEnabled}
             onChange={handleVoiceToggle}
           />
           <SwitchControl
             label="自动朗读"
-            description="新问题到达时自动朗读一次；公共场所可能被他人听到"
+            description="有新回复时自动读一遍"
             checked={prefs.autoRead}
             onChange={handleAutoToggle}
           />
@@ -591,31 +579,18 @@ export default function Settings() {
         </div>
 
         {/* 明确支持情况，避免“开关看似开启却完全无反馈” */}
-        <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-          {!audioSupported || !speechSupported ? (
-            <p role="status">
-              当前浏览器不支持语音合成。可改用最新版 Chrome / Edge / Safari；文字阅读、诊断与安全提示均不受影响。
-            </p>
-          ) : !speechReady ? (
-            <p role="status">正在加载系统语音列表…</p>
-          ) : speechNoZh ? (
-            <p role="status">
-              未检测到中文音色，将尝试浏览器默认音色朗读；若无声或发音不准，请更换浏览器或在系统中安装中文语音。
-            </p>
-          ) : (
-            <p role="status">
-              语音合成可用
-              {speechVoiceLabel ? `，当前音色：${speechVoiceLabel}` : "，使用浏览器默认音色"}。
-              具体音色与是否离线由设备和浏览器决定，本项目不承诺所有设备都能离线朗读。
-            </p>
-          )}
-          {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
-          <p>
-            音色由设备与浏览器提供。系统旧版音色偏机械时，可在上方切换其他中文音色；
-            设备安装自然/神经网络音色后会自动优先使用。
-          </p>
-          <p>自动朗读默认关闭；只有你主动开启后才会在新问题到达时播放一次。</p>
-        </div>
+        {(!audioSupported || !speechSupported || speechNoZh || speechError) && (
+          <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
+            {!audioSupported || !speechSupported ? (
+              <p role="status">
+                当前浏览器不支持语音合成，可改用最新版 Chrome / Edge / Safari。
+              </p>
+            ) : speechNoZh ? (
+              <p role="status">未检测到中文音色，将尝试浏览器默认音色朗读。</p>
+            ) : null}
+            {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
+          </div>
+        )}
       </SectionCard>
 
       {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示；长辈模式隐藏此高级操作） */}
@@ -671,13 +646,14 @@ export default function Settings() {
           <Button variant="secondary" onClick={() => setClearOpen(true)}>
             清除本机数据
           </Button>
-          <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="danger"
+            className="bg-[#c1503c]! hover:bg-[#a94432]!"
+            onClick={() => setDeleteOpen(true)}
+          >
             注销账号
           </Button>
         </div>
-        <p className="mt-2 text-xs text-stone-400">
-          账号注销功能暂未开放；本机历史与维修记录不会因登录或注册自动归属到新账号。
-        </p>
         <ConfirmDialog
           open={clearOpen}
           title="确认清除本机数据？"
@@ -784,9 +760,6 @@ export default function Settings() {
           <li>· 提供更清晰的操作指引</li>
           <li>· 界面更简洁</li>
         </ul>
-        <p className="mt-3 text-xs text-stone-400">
-          注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
-        </p>
       </SectionCard>
       </div>
 
@@ -794,7 +767,6 @@ export default function Settings() {
       <ModalDialog
         open={profileOpen}
         title="编辑昵称"
-        description="昵称仅用于展示，账号标识仍为用户名。"
         onClose={closeEdit}
         footer={
           <>
@@ -815,11 +787,7 @@ export default function Settings() {
             value={nickname}
             onChange={setNickname}
             error={accountError ?? undefined}
-            description="修改成功后刷新页面仍会保留。"
           />
-          {user && (
-            <p className="text-xs text-stone-500">账号标识：{user.username}</p>
-          )}
         </div>
       </ModalDialog>
 

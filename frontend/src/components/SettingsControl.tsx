@@ -41,7 +41,7 @@ export function SwitchControl({
   onChange,
 }: {
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
