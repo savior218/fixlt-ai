@@ -5,6 +5,9 @@ def test_health(client) -> None:
     assert body["status"] == "ok"
     assert body["deployment_mode"] in {"dev", "public"}
     assert body["safety_rules_version"].startswith("SAFETY-")
+    # 只暴露是否配置，不返回密钥；测试环境没有百度 key
+    assert body["tts_provider"] in {"baidu", "zhipu"}
+    assert body["tts_configured"] is False
 
 
 def test_private_devices_require_login(client) -> None:
