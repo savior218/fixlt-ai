@@ -45,10 +45,6 @@ const DEVICE_TO_REPAIR_CATEGORY: Record<string, string> = {
   washer: "washer",
 };
 
-function repairCategoryLabel(value: string): string {
-  return REPAIR_CATEGORIES.find((c) => c.value === value)?.label ?? value;
-}
-
 /** 已添加设备的选项文案：没有品牌型号时只显示名称，避免出现空括号 */
 function deviceOptionLabel(d: {
   name: string;
@@ -114,6 +110,8 @@ export default function RepairAssistant() {
     : null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
+  /** 设备下拉中选择「手动填写」：不关联已有设备，直接填写下方品牌型号 */
+  const [manualEntry, setManualEntry] = useState(false);
   /** 只列出与当前设备类型一致的已添加设备，避免选错设备带错品牌型号 */
   const devicesForCategory = useMemo(
     () =>
@@ -122,9 +120,6 @@ export default function RepairAssistant() {
       ),
     [devices, form.category]
   );
-  /** 已添加设备只覆盖空调 / 冰箱 / 洗衣机；电视与其他只能手填 */
-  const deviceLibrarySupportsCategory =
-    form.category === "ac" || form.category === "fridge" || form.category === "washer";
   /** 草稿恢复或列表未加载完时，只有确实存在的同类设备才作为选中值 */
   const selectedDeviceValue =
     form.deviceId != null &&
@@ -231,6 +226,13 @@ export default function RepairAssistant() {
   }
 
   function onPickDevice(id: string) {
+    if (id === "manual") {
+      setManualEntry(true);
+      // 从已选设备切到手动填写时，清空自动带入的品牌型号，避免新旧信息混在一起
+      patch(form.deviceId != null ? { deviceId: null, brand: "", model: "" } : { deviceId: null });
+      return;
+    }
+    setManualEntry(false);
     if (!id) {
       patch({ deviceId: null });
       return;
@@ -451,42 +453,28 @@ export default function RepairAssistant() {
       />
 
       <SelectField
-        label="已添加的设备（选填）"
-        value={selectedDeviceValue}
+        label="已添加的设备"
+        value={manualEntry ? "manual" : selectedDeviceValue}
         onChange={onPickDevice}
         disabled={!form.category || devicesLoading}
         placeholder={
-          !form.category
-            ? "请先选择上方的设备类型"
-            : devicesLoading
-              ? "加载中…"
-              : devicesForCategory.length === 0
-                ? deviceLibrarySupportsCategory
-                  ? "暂无该类型设备，可手动填写"
-                  : "该类型无需从设备库选择"
-                : "不使用已添加设备，手动填写"
+          !form.category ? "请先选择上方的设备类型" : devicesLoading ? "加载中…" : "请选择"
         }
-        options={devicesForCategory.map((d) => ({
-          value: String(d.id),
-          label: deviceOptionLabel(d),
-        }))}
+        options={[
+          ...devicesForCategory.map((d) => ({
+            value: String(d.id),
+            label: deviceOptionLabel(d),
+          })),
+          { value: "manual", label: "无" },
+        ]}
       />
       {form.category && !devicesLoading && devicesForCategory.length === 0 && (
         <p className="-mt-2 text-xs text-stone-500">
-          {deviceLibrarySupportsCategory ? (
-            <>
-              还没有添加过{repairCategoryLabel(form.category)}设备。可直接填写下方品牌型号，或去{" "}
-              <Link to="/devices" className="text-brand-700 underline">
-                我的设备
-              </Link>{" "}
-              添加。
-            </>
-          ) : (
-            <>
-              设备库暂只管理空调 / 冰箱 / 洗衣机，
-              {repairCategoryLabel(form.category)}请直接填写下方信息。
-            </>
-          )}
+          暂无已添加设备，可去
+          <Link to="/devices" className="mx-1 text-brand-700 underline">
+            我的设备
+          </Link>
+          添加
         </p>
       )}
 
@@ -602,9 +590,8 @@ export default function RepairAssistant() {
             {photoError && <p className="text-xs text-risk-high">{photoError}</p>}
           </div>
         )}
-        <p className="mt-2 text-xs leading-relaxed text-stone-400">
-          照片保存在服务端数据库，重新部署后仍可查看，仅当前账号可读取；照片仅用于故障判断与工单展示，
-          不会用于广告投放或模型训练。详见
+        <p className="mt-2 text-xs text-stone-400">
+          照片仅用于故障判断，详见
           <Link to="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-800">
             《隐私政策》
           </Link>
