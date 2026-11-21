@@ -41,7 +41,7 @@ import {
 } from "../types/repair";
 
 const STATUS_OPTIONS = [
-  { value: "all", label: "全部状态" },
+  { value: "all", label: "验证状态" },
   { value: "unverified", label: "待验证" },
   { value: "recovered", label: "已恢复" },
   { value: "partial", label: "部分恢复" },
@@ -49,7 +49,7 @@ const STATUS_OPTIONS = [
 ];
 
 const TIME_OPTIONS = [
-  { value: "all", label: "全部时间" },
+  { value: "all", label: "时间" },
   { value: "30", label: "近 30 天" },
   { value: "90", label: "近 90 天" },
 ];
@@ -216,8 +216,8 @@ export default function Records() {
         keyword={keyword}
         onKeywordChange={setKeyword}
         filters={[
-          { label: "验证状态", value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS },
-          { label: "时间", value: timeFilter, onChange: setTimeFilter, options: TIME_OPTIONS },
+          { label: "", value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS },
+          { label: "", value: timeFilter, onChange: setTimeFilter, options: TIME_OPTIONS },
         ]}
         onReset={() => {
           setKeyword("");
