@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Camera, CheckCircle2, ClipboardCopy, Loader2, Phone, Send, ShieldAlert, X } from "lucide-react";
+import { Camera, Check, CheckCircle2, ClipboardCopy, Copy, Loader2, Phone, Send, ShieldAlert, X } from "lucide-react";
 
 import Button from "../components/Button";
 import InputField from "../components/InputField";
@@ -107,6 +107,14 @@ export default function RepairAssistant() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  /** 触屏设备保留一键拨号；电脑端无法拨号，改为复制电话 */
+  const [isTouch] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      (window.matchMedia("(pointer: coarse)").matches ||
+        navigator.maxTouchPoints > 0)
+  );
+  const [copied, setCopied] = useState(false);
   /** 预览区：窄屏上下堆叠时，生成后滚动到这里 */
   const previewRef = useRef<HTMLDivElement>(null);
   /** 访问照片前先弹窗征得用户同意 */
@@ -290,6 +298,18 @@ export default function RepairAssistant() {
     setPhotoPreview(null);
     setPhotoId(null);
     setPhotoError(null);
+  }
+
+  /** 电脑端无法拨号：复制官方售后电话，便于用户自行粘贴拨打 */
+  async function copyHotline() {
+    if (!hotline) return;
+    if (await copyText(hotline.phone)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+      notify("官方售后电话已复制", "success");
+    } else {
+      notify("复制失败，请手动选择号码复制", "error");
+    }
   }
 
   function keepFormForLogin() {
@@ -629,7 +649,7 @@ export default function RepairAssistant() {
         >
           {!generated ? (
             <div className="rounded-2xl border border-dashed border-stone-300 bg-surface px-4 py-10 text-center">
-              <p className="text-sm text-stone-500">尚未生成话术</p>
+              <p className="text-sm text-stone-400">尚未生成话术</p>
             </div>
           ) : editing != null ? (
             <div className="space-y-3">
@@ -654,18 +674,35 @@ export default function RepairAssistant() {
                 </p>
                 {hotline ? (
                   <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-lg font-bold tracking-wide text-brand-800">
+                    <p className="break-all text-2xl font-bold tracking-wide text-brand-800">
                       {hotline.phone}
                     </p>
-                    <a href={`tel:${hotline.phone.replace(/-/g, "")}`}>
-                      <Button size="sm">拨打官方售后</Button>
-                    </a>
+                    {isTouch ? (
+                      <a
+                        href={`tel:${hotline.phone.replace(/-/g, "")}`}
+                        aria-label={`拨打${form.brand.trim() || ""}官方售后电话 ${hotline.phone}`}
+                      >
+                        <Button size="sm">
+                          <Phone className="h-4 w-4" /> 拨打电话
+                        </Button>
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => void copyHotline()}
+                        aria-label={`复制${form.brand.trim() || ""}官方售后电话 ${hotline.phone}`}
+                      >
+                        {copied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        {copied ? "已复制" : "复制电话"}
+                      </Button>
+                    )}
                   </div>
                 ) : (
-                  <p className="mt-1 text-xs text-stone-500">
-                    暂未收录该品牌的官方电话，可查看设备保修卡、说明书或品牌官网；
-                    也可在左侧填写常见品牌（如格力、美的、海尔）后在此一键拨打。
-                  </p>
+                  <p className="mt-1 text-xs text-stone-500">暂未收录该品牌电话</p>
                 )}
                 <Link
                   to="/hotlines"
@@ -751,10 +788,6 @@ export default function RepairAssistant() {
                   {submitting ? "保存中…" : "存入维修档案"}
                 </Button>
               </div>
-              <p className="text-xs text-stone-400">
-                平台不代您报修：保存后可在维修档案跟进整个流程（待联系 → 已联系售后 → 已维修 / 未维修），
-                也可在详情中记录联系对象、联系时间、预约时间和处理备注。
-              </p>
             </div>
           )}
         </SectionCard>
