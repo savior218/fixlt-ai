@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Camera, LogIn, ShieldCheck, Volume2 } from "lucide-react";
+import { Camera, LogIn, Volume2 } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
@@ -140,6 +140,8 @@ export default function Settings() {
   const firstRun = useRef(true);
 
   const [clearOpen, setClearOpen] = useState(false);
+  /** 开启消息免打扰后的说明弹窗 */
+  const [dndNoticeOpen, setDndNoticeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   /** 删除某类本机数据后触发重算占用 */
@@ -445,11 +447,24 @@ export default function Settings() {
         <SectionCard title="消息通知">
           <SwitchControl
             label="消息免打扰"
-            description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
             checked={prefs.doNotDisturb}
-            onChange={prefs.setDoNotDisturb}
+            onChange={(v) => {
+              prefs.setDoNotDisturb(v);
+              if (v) setDndNoticeOpen(true);
+            }}
           />
         </SectionCard>
+        <ModalDialog
+          open={dndNoticeOpen}
+          title="已开启消息免打扰"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          onClose={() => setDndNoticeOpen(false)}
+          footer={
+            <Button variant="secondary" onClick={() => setDndNoticeOpen(false)}>
+              知道了
+            </Button>
+          }
+        />
       </div>
 
       {/* B. 使用模式 */}
@@ -459,21 +474,10 @@ export default function Settings() {
           value={prefs.mode}
           onChange={(v) => prefs.setMode(v === "elder" ? "elder" : "standard")}
           options={[
-            { value: "standard", label: "标准模式", description: "完整信息与操作" },
-            {
-              value: "elder",
-              label: "长辈关怀模式",
-              description: "不只是「大字体」：更贴心的表达、更清晰的操作引导、更简洁的界面",
-            },
+            { value: "standard", label: "标准模式" },
+            { value: "elder", label: "长辈关怀模式" },
           ]}
         />
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" />
-          <p>
-            安全说明：关怀模式只改变字体大小与表达方式，<span className="font-medium">不改变</span>
-            AI 风险判断、危险操作拦截、高风险告警、安全规则与诊断依据。系统不会根据年龄自动开启关怀模式。
-          </p>
-        </div>
       </SectionCard>
 
       {/* C. 显示设置 */}
