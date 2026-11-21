@@ -15,6 +15,9 @@ os.environ["FIXITAI_AUTH_LOGIN_RATE_LIMIT_PER_MINUTE"] = "1000"
 os.environ["FIXITAI_AUTH_REGISTER_RATE_LIMIT_PER_MINUTE"] = "1000"
 # 测试必须与开发者的 backend/.env 隔离，避免本地真实密钥影响“未配置”用例
 os.environ["FIXITAI_AI_API_KEY"] = ""
+os.environ["FIXITAI_TTS_PROVIDER"] = "baidu"
+os.environ["FIXITAI_BAIDU_TTS_API_KEY"] = ""
+os.environ["FIXITAI_BAIDU_TTS_SECRET_KEY"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -23,10 +26,15 @@ from fastapi.testclient import TestClient  # noqa: E402
 @pytest.fixture(autouse=True)
 def reset_model_limiter():
     """每个用例重置模型并发/频率额度，避免跨用例共享进程内计数。"""
-    from app.services.limiter import reset_auth_limiter, reset_limiter
+    from app.services.limiter import (
+        reset_auth_limiter,
+        reset_limiter,
+        reset_tts_limiter,
+    )
 
     reset_limiter()
     reset_auth_limiter()
+    reset_tts_limiter()
     yield
 
 

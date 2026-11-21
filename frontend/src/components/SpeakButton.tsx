@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Square, Volume2 } from "lucide-react";
+import { Loader2, Square, Volume2 } from "lucide-react";
 
 import Button from "./Button";
 import { useToast } from "./Toast";
@@ -31,6 +31,7 @@ export default function SpeakButton({
   const status = useSpeech((s) => s.status);
   const activeKey = useSpeech((s) => s.activeKey);
   const enabled = usePrefs((s) => s.voiceEnabled);
+  const loading = useSpeech((s) => s.loading);
   const active = status === "speaking" && activeKey === speechKey;
 
   // 组件卸载时只停止自己正在播放的段落，不影响其他页面
@@ -72,16 +73,20 @@ export default function SpeakButton({
       className={className}
       title={
         enabled
-          ? "使用浏览器语音合成朗读当前文字，不会重新调用模型"
+          ? "使用浏览器语音或云端合成朗读当前文字，不会重新调用模型"
           : "语音朗读已关闭，可在设置中开启"
       }
     >
       {active ? (
-        <Square className={elder ? "h-5 w-5" : "h-4 w-4"} />
+        loading ? (
+          <Loader2 className={`${elder ? "h-5 w-5" : "h-4 w-4"} animate-spin`} />
+        ) : (
+          <Square className={elder ? "h-5 w-5" : "h-4 w-4"} />
+        )
       ) : (
         <Volume2 className={elder ? "h-5 w-5" : "h-4 w-4"} />
       )}
-      {active ? "停止朗读" : label}
+      {active ? (loading ? "准备朗读" : "停止朗读") : label}
     </Button>
   );
 }

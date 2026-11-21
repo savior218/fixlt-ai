@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CheckCheck,
   ClipboardList,
+  Loader2,
   Square,
   Stethoscope,
   Volume2,
@@ -42,6 +43,7 @@ export default function NotificationBell() {
   const speechSupported = useSpeech((s) => s.supported);
   const speechStatus = useSpeech((s) => s.status);
   const speechActiveKey = useSpeech((s) => s.activeKey);
+  const speechLoading = useSpeech((s) => s.loading);
 
   const [open, setOpen] = useState(false);
 
@@ -196,7 +198,11 @@ export default function NotificationBell() {
                           className="mr-1 mt-1.5 shrink-0 rounded-lg p-2 text-stone-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
                         >
                           {speaking ? (
-                            <Square className="h-4 w-4" />
+                            speechLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )
                           ) : (
                             <Volume2 className="h-4 w-4" />
                           )}
@@ -211,8 +217,8 @@ export default function NotificationBell() {
           {!speechSupported && (
             <p className="border-t border-stone-100 px-4 py-2 text-[11px] leading-relaxed text-stone-400">
               {isWeChatBrowser()
-                ? "微信内置浏览器不支持语音朗读，请点右上角「…」→「在浏览器打开」后使用。"
-                : "当前浏览器不支持语音朗读，建议改用 Chrome / Edge。"}
+                ? "微信内置浏览器当前无法播放语音，请点右上角「…」→「在浏览器打开」后重试。"
+                : "当前环境不支持语音播放，文字内容仍可正常查看。"}
             </p>
           )}
         </div>

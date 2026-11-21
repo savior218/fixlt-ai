@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, data, demo, devices, diagnose, health, hotlines, interview, records, repairs
+from app.api import auth, data, demo, devices, diagnose, health, hotlines, interview, records, repairs, tts
 from app.core.config import ensure_deployment_config, settings
 from app.database.hotline_seed import seed_hotline_directory
 from app.database.seed import seed_demo_data
@@ -116,6 +116,7 @@ app.include_router(records.router)
 app.include_router(repairs.router)
 app.include_router(data.router)
 app.include_router(interview.router)
+app.include_router(tts.router)
 
 
 # 生产部署：FastAPI 统一托管前端构建产物（单服务部署，前端与 /api 同源无需跨域）

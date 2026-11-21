@@ -91,6 +91,7 @@ npm run e2e:stage11   # 需先启动前后端；浏览器验收注册/登录/设
 ## 环境变量与密钥安全
 
 - 复制 `backend/.env.example` 为 `backend/.env`，填入智谱 API Key（https://open.bigmodel.cn 控制台获取）。
+- 手机浏览器朗读兜底：`FIXITAI_TTS_PROVIDER=baidu`（默认）时需配置百度智能云语音应用的 `FIXITAI_BAIDU_TTS_API_KEY` 与 `FIXITAI_BAIDU_TTS_SECRET_KEY`；改用 `zhipu` 则复用 `FIXITAI_AI_API_KEY`。
 - **真实密钥仅存放在后端 `.env`（已在 .gitignore 中排除，严禁提交/泄露到前端）**。
 - 留空 = AI 未配置：诊断请求会返回 `ai_not_configured`，前端明确提示并提供「重试真实 AI / 查看模板演示（非 AI）」。
 - 公开服务建议设置 `FIXITAI_DEPLOYMENT_MODE=public`，会关闭交互式文档。

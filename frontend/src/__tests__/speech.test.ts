@@ -7,6 +7,7 @@ import {
   shouldAutoRead,
   speak,
   speechLeadIn,
+  splitForSpeech,
   stopSpeech,
   useSpeech,
 } from "../services/speech";
@@ -62,6 +63,11 @@ function installSpeech(voices: Array<{ name: string; lang: string }> = []) {
 beforeEach(() => {
   // 测试环境为 node：把 window 指向全局对象，供 speech 服务按浏览器路径运行
   vi.stubGlobal("window", globalThis);
+  // 默认既没有原生语音，也没有云端能力；各用例按需覆盖
+  vi.stubGlobal("speechSynthesis", undefined);
+  vi.stubGlobal("SpeechSynthesisUtterance", undefined);
+  vi.stubGlobal("fetch", undefined);
+  vi.stubGlobal("Audio", undefined);
   resetSpeechForTests();
   usePrefs.setState({ voiceEnabled: true, autoRead: false, speechRate: 1, mode: "standard" });
 });
@@ -144,10 +150,106 @@ describe("语音朗读（阶段十三）", () => {
   });
 
   it("浏览器不支持时明确失败，不影响文字内容", () => {
-    vi.stubGlobal("speechSynthesis", undefined);
-    vi.stubGlobal("SpeechSynthesisUtterance", undefined);
     expect(speak({ key: "k1", text: "您好" })).toBe(false);
     expect(useSpeech.getState().error).toContain("不支持");
+  });
+
+  it("原生可用时不调用云端接口", async () => {
+    installSpeech([{ name: "Tingting", lang: "zh-CN" }]);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("Audio", class {});
+    expect(speak({ key: "k1", text: "原生优先" })).toBe(true);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("没有原生语音时走云端合成并依次播放", async () => {
+    const calls: Array<{ url: string; body: { text: string; speed: number } }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        calls.push({
+          url: String(url),
+          body: JSON.parse(String(init.body)),
+        });
+        return {
+          ok: true,
+          status: 200,
+          blob: async () => new Blob([new Uint8Array(128)]),
+        } as unknown as Response;
+      })
+    );
+    class FakeAudio {
+      src = "";
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      play() {
+        setTimeout(() => this.onended?.(), 0);
+        return Promise.resolve();
+      }
+      pause() {}
+      removeAttribute() {}
+      load() {}
+    }
+    vi.stubGlobal("Audio", FakeAudio);
+    vi.stubGlobal("URL", {
+      createObjectURL: () => "blob:test",
+      revokeObjectURL: () => undefined,
+    });
+
+    expect(speak({ key: "cloud:1", text: "您好，我是修必达。" })).toBe(true);
+    expect(useSpeech.getState().loading).toBe(true);
+    await new Promise((r) => setTimeout(r, 60));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("/api/tts");
+    expect(calls[0].body).toEqual({ text: "您好，我是修必达", speed: 1 });
+    expect(useSpeech.getState().status).toBe("idle");
+    expect(useSpeech.getState().loading).toBe(false);
+  });
+
+  it("云端朗读失败时给出可读提示", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          detail: { code: "tts_unavailable", message: "云端朗读暂不可用，请稍后重试" },
+        }),
+      }) as unknown as Response)
+    );
+    class FakeAudio {
+      src = "";
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      play() {
+        return Promise.resolve();
+      }
+      pause() {}
+      removeAttribute() {}
+      load() {}
+    }
+    vi.stubGlobal("Audio", FakeAudio);
+    vi.stubGlobal("URL", {
+      createObjectURL: () => "blob:test",
+      revokeObjectURL: () => undefined,
+    });
+
+    expect(speak({ key: "cloud:2", text: "失败提示" })).toBe(true);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(useSpeech.getState().status).toBe("error");
+    expect(useSpeech.getState().errorSource).toBe("cloud");
+    expect(useSpeech.getState().error).toContain("云端朗读");
+  });
+
+  it("长文本按标点分段，单段不超过上限", () => {
+    const text = "第一句。".repeat(100);
+    const chunks = splitForSpeech(text, 100);
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.every((chunk) => chunk.length <= 100)).toBe(true);
+    expect(chunks.join("")).toBe(text);
   });
 
   it("自动朗读同一段只触发一次（刷新 / 重渲染不重复）", () => {

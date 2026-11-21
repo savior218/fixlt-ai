@@ -65,6 +65,8 @@ class SlidingWindowLimiter:
 
 _limiter = SlidingWindowLimiter()
 _auth_limiter = SlidingWindowLimiter()
+# 语音合成独立计数：避免连续朗读挤占诊断模型的额度
+_tts_limiter = SlidingWindowLimiter()
 
 
 def get_limiter() -> SlidingWindowLimiter:
@@ -75,9 +77,17 @@ def get_auth_limiter() -> SlidingWindowLimiter:
     return _auth_limiter
 
 
+def get_tts_limiter() -> SlidingWindowLimiter:
+    return _tts_limiter
+
+
 def reset_limiter() -> None:
     _limiter.reset()
 
 
 def reset_auth_limiter() -> None:
     _auth_limiter.reset()
+
+
+def reset_tts_limiter() -> None:
+    _tts_limiter.reset()

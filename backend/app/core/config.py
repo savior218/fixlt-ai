@@ -54,6 +54,33 @@ class Settings(BaseSettings):
     ai_timeout_seconds: float = 60.0
     ai_max_output_tokens: int = 1500
 
+    # 语音合成（浏览器不支持 Web Speech 时的云端兜底）
+    # baidu = 百度短文本在线合成（实名后赠送免费测试额度，推荐）
+    # zhipu = 智谱 GLM-TTS（复用 ai_api_key，按字符计费）
+    tts_provider: Literal["baidu", "zhipu"] = "baidu"
+    # 百度：控制台 → 语音技术 → 应用列表中的 API Key / Secret Key
+    baidu_tts_api_key: str = ""
+    baidu_tts_secret_key: str = ""
+    baidu_tts_token_url: str = "https://aip.baidubce.com/oauth/2.0/token"
+    baidu_tts_endpoint: str = "https://tsn.baidu.com/text2audio"
+    # 发音人：0 度小美 / 1 度小宇 / 3 度逍遥 / 4 度丫丫 / 5 度小娇 / 5118 度小鹿
+    baidu_tts_voice: str = "0"
+    # 百度音调、音量取值 0-15（默认 5）
+    baidu_tts_pitch: int = 5
+    baidu_tts_volume: int = 5
+    # 智谱：仅当 tts_provider=zhipu 时使用
+    tts_model: str = "glm-tts"
+    tts_voice: str = "tongtong"
+    # 单次合成上限；百度按 UTF-8 字节限制 < 1024，前端按 280 字分段
+    tts_max_input_chars: int = 1024
+    tts_max_input_bytes: int = 1000
+    tts_timeout_seconds: float = 45.0
+    tts_rate_limit_per_minute: int = 30
+    tts_guest_rate_limit_per_minute: int = 8
+    tts_cache_max_entries: int = 40
+    tts_cache_max_bytes: int = 16 * 1024 * 1024
+    tts_cache_ttl_seconds: int = 60 * 60
+
     # 模型接口保护（单实例内存限流；多实例部署需改用 Redis 等共享存储）
     ai_rate_limit_per_minute: int = 8
     # 自由聊天每轮调用一次模型，额度单独计算，避免对话被 8 次/分钟误伤

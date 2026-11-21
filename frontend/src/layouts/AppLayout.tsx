@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
@@ -9,13 +9,33 @@ import NotificationPopup from "../components/NotificationPopup";
 import SafetyBanner from "../components/SafetyBanner";
 import SidebarNav from "../components/SidebarNav";
 import TopBar from "../components/TopBar";
-import { ToastProvider } from "../components/Toast";
+import { ToastProvider, useToast } from "../components/Toast";
 import { useApplyPrefs } from "../hooks/useApplyPrefs";
 import { useAuthStore } from "../stores/authStore";
 import { useMaintenanceStore } from "../stores/maintenanceStore";
 import { useTicketStore } from "../stores/ticketStore";
-import { initSpeech, stopSpeech } from "../services/speech";
+import { initSpeech, stopSpeech, useSpeech } from "../services/speech";
 import { loginHref } from "../utils/redirect";
+
+/** 云端朗读失败时统一弹一次 toast；原生/自动播放错误由页面内提示 */
+function SpeechErrorWatcher() {
+  const { notify } = useToast();
+  const error = useSpeech((s) => s.error);
+  const source = useSpeech((s) => s.errorSource);
+  const lastRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!error) {
+      lastRef.current = null;
+      return;
+    }
+    if (source !== "cloud" || lastRef.current === error) return;
+    lastRef.current = error;
+    notify(error, "error");
+  }, [error, source, notify]);
+
+  return null;
+}
 
 export default function AppLayout() {
   useApplyPrefs();
@@ -98,6 +118,7 @@ export default function AppLayout() {
 
   return (
     <ToastProvider>
+      <SpeechErrorWatcher />
       <MediaPermissionProvider>
         <div className="app-shell flex min-h-screen">
           <a

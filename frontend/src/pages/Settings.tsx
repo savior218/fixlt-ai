@@ -160,16 +160,14 @@ export default function Settings() {
 
   // 浏览器语音合成状态（异步加载音色，不在设置里假装已开启）
   const speechSupported = useSpeech((s) => s.supported);
+  const speechNativeSupported = useSpeech((s) => s.nativeSupported);
   const speechReady = useSpeech((s) => s.ready);
   const speechStatus = useSpeech((s) => s.status);
   const speechActiveKey = useSpeech((s) => s.activeKey);
   const speechError = useSpeech((s) => s.error);
   const speechVoices = useSpeech((s) => s.voices);
   const speechNoZh = useSpeech((s) => s.noZhVoice);
-  const audioSupported =
-    typeof window !== "undefined" &&
-    "speechSynthesis" in window &&
-    typeof window.SpeechSynthesisUtterance !== "undefined";
+  const speechLoading = useSpeech((s) => s.loading);
   const testKey = "settings:test";
   const testActive = speechStatus === "speaking" && speechActiveKey === testKey;
 
@@ -197,8 +195,8 @@ export default function Settings() {
   }
 
   function playTestVoice() {
-    if (!audioSupported) {
-      notify("当前浏览器不支持语音合成，文字内容仍可正常使用", "error");
+    if (!speechSupported) {
+      notify("当前环境不支持语音播放，文字内容仍可正常使用", "error");
       return;
     }
     if (!prefs.voiceEnabled) prefs.setVoiceEnabled(true);
@@ -580,12 +578,21 @@ export default function Settings() {
             variant="secondary"
             size="sm"
             onClick={playTestVoice}
-            disabled={!audioSupported}
+            disabled={!speechSupported}
           >
             <Volume2 className="h-4 w-4" />
-            {testActive ? "停止测试语音" : "播放测试语音"}
+            {testActive
+              ? speechLoading
+                ? "准备测试语音"
+                : "停止测试语音"
+              : "播放测试语音"}
           </Button>
-          {audioSupported && speechStatus === "speaking" && (
+          {testActive && speechLoading && (
+            <span aria-live="polite" className="ml-2 text-xs text-stone-500">
+              正在生成语音…
+            </span>
+          )}
+          {testActive && !speechLoading && (
             <span aria-live="polite" className="ml-2 text-xs text-stone-500">
               正在播放…
             </span>
@@ -593,11 +600,13 @@ export default function Settings() {
         </div>
 
         {/* 明确支持情况，避免“开关看似开启却完全无反馈” */}
-        {(!audioSupported || !speechSupported || speechNoZh || speechError) && (
+        {(!speechSupported || !speechNativeSupported || speechNoZh || speechError) && (
           <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-            {!audioSupported || !speechSupported ? (
+            {!speechSupported ? (
+              <p role="status">当前环境不支持语音播放，文字内容仍可正常查看。</p>
+            ) : !speechNativeSupported ? (
               <p role="status">
-                当前浏览器不支持语音合成，可改用最新版 Chrome / Edge / Safari。
+                当前浏览器不支持系统语音，将自动使用云端朗读（需要联网）。
               </p>
             ) : speechNoZh ? (
               <p role="status">未检测到中文音色，将尝试浏览器默认音色朗读。</p>
