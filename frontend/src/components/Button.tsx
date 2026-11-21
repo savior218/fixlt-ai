@@ -1,6 +1,12 @@
 ﻿import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "danger" | "ghost";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "outlineAccent"
+  | "danger"
+  | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
@@ -9,6 +15,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     "bg-stone-200 text-stone-700 border-transparent hover:bg-stone-300",
   outline:
     "bg-surface text-stone-700 border-stone-300 hover:border-brand-400 hover:bg-brand-50/50 hover:text-brand-700",
+  outlineAccent:
+    "bg-surface text-stone-700 border-stone-300 hover:border-brand-300 hover:bg-brand-100 hover:text-brand-800",
   danger: "bg-red-600 text-white hover:bg-red-700 border-transparent",
   ghost: "bg-transparent text-brand-700 border-transparent hover:bg-brand-50",
 };
