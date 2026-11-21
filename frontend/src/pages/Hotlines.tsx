@@ -70,6 +70,35 @@ const OTHER_GROUPS = [
   { key: "small", label: "生活小电", categories: ["生活小电", "个护电器"] },
 ] as const;
 
+/** 品类展示文案：把内部检索分类翻译成用户熟悉的说法 */
+const CATEGORY_DISPLAY: Record<string, string> = {
+  空调: "空调",
+  中央空调: "中央空调",
+  冰箱冷柜: "冰箱、冷柜",
+  洗衣干衣: "洗衣机、干衣机",
+  衣物护理: "衣物护理机",
+  电视影音: "电视、影音设备",
+  热水采暖: "热水器、采暖设备",
+  厨房电器: "厨房电器",
+  净水饮水: "净水器、饮水机",
+  生活小电: "生活小家电",
+  个护电器: "个护电器",
+  清洁电器: "清洁电器",
+  空气处理: "空气净化",
+  咖啡电器: "咖啡机",
+};
+
+/** 品类展示最多 5 项，超出用“等”收尾，避免把复制按钮挤到下一行 */
+const MAX_CATEGORY_ITEMS = 5;
+
+function categoryText(categories: string[]): string {
+  const items = categories.flatMap((c) =>
+    (CATEGORY_DISPLAY[c] ?? c).split("、")
+  );
+  if (items.length <= MAX_CATEGORY_ITEMS) return items.join("、");
+  return `${items.slice(0, MAX_CATEGORY_ITEMS).join("、")}等`;
+}
+
 /** 与数据包 lookup.mjs 一致：NFKC、去空白与常见分隔符后精确匹配，避免三菱重工/三菱电机混用 */
 function normalize(value: string | null | undefined): string {
   return String(value ?? "")
@@ -121,7 +150,7 @@ function ContactRow({
           <p className="text-sm font-semibold text-stone-900">
             {record.brand}
             <span className="ml-2 text-xs font-normal text-stone-400">
-              {record.categories.join(" / ")}
+              {categoryText(record.categories)}
             </span>
           </p>
           <p className="mt-1 break-all text-xl font-bold tracking-wide text-brand-800">
@@ -321,12 +350,7 @@ export default function Hotlines() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="官方售后电话查询"
-        subtitle="按品牌和家电类型查找品牌官网公布的售后电话，由您自行致电，平台不代报修"
-        titleClassName="font-body"
-        subtitleClassName="font-body"
-      />
+      <PageHeader title="官方售后电话查询" titleClassName="font-body" />
 
       {/* 主入口：空调 / 冰箱 / 洗衣机 / 其他家电 */}
       <section aria-labelledby="hotline-categories">
@@ -388,14 +412,14 @@ export default function Hotlines() {
           <InputField
             mode="search"
             label="搜索品牌"
-            placeholder="输入品牌，如 海尔 / Haier / 卡萨帝"
+            inputClassName="bg-surface"
+            placeholder="输入品牌，如 海尔、Haier、卡萨帝"
             value={query}
             onChange={setQuery}
-            description="支持中文品牌、英文名和别名；需输入完整品牌名，避免把不同服务体系混在一起。"
           />
         </div>
         {(mainKey || subKey || query) && (
-          <Button variant="secondary" onClick={clearFilters} className="sm:mb-5">
+          <Button variant="secondary" onClick={clearFilters}>
             清除筛选
           </Button>
         )}

@@ -1,13 +1,11 @@
-﻿﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
+﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CalendarClock, Download, Phone, RotateCcw } from "lucide-react";
+import { AlertTriangle, ChevronRight, Download, Phone, RotateCcw } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
-import EmptyState from "../components/EmptyState";
 import FilterBar from "../components/FilterBar";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
-import SourceBadge from "../components/SourceBadge";
 import {
   LEGACY_STATUS_LABELS,
   PROGRESS_STATUS_LABELS,
@@ -43,7 +41,7 @@ import {
 } from "../types/repair";
 
 const STATUS_OPTIONS = [
-  { value: "all", label: "全部状态" },
+  { value: "all", label: "验证状态" },
   { value: "unverified", label: "待验证" },
   { value: "recovered", label: "已恢复" },
   { value: "partial", label: "部分恢复" },
@@ -51,7 +49,7 @@ const STATUS_OPTIONS = [
 ];
 
 const TIME_OPTIONS = [
-  { value: "all", label: "全部时间" },
+  { value: "all", label: "时间" },
   { value: "30", label: "近 30 天" },
   { value: "90", label: "近 90 天" },
 ];
@@ -139,7 +137,6 @@ export default function Records() {
     <div className="space-y-5">
       <PageHeader
         title="维修档案"
-        subtitle="跟踪报修流程闭环与维修记录，并按品类管理保养提醒"
         actions={
           <Button variant="secondary" onClick={() => notify("演示状态：导出功能暂未接入", "info")}>
             <Download className="h-4 w-4" /> 导出记录
@@ -180,8 +177,9 @@ export default function Records() {
                       {d.saveStatus === "failed" ? " · 未同步到云端" : ""}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <SourceBadge source={d.source} model={d.model} />
+                  <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-brand-700">
+                    点击查看
+                    <ChevronRight aria-hidden className="h-3.5 w-3.5" />
                   </span>
                 </Link>
               </li>
@@ -218,35 +216,36 @@ export default function Records() {
         keyword={keyword}
         onKeywordChange={setKeyword}
         filters={[
-          { label: "验证状态", value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS },
-          { label: "时间", value: timeFilter, onChange: setTimeFilter, options: TIME_OPTIONS },
+          { label: "", value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS },
+          { label: "", value: timeFilter, onChange: setTimeFilter, options: TIME_OPTIONS },
         ]}
         onReset={() => {
           setKeyword("");
           setStatusFilter("all");
           setTimeFilter("all");
         }}
-        searchPlaceholder="搜索设备 / 故障 / 维修人员…"
+        searchPlaceholder="搜索设备、故障、维修人员…"
       />
 
       {/* 记录列表 */}
       {filtered.length === 0 ? (
-        <EmptyState
-          icon="🗂️"
-          title={records.length === 0 ? "暂无维修记录" : "没有符合筛选条件的记录"}
-          description={
-            records.length === 0
-              ? "完成诊断后点击「保存维修记录」，或手动添加维修记录。"
-              : "试试调整筛选条件。"
-          }
-          action={
-            records.length === 0 ? (
-              <Link to="/diagnose" className={buttonClass("primary", "md")}>
-                开始诊断
-              </Link>
-            ) : undefined
-          }
-        />
+        <div className="rounded-2xl border border-dashed border-stone-300 bg-surface px-4 py-12 text-center">
+          {records.length === 0 ? (
+            <>
+              <p className="text-sm text-stone-500">暂无维修记录</p>
+              <p data-elder="hide" className="mt-1 text-xs text-stone-400">
+                完成诊断后点击保存维修记录，或手动添加维修记录。
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-stone-500">没有符合筛选条件的记录</p>
+              <p data-elder="hide" className="mt-1 text-xs text-stone-400">
+                试试调整筛选条件。
+              </p>
+            </>
+          )}
+        </div>
       ) : (
         <ul className="space-y-3">
           {filtered.map((r) => {
@@ -476,14 +475,6 @@ function AfterSalesSection() {
         </span>
       }
     >
-      <p className="mb-3 text-xs text-stone-500">
-        平台不代您报修。在
-        <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
-          智能报修助手
-        </Link>
-        生成话术并拨打品牌官方售后电话后，回到这里把流程更新为「已联系售后 → 已维修 / 未维修」，形成完整闭环。
-      </p>
-
       {legacyDrafts.length > 0 && (
         <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
           另有 {legacyDrafts.length} 条旧版本本地草稿（未提交到服务端，仅保留在本机，不会被当作已保存事项）：
@@ -496,13 +487,16 @@ function AfterSalesSection() {
       )}
 
       {tickets.length === 0 && !loading ? (
-        <p className="text-sm text-stone-500">
-          当前账号暂无报修流程记录。可在
-          <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
-            智能报修助手
-          </Link>
-          生成报修话术并拨打官方售后电话后，把报修流程存入维修档案。
-        </p>
+        <div className="py-8 text-center">
+          <p className="text-sm text-stone-500">暂无保修流程记录</p>
+          <p className="mt-1 text-xs text-stone-400">
+            可在
+            <Link to="/repair" className="mx-1 text-brand-700 hover:underline">
+              智能报修助手
+            </Link>
+            生成报修话术并拨打官方售后电话后，把报修流程存入维修档案。
+          </p>
+        </div>
       ) : (
         <>
           {groups.repaired.length > 0 && (
@@ -652,19 +646,17 @@ function MaintenanceSection() {
         ) : undefined
       }
     >
-      <p className="mb-3 flex items-start gap-2 text-xs text-stone-500">
-        <CalendarClock aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-        按品类默认保养间隔跟踪每台设备（如空调滤网每 1 个月清洗一次）。
-        记录保养后，到期会通过站内消息提醒您；也可补记过去的保养日期。
-      </p>
       {rows.length === 0 ? (
-        <p className="text-sm text-stone-500">
-          暂无可跟踪保养的设备。先在
-          <Link to="/devices" className="mx-1 text-brand-700 hover:underline">
-            我的设备
-          </Link>
-          添加空调 / 冰箱 / 洗衣机 / 电视，这里会自动生成对应保养计划。
-        </p>
+        <div className="py-8 text-center">
+          <p className="text-sm text-stone-500">暂无可跟踪保养的设备</p>
+          <p className="mt-1 text-xs text-stone-400">
+            先在
+            <Link to="/devices" className="mx-1 text-brand-700 hover:underline">
+              我的设备
+            </Link>
+            添加相应设备，这里会自动生成对应保养计划。
+          </p>
+        </div>
       ) : (
         <ul className="divide-y divide-stone-100">
           {rows.map((r) => {

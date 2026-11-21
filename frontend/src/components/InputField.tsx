@@ -13,6 +13,7 @@ export default function InputField({
   rows = 3,
   maxLength,
   placeholder,
+  inputClassName,
   value,
   onChange,
 }: {
@@ -31,6 +32,8 @@ export default function InputField({
   rows?: number;
   maxLength?: number;
   placeholder?: string;
+  /** 按页面覆盖输入框背景等样式 */
+  inputClassName?: string;
   value: string;
   onChange: (v: string) => void;
 }) {
@@ -66,7 +69,7 @@ export default function InputField({
             placeholder={placeholder ?? "搜索…"}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className={`${baseClass} pl-9`}
+            className={`${baseClass} pl-9 ${inputClassName ?? ""}`}
           />
         </div>
       ) : mode === "textarea" ? (
@@ -78,7 +81,7 @@ export default function InputField({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${baseClass} resize-y`}
+          className={`${baseClass} resize-y ${inputClassName ?? ""}`}
         />
       ) : (
         <input
@@ -89,7 +92,7 @@ export default function InputField({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={baseClass}
+          className={`${baseClass} ${inputClassName ?? ""}`}
         />
       )}
 

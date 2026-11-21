@@ -1,4 +1,5 @@
-﻿﻿import { Link, useNavigate } from "react-router-dom";
+﻿﻿import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ClipboardList,
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 
 import Button from "../components/Button";
+import ModalDialog from "../components/ModalDialog";
 import RiskBadge from "../components/RiskBadge";
 import SectionCard from "../components/SectionCard";
 import { diagnosesForOwner, useDiagnosisStore } from "../stores/diagnosisStore";
@@ -23,10 +25,46 @@ const QUICK_ENTRIES = [
 ] as const;
 
 const FAQ_ITEMS = [
-  { q: "空调不制冷怎么办？", to: "/diagnose?category=ac" },
-  { q: "洗衣机脱水时噪音很大", to: "/diagnose?category=washer" },
-  { q: "冰箱结冰严重怎么处理", to: "/diagnose?category=fridge" },
-  { q: "什么情况必须立即停机？", to: "/diagnose" },
+  {
+    q: "空调不制冷怎么办？",
+    answer: [
+      "先确认模式已设为「制冷」，设定温度比室温低 3℃ 以上。",
+      "拆下并清洗滤网（晾干后再装回），滤网积尘会明显削弱制冷效果。",
+      "检查室外机是否被遮挡、散热不良，周围能否正常出风。",
+      "若室内机出风弱、有异响或漏水，多为风轮或排水管问题。",
+      "出现压缩机启动即停、异味、异响时请停止使用，联系专业师傅；加氟、换电容需专业人员操作。",
+    ],
+  },
+  {
+    q: "洗衣机脱水时噪音很大",
+    answer: [
+      "衣物偏载最常见：被套、羽绒服等大件单独甩干容易偏心，请抖散后均匀摆放。",
+      "检查机身是否晃动、四个底脚是否平稳着地，调平后再试。",
+      "新机确认运输螺栓已拆除，否则脱水时会剧烈震动。",
+      "检查衣物口袋是否有硬币、发夹等异物撞击内桶。",
+      "若听到「咯噔」撞击声或桶体大幅摆动、位移，可能是减震器或轴承损坏，请报修。",
+    ],
+  },
+  {
+    q: "冰箱结冰严重怎么处理",
+    answer: [
+      "先检查门是否关严、密封条是否变形老化（可用夹纸法测试密封）。",
+      "冷藏室出风口被食物遮挡会导致局部结冰，请给出风口留出空隙。",
+      "温控档位调得过高、频繁开门、放入热食都会加重结冰。",
+      "直冷冰箱结霜属正常现象，霜层超过 5mm 应断电自然除霜，不要用刀铲、勿用开水冲。",
+      "若冷冻室结冰但冷藏不冷，可能是化霜系统故障，需专业师傅检修。",
+    ],
+  },
+  {
+    q: "什么情况必须立即停机？",
+    answer: [
+      "冒烟、闻到焦糊味，或外壳、插头、插座异常发烫甚至变形。",
+      "有漏电、麻手感，或跳闸频繁发生。",
+      "出现异常巨响、剧烈抖动，或压缩机频繁启停。",
+      "闻到燃气味或疑似制冷剂泄漏的气味。",
+      "处理方式：先断电（拔插头或关闭空开），不要再通电试探，尽快联系专业师傅上门。",
+    ],
+  },
 ];
 
 /** 卡片标题右侧的"查看全部"胶囊按钮 */
@@ -61,6 +99,9 @@ export default function Home() {
   const elder = mode === "elder";
   const history = useDiagnosisStore((s) => s.history);
   const ownerKey = useDiagnosisStore((s) => s.ownerKey);
+  // 常见问题弹窗：当前展开的问题序号，null 表示关闭
+  const [faqIndex, setFaqIndex] = useState<number | null>(null);
+  const activeFaq = faqIndex === null ? null : FAQ_ITEMS[faqIndex];
 
   // 只展示当前账号的诊断记录，其他账号 / 本机历史不混入
   const recent = diagnosesForOwner(history, ownerKey).slice(0, 3);
@@ -82,10 +123,10 @@ export default function Home() {
           <p className="text-sm text-stone-500">{greetingByHour()}</p>
         )}
         <h1
-          className={`font-semibold leading-snug text-balance text-stone-900 ${
+          className={`font-body font-semibold leading-snug text-balance text-stone-900 ${
             elder
-              ? "text-3xl leading-relaxed"
-              : "mt-2 text-[22px] min-[380px]:text-[26px] sm:text-3xl"
+              ? "text-3xl! leading-relaxed"
+              : "mt-2 text-[22px]! min-[380px]:text-2xl!"
           }`}
         >
           家电坏了？
@@ -110,7 +151,7 @@ export default function Home() {
             <ArrowRight aria-hidden className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="outlineAccent"
             size="lg"
             className={elder ? "w-full text-lg" : ""}
             onClick={() => navigate("/repair")}
@@ -212,15 +253,20 @@ export default function Home() {
           padding="sm"
         >
           <ul>
-            {FAQ_ITEMS.map((item) => (
+            {FAQ_ITEMS.map((item, i) => (
               <li key={item.q} className="border-b border-stone-100 last:border-0">
-                <Link
-                  to={item.to}
-                  className="flex items-center justify-between py-2.5 text-sm text-stone-700 transition-colors hover:text-brand-700"
+                <button
+                  type="button"
+                  onClick={() => setFaqIndex(i)}
+                  aria-haspopup="dialog"
+                  className="group flex w-full items-center justify-between py-2.5 text-left text-sm text-stone-700 transition-colors hover:text-brand-700"
                 >
                   {item.q}
-                  <ChevronRight aria-hidden className="h-3.5 w-3.5 text-stone-300" />
-                </Link>
+                  <ChevronRight
+                    aria-hidden
+                    className="h-3.5 w-3.5 shrink-0 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500"
+                  />
+                </button>
               </li>
             ))}
           </ul>
@@ -238,6 +284,27 @@ export default function Home() {
           ，请立即停止使用，并联系专业人员。
         </p>
       </div>
+
+      {/* 常见问题解答弹窗 */}
+      <ModalDialog
+        open={faqIndex !== null}
+        title={activeFaq?.q ?? ""}
+        description="常见原因与处理建议"
+        size="lg"
+        onClose={() => setFaqIndex(null)}
+        footer={
+          <Button onClick={() => setFaqIndex(null)}>知道了</Button>
+        }
+      >
+        <ul className="space-y-3 text-sm leading-relaxed text-stone-700">
+          {activeFaq?.answer.map((line) => (
+            <li key={line} className="flex gap-2.5">
+              <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
+              <span className="min-w-0">{line}</span>
+            </li>
+          ))}
+        </ul>
+      </ModalDialog>
     </div>
   );
 }
