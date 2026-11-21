@@ -7,6 +7,7 @@ import InputField from "../components/InputField";
 import { useMediaPermission } from "../components/MediaPermission";
 import PageHeader from "../components/PageHeader";
 import SectionCard from "../components/SectionCard";
+import SelectField from "../components/SelectField";
 import SourceBadge from "../components/SourceBadge";
 import { useToast } from "../components/Toast";
 import { useDeviceStore } from "../stores/deviceStore";
@@ -441,56 +442,35 @@ export default function RepairAssistant() {
   /* ---------- 左侧表单（elder 模式分两步） ---------- */
   const basicFields = (
     <>
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium text-stone-700">
-          设备类型 <span className="text-risk-high">*</span>
-        </span>
-        <select
-          value={form.category}
-          onChange={(e) => onChangeCategory(e.target.value)}
-          className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 ${
-            form.category ? "text-stone-800" : "text-stone-400"
-          }`}
-        >
-          <option value="">请选择</option>
-          {REPAIR_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label="设备类型"
+        required
+        value={form.category}
+        onChange={onChangeCategory}
+        options={REPAIR_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+      />
 
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium text-stone-700">
-          已添加的设备 <span className="font-normal text-stone-400">（选填）</span>
-        </span>
-        <select
-          value={selectedDeviceValue}
-          onChange={(e) => onPickDevice(e.target.value)}
-          disabled={!form.category || devicesLoading}
-          className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50 disabled:text-stone-400 ${
-            selectedDeviceValue ? "text-stone-800" : "text-stone-400"
-          }`}
-        >
-          <option value="">
-            {!form.category
-              ? "请先选择上方的设备类型"
-              : devicesLoading
-                ? "加载中…"
-                : devicesForCategory.length === 0
-                  ? deviceLibrarySupportsCategory
-                    ? "暂无该类型设备，可手动填写"
-                    : "该类型无需从设备库选择"
-                  : "不使用已添加设备，手动填写"}
-          </option>
-          {devicesForCategory.map((d) => (
-            <option key={d.id} value={d.id}>
-              {deviceOptionLabel(d)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label="已添加的设备（选填）"
+        value={selectedDeviceValue}
+        onChange={onPickDevice}
+        disabled={!form.category || devicesLoading}
+        placeholder={
+          !form.category
+            ? "请先选择上方的设备类型"
+            : devicesLoading
+              ? "加载中…"
+              : devicesForCategory.length === 0
+                ? deviceLibrarySupportsCategory
+                  ? "暂无该类型设备，可手动填写"
+                  : "该类型无需从设备库选择"
+                : "不使用已添加设备，手动填写"
+        }
+        options={devicesForCategory.map((d) => ({
+          value: String(d.id),
+          label: deviceOptionLabel(d),
+        }))}
+      />
       {form.category && !devicesLoading && devicesForCategory.length === 0 && (
         <p className="-mt-2 text-xs text-stone-500">
           {deviceLibrarySupportsCategory ? (
@@ -515,25 +495,13 @@ export default function RepairAssistant() {
         <InputField label="型号" placeholder="如：KFR-35GW" value={form.model} onChange={(v) => patch({ model: v })} />
       </div>
 
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium text-stone-700">
-          故障现象 <span className="text-risk-high">*</span>
-        </span>
-        <select
-          value={form.symptom}
-          onChange={(e) => patch({ symptom: e.target.value })}
-          className={`w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 ${
-            form.symptom ? "text-stone-800" : "text-stone-400"
-          }`}
-        >
-          <option value="">请选择</option>
-          {SYMPTOMS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label="故障现象"
+        required
+        value={form.symptom}
+        onChange={(v) => patch({ symptom: v })}
+        options={SYMPTOMS.map((s) => ({ value: s, label: s }))}
+      />
     </>
   );
 
