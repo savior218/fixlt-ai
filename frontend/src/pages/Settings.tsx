@@ -142,6 +142,8 @@ export default function Settings() {
   const [clearOpen, setClearOpen] = useState(false);
   /** 开启消息免打扰后的说明弹窗 */
   const [dndNoticeOpen, setDndNoticeOpen] = useState(false);
+  /** 开启自动朗读后的提醒弹窗 */
+  const [autoReadNoticeOpen, setAutoReadNoticeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   /** 删除某类本机数据后触发重算占用 */
@@ -189,6 +191,7 @@ export default function Settings() {
   function handleAutoToggle(next: boolean) {
     if (next && !prefs.voiceEnabled) prefs.setVoiceEnabled(true);
     prefs.setAutoRead(next);
+    if (next) setAutoReadNoticeOpen(true);
   }
 
   function playTestVoice() {
@@ -529,7 +532,6 @@ export default function Settings() {
           />
           <SwitchControl
             label="自动朗读"
-            description="有新回复时自动读一遍"
             checked={prefs.autoRead}
             onChange={handleAutoToggle}
           />
@@ -544,7 +546,7 @@ export default function Settings() {
                 id="speech-voice"
                 value={prefs.speechVoiceURI ?? ""}
                 onChange={(e) => selectSpeechVoice(e.target.value || null)}
-                className="max-w-[70%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
+                className="w-64 max-w-[62%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
               >
                 <option value="">自动（优先自然音色）</option>
                 {speechVoices.map((v) => (
@@ -595,6 +597,17 @@ export default function Settings() {
             {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
           </div>
         )}
+        <ModalDialog
+          open={autoReadNoticeOpen}
+          title="已开启自动朗读"
+          description="有新回复时会自动读一遍；在公共场合使用时可能需要注意一下，避免打扰到身边的人。"
+          onClose={() => setAutoReadNoticeOpen(false)}
+          footer={
+            <Button variant="secondary" onClick={() => setAutoReadNoticeOpen(false)}>
+              知道了
+            </Button>
+          }
+        />
       </SectionCard>
 
       {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示；长辈模式隐藏此高级操作） */}
