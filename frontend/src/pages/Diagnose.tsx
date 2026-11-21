@@ -35,6 +35,7 @@ import { useNotificationStore } from "../stores/notifications";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { usePrefs } from "../stores/prefs";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
+import { isWeChatBrowser, WECHAT_SPEECH_HINT } from "../utils/platform";
 
 /** 等待报告生成时轮换的短句，缓解等待焦虑，不虚构进度 */
 const WAITING_LINES = [
@@ -81,10 +82,12 @@ export default function Diagnose() {
   /** 最近一次失败发生在对话中，还是最终生成时 */
   const [errorPhase, setErrorPhase] = useState<"chat" | "generate">("chat");
 
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   /** 用户是否在消息区向上翻阅（此时不强制拉回底部） */
   const userScrolledUp = useRef(false);
+  /** 程序化滚动进行中：忽略 onScroll，避免把自己的滚动误判成「用户上翻」 */
+  const autoScrollingRef = useRef(false);
+  const autoScrollTimerRef = useRef<number | null>(null);
 
   /** 防止重复生成 / 重复保存 */
   const busyRef = useRef(false);
@@ -143,11 +146,16 @@ export default function Diagnose() {
     if (voice.listening) {
       voice.stop();
     } else if (!voice.supported) {
-      notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
+      notify(
+        isWeChatBrowser()
+          ? WECHAT_SPEECH_HINT
+          : "当前浏览器不支持语音输入，建议使用 Chrome / Edge",
+        "error"
+      );
     } else {
-      // 先征求意见：允许后才真正开启麦克风
+      // 先征求意见：允许后才真正开启麦克风；启动失败由 hook 统一给错误提示
       requestPermission("microphone", () => {
-        if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+        voice.start();
       });
     }
   }
@@ -309,6 +317,8 @@ export default function Diagnose() {
     const text = raw.trim();
     if (!text) return;
 
+    // 主动发送消息即恢复自动跟随，即使之前上翻过也回到最新对话
+    userScrolledUp.current = false;
     const category = inferCategory(text, draft.category);
     const isFirst = draft.chat.length === 0;
     const description = isFirst && !draft.description.trim()
@@ -443,12 +453,33 @@ export default function Diagnose() {
   // 对话区滚动：用户上翻阅读时不强制拉回底部，仅在贴近底部时跟随新消息
   useEffect(() => {
     if (userScrolledUp.current) return;
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    // 等 DOM 完成布局后再滚，避免消息高度还没算出来就滚动
+    const raf = window.requestAnimationFrame(() => {
+      const el = chatScrollRef.current;
+      if (!el) return;
+      autoScrollingRef.current = true;
+      if (autoScrollTimerRef.current) window.clearTimeout(autoScrollTimerRef.current);
+      autoScrollTimerRef.current = window.setTimeout(() => {
+        autoScrollingRef.current = false;
+        autoScrollTimerRef.current = null;
+      }, 600);
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(raf);
   }, [draft.chat.length, thinking, generating]);
+
+  useEffect(
+    () => () => {
+      if (autoScrollTimerRef.current) window.clearTimeout(autoScrollTimerRef.current);
+    },
+    []
+  );
 
   function handleChatScroll() {
     const el = chatScrollRef.current;
     if (!el) return;
+    // 自动跟随产生的滚动事件不代表用户上翻
+    if (autoScrollingRef.current) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     userScrolledUp.current = !nearBottom;
   }
@@ -640,7 +671,6 @@ export default function Diagnose() {
               </button>
             </div>
           )}
-          <div ref={chatEndRef} />
         </div>
 
         {/* 照片预览 */}
@@ -697,7 +727,7 @@ export default function Diagnose() {
             </Button>
             <textarea
               rows={1}
-              value={input}
+              value={voice.listening ? `${input}${voice.interimText}` : input}
               maxLength={500}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -711,11 +741,18 @@ export default function Diagnose() {
               autoComplete="off"
               disabled={generating}
               placeholder={
-                elder
-                  ? "想到什么就说什么，比如：空调不凉了…"
-                  : "输入你的问题，比如：空调开了半小时还是不凉，出风口只有自然风…"
+                voice.listening
+                  ? "正在聆听…说完点「停止」"
+                  : elder
+                    ? "想到什么就说什么，比如：空调不凉了…"
+                    : "输入你的问题，比如：空调开了半小时还是不凉，出风口只有自然风…"
               }
-              className="min-h-11 min-w-0 flex-1 resize-none rounded-xl border border-stone-300 px-3 py-2.5 text-sm leading-relaxed focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
+              className={[
+                "min-h-11 min-w-0 flex-1 resize-none rounded-xl border px-3 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 disabled:bg-stone-50",
+                voice.listening
+                  ? "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100"
+                  : "border-stone-300 focus:border-brand-500 focus:ring-brand-100",
+              ].join(" ")}
             />
             <Button
               onClick={handleSend}

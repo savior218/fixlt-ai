@@ -23,6 +23,7 @@ import {
   type InterviewState,
 } from "../services/api";
 import { compressImage, fileToDataUrl, validatePhoto } from "../utils/image";
+import { isWeChatBrowser, WECHAT_SPEECH_HINT } from "../utils/platform";
 import { generateAIDiagnosis } from "../services/diagnosisService";
 import { speak, stopSpeech } from "../services/speech";
 import type { QAPair } from "../types/diagnosis";
@@ -170,13 +171,18 @@ export default function DynamicInterview() {
       return;
     }
     if (!voice.supported) {
-      notify("当前浏览器不支持语音输入，建议使用 Chrome / Edge", "error");
+      notify(
+        isWeChatBrowser()
+          ? WECHAT_SPEECH_HINT
+          : "当前浏览器不支持语音输入，建议使用 Chrome / Edge",
+        "error"
+      );
       return;
     }
-    // 先征求意见：允许后才真正开启麦克风
+    // 先征求意见：允许后才真正开启麦克风；启动失败由 hook 统一提示
     requestPermission("microphone", () => {
       stopSpeech(); // 录音期间暂停页面朗读，避免把系统声音识别成回答
-      if (!voice.start()) notify("语音识别启动失败，请稍后再试", "error");
+      voice.start();
     });
   }
 

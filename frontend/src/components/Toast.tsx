@@ -1,4 +1,4 @@
-﻿﻿import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+﻿﻿import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -22,8 +22,16 @@ const TYPE_STYLES: Record<ToastType, string> = {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  /** 相同提示 1.5 秒内只弹一次，避免连点麦克风时叠出多条相同红条 */
+  const lastToastRef = useRef<{ message: string; type: ToastType; at: number } | null>(null);
 
   const notify = useCallback((message: string, type: ToastType = "info") => {
+    const now = Date.now();
+    const last = lastToastRef.current;
+    if (last && last.message === message && last.type === type && now - last.at < 1500) {
+      return;
+    }
+    lastToastRef.current = { message, type, at: now };
     const id = Date.now() + Math.random();
     setItems((prev) => [...prev, { id, type, message }]);
     window.setTimeout(() => {
@@ -37,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 flex-col items-center gap-2"
+        className="toast-stack pointer-events-none flex flex-col items-center gap-2"
       >
         {items.map((t) => (
           <div

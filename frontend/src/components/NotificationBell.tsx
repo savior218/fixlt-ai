@@ -5,7 +5,9 @@ import {
   CalendarClock,
   CheckCheck,
   ClipboardList,
+  Square,
   Stethoscope,
+  Volume2,
 } from "lucide-react";
 
 import {
@@ -14,7 +16,10 @@ import {
   type NotificationType,
 } from "../stores/notifications";
 import { usePrefs } from "../stores/prefs";
+import { speak, stopSpeech, useSpeech } from "../services/speech";
+import { isWeChatBrowser } from "../utils/platform";
 import { relativeTime } from "../utils/format";
+import { useToast } from "./Toast";
 
 /** 通知类型 → 图标 / 配色 / 标签（通知面板与弹窗共用） */
 export const TYPE_META: Record<
@@ -33,8 +38,25 @@ export default function NotificationBell() {
   const markAllRead = useNotificationStore((s) => s.markAllRead);
   const markRead = useNotificationStore((s) => s.markRead);
   const doNotDisturb = usePrefs((s) => s.doNotDisturb);
+  const { notify } = useToast();
+  const speechSupported = useSpeech((s) => s.supported);
+  const speechStatus = useSpeech((s) => s.status);
+  const speechActiveKey = useSpeech((s) => s.activeKey);
 
   const [open, setOpen] = useState(false);
+
+  /** 朗读单条通知：再次点击同一条则停止 */
+  function readNotification(id: string, title: string, body: string) {
+    const key = `notification:${id}`;
+    if (speechStatus === "speaking" && speechActiveKey === key) {
+      stopSpeech();
+      return;
+    }
+    if (!speak({ key, text: `${title}。${body}` })) {
+      const err = useSpeech.getState().error;
+      if (err) notify(err, "error");
+    }
+  }
   const [ringing, setRinging] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const unread = unreadCount(items);
@@ -98,7 +120,7 @@ export default function NotificationBell() {
         <div
           role="dialog"
           aria-label="通知中心"
-          className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-stone-200 bg-surface shadow-lg"
+          className="notification-panel overflow-hidden rounded-2xl border border-stone-200 bg-surface shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5">
             <p className="text-sm font-semibold text-stone-900">通知中心</p>
@@ -127,13 +149,15 @@ export default function NotificationBell() {
                 {items.map((n) => {
                   const meta = TYPE_META[n.type];
                   const Icon = meta.icon;
+                  const speaking =
+                    speechStatus === "speaking" && speechActiveKey === `notification:${n.id}`;
                   return (
-                    <li key={n.id}>
+                    <li key={n.id} className="flex items-start">
                       <button
                         type="button"
                         onClick={() => markRead(n.id)}
                         className={[
-                          "flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-stone-50",
+                          "flex min-w-0 flex-1 items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-stone-50",
                           n.read ? "opacity-70" : "",
                         ].join(" ")}
                       >
@@ -163,12 +187,34 @@ export default function NotificationBell() {
                           </span>
                         </span>
                       </button>
+                      {speechSupported && (
+                        <button
+                          type="button"
+                          onClick={() => readNotification(n.id, n.title, n.body)}
+                          aria-label={speaking ? "停止朗读该通知" : "朗读该通知"}
+                          aria-pressed={speaking}
+                          className="mr-1 mt-1.5 shrink-0 rounded-lg p-2 text-stone-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
+                        >
+                          {speaking ? (
+                            <Square className="h-4 w-4" />
+                          ) : (
+                            <Volume2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
           </div>
+          {!speechSupported && (
+            <p className="border-t border-stone-100 px-4 py-2 text-[11px] leading-relaxed text-stone-400">
+              {isWeChatBrowser()
+                ? "微信内置浏览器不支持语音朗读，请点右上角「…」→「在浏览器打开」后使用。"
+                : "当前浏览器不支持语音朗读，建议改用 Chrome / Edge。"}
+            </p>
+          )}
         </div>
       )}
     </div>

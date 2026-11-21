@@ -9,6 +9,7 @@
 import { create } from "zustand";
 
 import { SPEECH_RATE_MAX, SPEECH_RATE_MIN, usePrefs } from "../stores/prefs";
+import { isWeChatBrowser, WECHAT_SPEECH_HINT } from "../utils/platform";
 
 export type SpeechStatus = "idle" | "speaking" | "error";
 
@@ -225,7 +226,9 @@ export function speak({ key, text, rate }: SpeakOptions): boolean {
       supported: false,
       status: "error",
       activeKey: null,
-      error: "当前浏览器不支持语音合成，请改用最新版 Chrome 或 Edge。",
+      error: isWeChatBrowser()
+        ? WECHAT_SPEECH_HINT
+        : "当前浏览器不支持语音合成，请改用最新版 Chrome 或 Edge。",
     });
     return false;
   }

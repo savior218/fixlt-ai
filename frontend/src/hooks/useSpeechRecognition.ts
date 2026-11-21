@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { isWeChatBrowser, WECHAT_SPEECH_HINT } from "../utils/platform";
+
 /**
  * 语音识别最小接口（兼容 webkitSpeechRecognition）
  */
@@ -31,6 +33,29 @@ function getRecognitionCtor(): (new () => RecognitionLike) | null {
     | null;
 }
 
+/** 把 Web Speech 错误码翻译成用户能照做的提示 */
+function describeRecognitionError(code?: string): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "麦克风权限被拒绝，请在浏览器地址栏允许麦克风后重试";
+    case "no-speech":
+      return "没有听到声音，请靠近麦克风再说一次";
+    case "audio-capture":
+      return "未检测到可用的麦克风，请检查设备后重试";
+    case "language-not-supported":
+      return "当前浏览器不支持中文语音识别，建议改用 Chrome / Edge";
+    case "network":
+      return isWeChatBrowser()
+        ? WECHAT_SPEECH_HINT
+        : "语音识别服务连接失败，请检查网络后重试（部分浏览器不支持该功能）";
+    default:
+      return isWeChatBrowser()
+        ? WECHAT_SPEECH_HINT
+        : "语音识别暂时不可用，请稍后再试";
+  }
+}
+
 /**
  * 听写 Hook：浏览器原生语音识别（Chrome/Edge/Safari）。
  *
@@ -56,10 +81,19 @@ export function useSpeechRecognition(lang = "zh-CN") {
   const start = useCallback(() => {
     const Ctor = getRecognitionCtor();
     if (!Ctor) return false;
-    try {
-      recRef.current?.abort();
-    } catch {
-      /* 上一次实例可能已结束 */
+
+    // 先摘掉旧实例的事件再 abort：否则 abort 触发的 onerror/onend 会在新会话
+    // 启动后把 listening 置为 false，并弹出「语音识别暂时不可用」（二次点击失败的主因）
+    const previous = recRef.current;
+    if (previous) {
+      previous.onresult = null;
+      previous.onerror = null;
+      previous.onend = null;
+      try {
+        previous.abort();
+      } catch {
+        /* 上一次实例可能已结束 */
+      }
     }
 
     const rec = new Ctor();
@@ -91,11 +125,10 @@ export function useSpeechRecognition(lang = "zh-CN") {
       setInterimText(interim);
     };
     rec.onerror = (e) => {
-      setError(
-        e?.error === "not-allowed" || e?.error === "service-not-allowed"
-          ? "麦克风权限被拒绝，请在浏览器地址栏允许麦克风后重试"
-          : "语音识别暂时不可用，请稍后再试"
-      );
+      const code = e?.error;
+      // 主动 abort / 切换实例会触发 aborted，不是错误，不能打断新会话
+      if (code === "aborted") return;
+      setError(describeRecognitionError(code));
       setListening(false);
     };
     rec.onend = () => {
@@ -120,7 +153,14 @@ export function useSpeechRecognition(lang = "zh-CN") {
     setFinalText("");
     setInterimText("");
     setError(null);
-    rec.start();
+    try {
+      rec.start();
+    } catch {
+      // 权限尚未授予、实例状态异常等：返回 false 交给调用方提示，不抛出中断页面
+      setError("语音识别启动失败，请检查麦克风权限后重试");
+      setListening(false);
+      return false;
+    }
     setListening(true);
     return true;
   }, [lang]);

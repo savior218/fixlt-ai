@@ -207,6 +207,55 @@
 }
 /* 减少动画模式（html.rm）下由 global.css 的 transition:none!important 接管 */
 
+/* ============================================================
+   通知中心下拉面板
+   <640px：固定贴左右边距，避免被铃铛锚点推到屏幕外
+   ≥640px：回到铃铛下方右对齐
+   ============================================================ */
+.notification-panel {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  z-index: 30;
+}
+@media (min-width: 640px) {
+  .notification-panel {
+    position: absolute;
+    left: auto;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    width: 20rem;
+  }
+}
+
+/* ============================================================
+   Toast 堆叠层
+   手机：显示在顶栏下方，避免遮挡底部输入框 / 弹窗按钮 / 页脚
+   桌面：保持底部居中
+   ============================================================ */
+.toast-stack {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  z-index: 50;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 24rem;
+}
+@media (min-width: 640px) {
+  .toast-stack {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 5rem;
+    transform: translateX(-50%);
+    width: calc(100vw - 2rem);
+  }
+}
+
 /* ---- 兼容保留：底部弹层/抽屉的安全区工具类（ModalDialog 等使用） ---- */
 .safe-pad-bottom {
   /* 1.25rem 基础内边距 + 底部安全区，避免弹窗按钮贴住屏幕底边 */
