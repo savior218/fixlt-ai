@@ -556,7 +556,7 @@ export default function Settings() {
                 onChange={(e) => selectSpeechVoice(e.target.value || null)}
                 className="w-64 max-w-[62%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
               >
-                <option value="">自动（优先自然音色）</option>
+                <option value="">默认</option>
                 {speechVoices.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}
