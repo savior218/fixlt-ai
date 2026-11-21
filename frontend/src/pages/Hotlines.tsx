@@ -412,6 +412,7 @@ export default function Hotlines() {
           <InputField
             mode="search"
             label="搜索品牌"
+            inputClassName="bg-surface"
             placeholder="输入品牌，如 海尔、Haier、卡萨帝"
             value={query}
             onChange={setQuery}

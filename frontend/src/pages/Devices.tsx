@@ -147,7 +147,6 @@ export default function Devices() {
     <div className="space-y-5">
       <PageHeader
         title="我的设备"
-        subtitle="管理家庭设备，随时查看状态与维修记录"
         actions={
           demoMode ? (
             <Link to={loginHref("/devices")} className={buttonClass("primary", "md")}>
@@ -202,11 +201,11 @@ export default function Devices() {
           onKeywordChange={setKeyword}
           filters={[
             {
-              label: "设备类型",
+              label: "",
               value: categoryFilter,
               onChange: setCategoryFilter,
               options: [
-                { value: "all", label: "全部" },
+                { value: "all", label: "设备类型" },
                 ...(Object.keys(CATEGORY_LABELS) as DeviceCategory[]).map((c) => ({
                   value: c,
                   label: CATEGORY_LABELS[c],
@@ -218,7 +217,7 @@ export default function Devices() {
             setKeyword("");
             setCategoryFilter("all");
           }}
-          searchPlaceholder="搜索设备名称 / 品牌 / 位置…"
+          searchPlaceholder="搜索设备名称、品牌、位置…"
         />
       )}
 
@@ -227,17 +226,11 @@ export default function Devices() {
         <Loading label="加载设备中…" />
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="🏠"
+          icon={null}
           title={devices.length === 0 ? "暂无设备" : "没有符合筛选条件的设备"}
+          titleClassName={devices.length === 0 ? "text-stone-400" : undefined}
           description={
-            devices.length === 0
-              ? "添加家里的空调、冰箱或洗衣机，诊断时可直接关联。"
-              : "试试调整筛选条件或清空关键词。"
-          }
-          action={
-            devices.length === 0 && !demoMode ? (
-              <Button onClick={openCreate}>添加设备</Button>
-            ) : undefined
+            devices.length === 0 ? undefined : "试试调整筛选条件或清空关键词。"
           }
         />
       ) : (
