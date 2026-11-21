@@ -116,7 +116,7 @@ export default function TopBar({
           className={[
             "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
             mode === "elder"
-              ? "border-amber-500 bg-amber-100 text-amber-800"
+              ? "border-brand-400 bg-brand-100 text-brand-700"
               : "border-stone-300 bg-surface text-stone-600 hover:bg-stone-100",
           ].join(" ")}
         >

@@ -6,7 +6,7 @@ export default function Toggle({
   onChange,
 }: {
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -14,7 +14,7 @@ export default function Toggle({
     <div className="flex items-center justify-between gap-4 py-3">
       <span>
         <span className="block text-sm font-medium text-stone-800">{label}</span>
-        <span className="block text-xs text-stone-500">{description}</span>
+        {description && <span className="block text-xs text-stone-500">{description}</span>}
       </span>
       <button
         type="button"

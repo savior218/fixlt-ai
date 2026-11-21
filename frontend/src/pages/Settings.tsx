@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Camera, LogIn, ShieldCheck, Volume2 } from "lucide-react";
+import { Camera, LogIn, Volume2 } from "lucide-react";
 
 import Button, { buttonClass } from "../components/Button";
 import AIMessageBubble from "../components/AIMessageBubble";
@@ -22,8 +22,6 @@ import {
   usePrefs,
   type ContrastLevel,
   type FontScale,
-  ZOOM_MAX,
-  ZOOM_MIN,
 } from "../stores/prefs";
 import { useAuthStore } from "../stores/authStore";
 import { useAvatarStore } from "../stores/avatarStore";
@@ -142,6 +140,12 @@ export default function Settings() {
   const firstRun = useRef(true);
 
   const [clearOpen, setClearOpen] = useState(false);
+  /** 开启消息免打扰后的说明弹窗 */
+  const [dndNoticeOpen, setDndNoticeOpen] = useState(false);
+  /** 开启自动朗读后的提醒弹窗 */
+  const [autoReadNoticeOpen, setAutoReadNoticeOpen] = useState(false);
+  /** 修改密码的二次确认弹窗 */
+  const [pwdConfirmOpen, setPwdConfirmOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   /** 删除某类本机数据后触发重算占用 */
@@ -160,7 +164,6 @@ export default function Settings() {
   const speechStatus = useSpeech((s) => s.status);
   const speechActiveKey = useSpeech((s) => s.activeKey);
   const speechError = useSpeech((s) => s.error);
-  const speechVoiceLabel = useSpeech((s) => s.voiceLabel);
   const speechVoices = useSpeech((s) => s.voices);
   const speechNoZh = useSpeech((s) => s.noZhVoice);
   const audioSupported =
@@ -190,6 +193,7 @@ export default function Settings() {
   function handleAutoToggle(next: boolean) {
     if (next && !prefs.voiceEnabled) prefs.setVoiceEnabled(true);
     prefs.setAutoRead(next);
+    if (next) setAutoReadNoticeOpen(true);
   }
 
   function playTestVoice() {
@@ -270,21 +274,27 @@ export default function Settings() {
     }
   }
 
-  async function savePassword() {
+  /** 提交前先做前端校验；通过后弹出二次确认 */
+  function validatePasswordForm(): boolean {
     if (currentPwd.length === 0) {
       setAccountError("请输入旧密码");
-      return;
+      return false;
     }
     if (newPwd.length < 8) {
       setAccountError("新密码至少 8 位");
-      return;
+      return false;
     }
     if (newPwd !== confirmPwd) {
       setAccountError("两次输入的新密码不一致");
-      return;
+      return false;
     }
-    setAccountBusy(true);
     setAccountError(null);
+    return true;
+  }
+
+  async function savePassword() {
+    if (!validatePasswordForm()) return;
+    setAccountBusy(true);
     try {
       const message = await changePassword(currentPwd, newPwd);
       setPasswordOpen(false);
@@ -339,7 +349,6 @@ export default function Settings() {
     <div className="space-y-5">
       <PageHeader
         title="个人设置"
-        subtitle="管理您的账号信息与使用偏好，让修必达更符合您的使用习惯。"
         actions={
           <span
             aria-live="polite"
@@ -397,10 +406,6 @@ export default function Settings() {
                     已登录
                   </span>
                 </p>
-                <p className="mt-0.5 text-sm text-stone-500">账号标识：{user.username}</p>
-                <p className="mt-0.5 text-xs text-stone-400">
-                  当前模式：{prefs.mode === "elder" ? "长辈关怀模式" : "标准模式"}
-                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -453,11 +458,24 @@ export default function Settings() {
         <SectionCard title="消息通知">
           <SwitchControl
             label="消息免打扰"
-            description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
             checked={prefs.doNotDisturb}
-            onChange={prefs.setDoNotDisturb}
+            onChange={(v) => {
+              prefs.setDoNotDisturb(v);
+              if (v) setDndNoticeOpen(true);
+            }}
           />
         </SectionCard>
+        <ModalDialog
+          open={dndNoticeOpen}
+          title="已开启消息免打扰"
+          description="开启后诊断完成、高风险告警、工单进展等新消息不再弹窗、也不播放提示音，仅保留右上角铃铛的未读小红点，随时可在通知中心查看"
+          onClose={() => setDndNoticeOpen(false)}
+          footer={
+            <Button variant="secondary" onClick={() => setDndNoticeOpen(false)}>
+              知道了
+            </Button>
+          }
+        />
       </div>
 
       {/* B. 使用模式 */}
@@ -467,26 +485,15 @@ export default function Settings() {
           value={prefs.mode}
           onChange={(v) => prefs.setMode(v === "elder" ? "elder" : "standard")}
           options={[
-            { value: "standard", label: "标准模式", description: "完整信息与操作" },
-            {
-              value: "elder",
-              label: "长辈关怀模式",
-              description: "不只是「大字体」：更贴心的表达、更清晰的操作引导、更简洁的界面",
-            },
+            { value: "standard", label: "标准模式" },
+            { value: "elder", label: "长辈关怀模式" },
           ]}
         />
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" />
-          <p>
-            安全说明：关怀模式只改变字体大小与表达方式，<span className="font-medium">不改变</span>
-            AI 风险判断、危险操作拦截、高风险告警、安全规则与诊断依据。系统不会根据年龄自动开启关怀模式。
-          </p>
-        </div>
       </SectionCard>
 
       {/* C. 显示设置 */}
       <SectionCard title="显示设置">
-        <SettingsRow label="字体大小" description="标准 / 大号 / 超大">
+        <SettingsRow label="字体大小">
           <SegmentedControl<FontScale>
             value={prefs.fontScale}
             onChange={prefs.setFontScale}
@@ -498,7 +505,7 @@ export default function Settings() {
           />
         </SettingsRow>
         <div className="divide-y divide-stone-100 border-y border-stone-100">
-          <SettingsRow label="页面缩放" description={`${prefs.zoom}%（${ZOOM_MIN}% ~ ${ZOOM_MAX}%）`}>
+          <SettingsRow label="页面缩放">
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => prefs.setZoom(prefs.zoom - 10)} aria-label="缩小">
                 −
@@ -509,7 +516,7 @@ export default function Settings() {
               </Button>
             </div>
           </SettingsRow>
-          <SettingsRow label="对比度" description="标准 / 高对比 / 更高对比">
+          <SettingsRow label="对比度">
             <SegmentedControl<ContrastLevel>
               value={prefs.contrast}
               onChange={prefs.setContrast}
@@ -521,9 +528,6 @@ export default function Settings() {
             />
           </SettingsRow>
         </div>
-        <p className="mt-3 rounded-xl bg-brand-50 p-3 text-xs text-brand-800">
-          实时预览：上方设置即刻生效，本页与全站文字、按钮会立即变化。
-        </p>
       </SectionCard>
 
       {/* D. 语音设置 */}
@@ -531,13 +535,11 @@ export default function Settings() {
         <div className="divide-y divide-stone-100">
           <SwitchControl
             label="语音朗读"
-            description="允许使用浏览器语音合成朗读页面文字（不调用模型、不产生模型费用）"
             checked={prefs.voiceEnabled}
             onChange={handleVoiceToggle}
           />
           <SwitchControl
             label="自动朗读"
-            description="新问题到达时自动朗读一次；公共场所可能被他人听到"
             checked={prefs.autoRead}
             onChange={handleAutoToggle}
           />
@@ -552,9 +554,9 @@ export default function Settings() {
                 id="speech-voice"
                 value={prefs.speechVoiceURI ?? ""}
                 onChange={(e) => selectSpeechVoice(e.target.value || null)}
-                className="max-w-[70%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
+                className="w-64 max-w-[62%] rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:border-brand-400 focus:outline-none"
               >
-                <option value="">自动（优先自然音色）</option>
+                <option value="">默认</option>
                 {speechVoices.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}
@@ -591,31 +593,29 @@ export default function Settings() {
         </div>
 
         {/* 明确支持情况，避免“开关看似开启却完全无反馈” */}
-        <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
-          {!audioSupported || !speechSupported ? (
-            <p role="status">
-              当前浏览器不支持语音合成。可改用最新版 Chrome / Edge / Safari；文字阅读、诊断与安全提示均不受影响。
-            </p>
-          ) : !speechReady ? (
-            <p role="status">正在加载系统语音列表…</p>
-          ) : speechNoZh ? (
-            <p role="status">
-              未检测到中文音色，将尝试浏览器默认音色朗读；若无声或发音不准，请更换浏览器或在系统中安装中文语音。
-            </p>
-          ) : (
-            <p role="status">
-              语音合成可用
-              {speechVoiceLabel ? `，当前音色：${speechVoiceLabel}` : "，使用浏览器默认音色"}。
-              具体音色与是否离线由设备和浏览器决定，本项目不承诺所有设备都能离线朗读。
-            </p>
-          )}
-          {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
-          <p>
-            音色由设备与浏览器提供。系统旧版音色偏机械时，可在上方切换其他中文音色；
-            设备安装自然/神经网络音色后会自动优先使用。
-          </p>
-          <p>自动朗读默认关闭；只有你主动开启后才会在新问题到达时播放一次。</p>
-        </div>
+        {(!audioSupported || !speechSupported || speechNoZh || speechError) && (
+          <div className="mt-3 space-y-1 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-500">
+            {!audioSupported || !speechSupported ? (
+              <p role="status">
+                当前浏览器不支持语音合成，可改用最新版 Chrome / Edge / Safari。
+              </p>
+            ) : speechNoZh ? (
+              <p role="status">未检测到中文音色，将尝试浏览器默认音色朗读。</p>
+            ) : null}
+            {speechError && <p role="status" className="text-amber-700">{speechError}</p>}
+          </div>
+        )}
+        <ModalDialog
+          open={autoReadNoticeOpen}
+          title="已开启自动朗读"
+          description="有新回复时会自动读一遍；在公共场合使用时可能需要注意一下，避免打扰到身边的人。"
+          onClose={() => setAutoReadNoticeOpen(false)}
+          footer={
+            <Button variant="secondary" onClick={() => setAutoReadNoticeOpen(false)}>
+              知道了
+            </Button>
+          }
+        />
       </SectionCard>
 
       {/* E. 本机历史导入（仅登录后、且存在未归属记录时显示；长辈模式隐藏此高级操作） */}
@@ -671,13 +671,14 @@ export default function Settings() {
           <Button variant="secondary" onClick={() => setClearOpen(true)}>
             清除本机数据
           </Button>
-          <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="danger"
+            className="bg-[#c1503c]! hover:bg-[#a94432]!"
+            onClick={() => setDeleteOpen(true)}
+          >
             注销账号
           </Button>
         </div>
-        <p className="mt-2 text-xs text-stone-400">
-          账号注销功能暂未开放；本机历史与维修记录不会因登录或注册自动归属到新账号。
-        </p>
         <ConfirmDialog
           open={clearOpen}
           title="确认清除本机数据？"
@@ -784,9 +785,6 @@ export default function Settings() {
           <li>· 提供更清晰的操作指引</li>
           <li>· 界面更简洁</li>
         </ul>
-        <p className="mt-3 text-xs text-stone-400">
-          注意：两种模式下风险判断与安全拦截完全一致，仅表达方式不同。
-        </p>
       </SectionCard>
       </div>
 
@@ -794,7 +792,6 @@ export default function Settings() {
       <ModalDialog
         open={profileOpen}
         title="编辑昵称"
-        description="昵称仅用于展示，账号标识仍为用户名。"
         onClose={closeEdit}
         footer={
           <>
@@ -815,11 +812,7 @@ export default function Settings() {
             value={nickname}
             onChange={setNickname}
             error={accountError ?? undefined}
-            description="修改成功后刷新页面仍会保留。"
           />
-          {user && (
-            <p className="text-xs text-stone-500">账号标识：{user.username}</p>
-          )}
         </div>
       </ModalDialog>
 
@@ -827,14 +820,18 @@ export default function Settings() {
       <ModalDialog
         open={passwordOpen}
         title="修改密码"
-        description="修改成功后，旧密码和全部旧登录会话都会失效。"
         onClose={closeEdit}
         footer={
           <>
             <Button variant="secondary" onClick={closeEdit} disabled={accountBusy}>
               取消
             </Button>
-            <Button onClick={() => void savePassword()} disabled={accountBusy}>
+            <Button
+              onClick={() => {
+                if (validatePasswordForm()) setPwdConfirmOpen(true);
+              }}
+              disabled={accountBusy}
+            >
               {accountBusy ? "提交中…" : "确认修改"}
             </Button>
           </>
@@ -873,6 +870,20 @@ export default function Settings() {
           )}
         </div>
       </ModalDialog>
+
+      {/* 修改密码二次确认：改完即退出其他设备，先让用户确认一下 */}
+      <ConfirmDialog
+        open={pwdConfirmOpen}
+        title="确认修改密码？"
+        message="修改后旧密码会立即失效，其他设备上的登录也会退出，需要用新密码重新登录。确定现在修改吗？"
+        confirmLabel="确认修改"
+        danger={false}
+        onConfirm={() => {
+          setPwdConfirmOpen(false);
+          void savePassword();
+        }}
+        onCancel={() => setPwdConfirmOpen(false)}
+      />
     </div>
   );
 }
